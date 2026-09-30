@@ -10,34 +10,34 @@ export function GradeBadge({ grade, size = "md" }: GradeBadgeProps) {
     switch (g) {
       case "A+":
       case "A":
-        return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]";
       case "B":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/40 shadow-[0_0_12px_rgba(14,165,233,0.2)]";
       case "C":
-        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+        return "bg-amber-500/10 text-amber-400 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.2)]";
       case "D":
-        return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+        return "bg-orange-500/10 text-orange-400 border-orange-500/40 shadow-[0_0_12px_rgba(249,115,22,0.2)]";
       case "F":
       default:
-        return "bg-red-500/20 text-red-400 border-red-500/30";
+        return "bg-rose-500/10 text-rose-400 border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.25)]";
     }
   };
 
   const getSizeClasses = (s: "sm" | "md" | "lg") => {
     switch (s) {
       case "sm":
-        return "px-1.5 py-0.5 text-xs font-semibold";
+        return "px-1.5 py-0.5 text-[10px] font-semibold";
       case "lg":
-        return "px-3 py-1.5 text-base font-bold";
+        return "px-3 py-1 text-sm font-bold tracking-wider";
       case "md":
       default:
-        return "px-2 py-1 text-xs font-bold";
+        return "px-2 py-0.5 text-xs font-bold tracking-wide";
     }
   };
 
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-md border uppercase tracking-wider ${getColors(
+      className={`inline-flex items-center justify-center rounded border font-mono uppercase tracking-wider ${getColors(
         grade
       )} ${getSizeClasses(size)}`}
     >
