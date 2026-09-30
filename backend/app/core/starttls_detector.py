@@ -52,7 +52,12 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
 
     # Auth check before TLS
     pre_tls_client = client_pl[:tls_offset] if tls_offset is not None else client_pl
-    auth_detected = b"AUTH PLAIN" in pre_tls_client or b"AUTH LOGIN" in pre_tls_client
+    auth_detected = (
+        b"AUTH PLAIN" in pre_tls_client
+        or b"AUTH LOGIN" in pre_tls_client
+        or (b"USER " in pre_tls_client and b"PASS " in pre_tls_client)
+        or b"LOGIN " in pre_tls_client
+    )
 
     server_banner = None
     first_line = server_pl.split(b"\r\n")[0] if b"\r\n" in server_pl else server_pl

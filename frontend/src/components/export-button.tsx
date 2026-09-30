@@ -3,24 +3,25 @@
 import { useState } from "react";
 import { FileText, FileCode2, Download } from "lucide-react";
 import { getReportUrl } from "@/lib/api";
-import { MOCK_RESULT } from "@/lib/mock-data";
+import { AnalysisResult } from "@/lib/types";
 
 interface ExportButtonsProps {
   analysisId: string;
+  data?: AnalysisResult;
 }
 
-export function ExportButtons({ analysisId }: ExportButtonsProps) {
+export function ExportButtons({ analysisId, data }: ExportButtonsProps) {
   const [downloading, setDownloading] = useState(false);
 
   const handleExportJson = () => {
-    // Client-side fallback to guarantee flawless download even without running FastAPI server
     try {
-      const jsonString = JSON.stringify(MOCK_RESULT, null, 2);
+      const payload = data || { analysis_id: analysisId };
+      const jsonString = JSON.stringify(payload, null, 2);
       const blob = new Blob([jsonString], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `securemailscope_forensic_audit_${analysisId.slice(0, 8)}.json`;
+      a.download = `securemailscope_forensic_${analysisId.slice(0, 8)}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -38,28 +39,28 @@ export function ExportButtons({ analysisId }: ExportButtonsProps) {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 font-mono">
       <button
         onClick={handleExportJson}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-soc-border bg-soc-card hover:bg-soc-cardHover hover:border-soc-borderHighlight text-slate-300 text-xs font-mono transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
-        title="Download complete structured analysis data in JSON format"
+        className="inline-flex items-center gap-1 px-2 py-1 border border-tactical-border bg-tactical-surface hover:border-phosphor-cyan text-tactical-text hover:text-white text-[10px] uppercase font-bold tracking-wider transition-colors"
+        title="Download complete structured forensic JSON analysis"
       >
-        <FileCode2 className="w-3.5 h-3.5 text-cyan-400" />
-        <span>RAW JSON</span>
+        <FileCode2 className="w-3 h-3 text-phosphor-cyan" />
+        <span>[JSON]</span>
       </button>
 
       <button
         onClick={handleExportPdf}
         disabled={downloading}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-600/90 hover:bg-cyan-500 text-slate-950 text-xs font-mono font-bold transition-all shadow-tactical-glow active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 disabled:opacity-70"
-        title="Generate official forensic briefing PDF for NTRO evaluation"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-phosphor-green/40 bg-phosphor-green/15 hover:bg-phosphor-green hover:text-black text-phosphor-green text-[10px] uppercase font-bold tracking-wider transition-all disabled:opacity-50"
+        title="Generate official ReportLab forensic audit PDF"
       >
         {downloading ? (
-          <Download className="w-3.5 h-3.5 animate-bounce text-slate-950" />
+          <Download className="w-3 h-3 animate-bounce" />
         ) : (
-          <FileText className="w-3.5 h-3.5 text-slate-950" />
+          <FileText className="w-3 h-3" />
         )}
-        <span>DEFENSE BRIEF (PDF)</span>
+        <span>[AUDIT PDF]</span>
       </button>
     </div>
   );

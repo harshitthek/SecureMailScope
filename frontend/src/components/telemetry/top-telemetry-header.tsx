@@ -2,6 +2,7 @@
 
 import { Activity, Shield } from "lucide-react";
 import { EvidenceCase } from "@/lib/types";
+import { ExportButtons } from "@/components/export-button";
 
 interface TopTelemetryHeaderProps {
   activeCase: EvidenceCase;
@@ -86,6 +87,11 @@ export function TopTelemetryHeader({ activeCase, bufferPercent = 74 }: TopTeleme
                 {data.processing_time_ms}ms
               </span>
             </div>
+          </div>
+
+          {/* Export Actions */}
+          <div className="hidden sm:block border-l border-tactical-border/80 pl-3">
+            <ExportButtons analysisId={data.analysis_id || "mock-001"} data={data} />
           </div>
         </div>
       </div>

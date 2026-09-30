@@ -99,15 +99,18 @@ export function useWorkstation() {
         case_code: customId,
         name: file.name.replace(/\.[^/.]+$/, "").toUpperCase().slice(0, 16),
         label: `[${customId}: ${file.name.slice(0, 14)}]`,
-        target_host: "Uploaded PCAP Network Capture",
-        protocol: data.protocols_detected.join("/") || "MULTI",
-        severity: (data.enterprise_grade === "A+" || data.enterprise_grade === "A" ? "secure" : "critical") as Severity,
+        target_host: data.sessions[0]?.server_name || "Live PCAP Capture",
+        protocol: data.protocols_detected.join("/") || "EMAIL",
+        severity: (
+          data.enterprise_score >= 80 ? "secure" :
+          data.enterprise_score >= 60 ? "medium" : "critical"
+        ) as Severity,
         packet_count: data.total_packets,
         stream_count: data.total_sessions,
         posture_score: data.enterprise_score,
         posture_grade: data.enterprise_grade,
         bpf_filter: "tcp and (port 25 or 587 or 465 or 993 or 110)",
-        description: `User-ingested raw PCAP (${file.name}) with ${data.total_packets} packets dissected.`,
+        description: `Live PCAP capture (${file.name}) — ${data.total_sessions} streams, ${data.total_packets} packets dissected.`,
         data,
       };
       setCases((prev) => [newCase, ...prev]);

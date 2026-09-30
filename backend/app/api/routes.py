@@ -69,6 +69,163 @@ def _tls_version_color(version: str | None) -> str:
     }.get(version or "None (Cleartext)", "#64748B")
 
 
+def _build_forensic_inspection(stream, starttls, tls) -> dict:
+    """Build timeline steps and raw wire hex/ascii chunks for Mode B dissector."""
+    state_timeline = []
+    step = 1
+
+    # Step 1: TCP Handshake / Connection
+    state_timeline.append({
+        "step": step,
+        "phase": "TCP_CONNECT",
+        "direction": "C->S",
+        "summary": f"TCP 3-way handshake established on port {stream.dst_port} ({stream.protocol})",
+        "status": "normal",
+    })
+    step += 1
+
+    if not stream.is_implicit_tls:
+        # Step 2: Server greeting / banner
+        banner_text = starttls.server_banner or "Service greeting ready"
+        state_timeline.append({
+            "step": step,
+            "phase": "BANNER",
+            "direction": "S->C",
+            "summary": banner_text[:40],
+            "status": "normal",
+        })
+        step += 1
+
+        if starttls.starttls_stripped:
+            state_timeline.append({
+                "step": step,
+                "phase": "STRIPTLS",
+                "direction": "S->C",
+                "summary": "STARTTLS capability missing from 250 greeting",
+                "status": "downgrade",
+                "is_transition_point": True,
+            })
+            step += 1
+            if starttls.cleartext_auth_detected:
+                state_timeline.append({
+                    "step": step,
+                    "phase": "AUTH_EXPOSED",
+                    "direction": "C->S",
+                    "summary": "Cleartext AUTH credentials transmitted across wire",
+                    "status": "compromised",
+                })
+                step += 1
+        elif starttls.starttls_initiated:
+            state_timeline.append({
+                "step": step,
+                "phase": "STARTTLS_REQ",
+                "direction": "C->S",
+                "summary": "Client sent STARTTLS upgrade command",
+                "status": "normal",
+            })
+            step += 1
+            state_timeline.append({
+                "step": step,
+                "phase": "STARTTLS_ACK",
+                "direction": "S->C",
+                "summary": "Server 220 Ready to start TLS",
+                "status": "normal",
+            })
+            step += 1
+        elif starttls.is_cleartext_only and starttls.cleartext_auth_detected:
+            state_timeline.append({
+                "step": step,
+                "phase": "AUTH_EXPOSED",
+                "direction": "C->S",
+                "summary": "Cleartext user credentials transmitted unencrypted",
+                "status": "compromised",
+                "is_transition_point": True,
+            })
+            step += 1
+
+    if tls:
+        state_timeline.append({
+            "step": step,
+            "phase": "CLIENT_HELLO",
+            "direction": "C->S",
+            "summary": f"Client Hello offered {len(tls.client_cipher_suites)} ciphers",
+            "status": "secure",
+            "is_transition_point": True,
+        })
+        step += 1
+        state_timeline.append({
+            "step": step,
+            "phase": "SERVER_HELLO",
+            "direction": "S->C",
+            "summary": f"Server Hello negotiated {tls.negotiated_version} with {tls.selected_cipher_name}",
+            "status": "secure",
+        })
+        step += 1
+        if tls.certificate_der:
+            state_timeline.append({
+                "step": step,
+                "phase": "CERTIFICATE",
+                "direction": "S->C",
+                "summary": "X.509 leaf certificate presented",
+                "status": "secure",
+            })
+            step += 1
+    elif starttls.is_cleartext_only:
+        state_timeline.append({
+            "step": step,
+            "phase": "CLEARTEXT_FLOW",
+            "direction": "C->S",
+            "summary": "Unencrypted protocol stream transmitted in cleartext",
+            "status": "compromised",
+        })
+        step += 1
+
+    # Raw chunks
+    def make_chunks(data: bytes, direction: str, base_offset: int, phase_name: str):
+        chunks = []
+        for i in range(0, min(len(data), 160), 16):
+            slice_b = data[i:i + 16]
+            hex_str = " ".join(f"{b:02X}" for b in slice_b)
+            ascii_str = "".join(chr(b) if 32 <= b <= 126 else "." for b in slice_b)
+            is_trans = False
+            hl_label = None
+            hl_type = None
+
+            if b"AUTH" in slice_b:
+                hl_label = "CLEARTEXT CREDENTIALS"
+                hl_type = "danger"
+            elif b"\x16\x03" in slice_b:
+                is_trans = True
+                hl_label = "TLS RECORD HEADER (0x16 0x03)"
+                hl_type = "secure"
+            elif b"STARTTLS" in slice_b:
+                hl_label = "STARTTLS COMMAND"
+                hl_type = "info"
+
+            chunks.append({
+                "offset": f"0x{(base_offset + i):04X}",
+                "hex": hex_str,
+                "ascii": ascii_str,
+                "direction": direction,
+                "protocol_phase": phase_name,
+                "is_transition_point": is_trans,
+                "highlight_label": hl_label,
+                "highlight_type": hl_type,
+            })
+        return chunks
+
+    raw_chunks = []
+    if stream.client_payload:
+        raw_chunks.extend(make_chunks(stream.client_payload, "C->S", 0, "CLIENT_STREAM"))
+    if stream.server_payload:
+        raw_chunks.extend(make_chunks(stream.server_payload, "S->C", len(stream.client_payload), "SERVER_STREAM"))
+
+    return {
+        "state_timeline": state_timeline,
+        "raw_chunks": raw_chunks[:14],
+    }
+
+
 def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
     """
     Full analysis pipeline: PCAP → Streams → TLS → Certs → JA3 → Scores → Vulns → Compliance.
@@ -188,6 +345,7 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
                 "raw_score": scoring.raw_score,
                 "final_score": scoring.final_score,
             },
+            "forensic_inspection": _build_forensic_inspection(stream, starttls, tls),
         }
         sessions.append(session)
 
