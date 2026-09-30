@@ -1,0 +1,111 @@
+[
+  {
+    "id": "NIST-3.1",
+    "standard": "NIST SP 800-52r2",
+    "section": "Section 3.1",
+    "requirement": "TLS 1.2 or higher must be supported and enforced for all server connections",
+    "check_type": "protocol_version",
+    "pass_condition": "all_sessions_tls12_or_higher",
+    "fail_values": ["SSL 2.0", "SSL 3.0", "TLS 1.0", "TLS 1.1", "None (Cleartext)"]
+  },
+  {
+    "id": "NIST-3.2.1",
+    "standard": "NIST SP 800-52r2",
+    "section": "Section 3.2.1",
+    "requirement": "SSL 2.0, SSL 3.0, TLS 1.0, and TLS 1.1 must be disabled on all servers",
+    "check_type": "protocol_version",
+    "pass_condition": "no_deprecated_protocols",
+    "fail_values": ["SSL 2.0", "SSL 3.0", "TLS 1.0", "TLS 1.1"]
+  },
+  {
+    "id": "NIST-3.3.1",
+    "standard": "NIST SP 800-52r2",
+    "section": "Section 3.3.1",
+    "requirement": "Cipher suites must support ephemeral Diffie-Hellman key exchange (ECDHE or DHE) for forward secrecy",
+    "check_type": "forward_secrecy",
+    "pass_condition": "all_sessions_have_pfs",
+    "fail_values": ["RSA"]
+  },
+  {
+    "id": "NIST-3.3.2",
+    "standard": "NIST SP 800-52r2",
+    "section": "Section 3.3.2",
+    "requirement": "AEAD cipher modes (AES-GCM, ChaCha20-Poly1305) must be preferred over CBC modes",
+    "check_type": "cipher_mode",
+    "pass_condition": "all_sessions_use_aead",
+    "fail_categories": ["CBC", "3DES", "RC4", "NULL", "EXPORT"]
+  },
+  {
+    "id": "NIST-3.4",
+    "standard": "NIST SP 800-52r2",
+    "section": "Section 3.4",
+    "requirement": "Server certificates must be valid, not expired, and issued by a trusted Certificate Authority",
+    "check_type": "certificate",
+    "pass_condition": "all_certs_valid_and_trusted",
+    "fail_conditions": ["expired", "self_signed", "not_yet_valid"]
+  },
+  {
+    "id": "NIST-3.5",
+    "standard": "NIST SP 800-52r2",
+    "section": "Section 3.5",
+    "requirement": "RSA key lengths must be at least 2048 bits; ECC keys at least 256 bits",
+    "check_type": "key_length",
+    "pass_condition": "all_keys_sufficient_length",
+    "min_rsa_bits": 2048,
+    "min_ec_bits": 256
+  },
+  {
+    "id": "NIST-3.6",
+    "standard": "NIST SP 800-52r2",
+    "section": "Section 3.6",
+    "requirement": "Certificate signature algorithms must use SHA-256 or stronger hash functions",
+    "check_type": "signature_algorithm",
+    "pass_condition": "no_weak_signatures",
+    "fail_hashes": ["MD5", "SHA-1"]
+  },
+  {
+    "id": "RFC-7465",
+    "standard": "RFC 7465",
+    "section": "Full",
+    "requirement": "RC4 cipher suites must not be offered or negotiated in any TLS connection",
+    "check_type": "cipher_category",
+    "pass_condition": "no_rc4_ciphers",
+    "fail_categories": ["RC4"]
+  },
+  {
+    "id": "RFC-8314",
+    "standard": "RFC 8314",
+    "section": "Section 3",
+    "requirement": "Implicit TLS (dedicated ports 465/993/995) should be preferred over opportunistic STARTTLS",
+    "check_type": "transport_model",
+    "pass_condition": "implicit_tls_preferred",
+    "warn_condition": "starttls_used"
+  },
+  {
+    "id": "RFC-8996",
+    "standard": "RFC 8996",
+    "section": "Full",
+    "requirement": "TLS 1.0 and TLS 1.1 must not be used for any Internet communication",
+    "check_type": "protocol_version",
+    "pass_condition": "no_tls10_or_tls11",
+    "fail_values": ["TLS 1.0", "TLS 1.1"]
+  },
+  {
+    "id": "CERTIN-1",
+    "standard": "CERT-In Directions 2022",
+    "section": "Section 6",
+    "requirement": "Organizations must maintain logs of encrypted communication sessions and report cryptographic incidents",
+    "check_type": "logging",
+    "pass_condition": "always_pass",
+    "notes": "This tool provides the required forensic logging capability"
+  },
+  {
+    "id": "BSI-TR02102",
+    "standard": "BSI TR-02102-2",
+    "section": "Section 3.3",
+    "requirement": "Elliptic curve domain parameters must be at least 250 bits (secp256r1, X25519)",
+    "check_type": "ec_curve",
+    "pass_condition": "all_ec_curves_sufficient",
+    "min_bits": 250
+  }
+]
