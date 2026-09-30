@@ -1,16 +1,77 @@
 {
-  "a0e9f5d64349fb13191bc781f81f42e1": {"client": "Mozilla Thunderbird", "version": "115+", "platform": "Cross-platform"},
-  "b32309a26951912be7dba376398abc3b": {"client": "Mozilla Thunderbird", "version": "102-114", "platform": "Cross-platform"},
-  "e7d705a3286e19ea42f587b344ee6865": {"client": "Microsoft Outlook", "version": "365/2021+", "platform": "Windows"},
-  "c12f54a1b2c3d4e5f6789012abcd3456": {"client": "Microsoft Outlook", "version": "2019", "platform": "Windows"},
-  "cd08e31494f9531f560d64c695473da9": {"client": "Apple Mail", "version": "16+", "platform": "macOS/iOS"},
-  "3b5074b1b5d032e5620f69f9f700ff0e": {"client": "Apple Mail", "version": "14-15", "platform": "macOS/iOS"},
-  "4d7a28d6f2263ed61de88ca66eb2e04b": {"client": "Gmail IMAP Client", "version": "Latest", "platform": "Android/iOS"},
-  "6734f37431670b3ab4292b8f60f29984": {"client": "Postfix MTA", "version": "3.5+", "platform": "Linux"},
-  "1d095e7b024e3a8b2d34e2f16c0b8a0f": {"client": "Dovecot IMAP", "version": "2.3+", "platform": "Linux"},
-  "d1b1a65a02d203a6a2abb8ca2762e6f4": {"client": "K-9 Mail / Thunderbird Android", "version": "6.0+", "platform": "Android"},
-  "72a589da586844d7f0818ce684948eea": {"client": "Windows Mail", "version": "11", "platform": "Windows"},
-  "f09e50b9a0b9a7c7b9d0e0f3c0a0b0c0": {"client": "Evolution Mail", "version": "3.40+", "platform": "Linux/GNOME"},
-  "ada70206e40642a3e4b24383c4e80a47": {"client": "Mutt/NeoMutt", "version": "2.0+", "platform": "Linux CLI"},
-  "ae4edc6faf64d08308082ad26be60767": {"client": "OpenSSL s_client", "version": "3.0+", "platform": "Cross-platform CLI"}
+  "a0e9f5d64349fb13191bc781f81f42e1": {
+    "client": "Mozilla Thunderbird",
+    "version": "115+",
+    "platform": "Cross-platform"
+  },
+  "b32309a26951912be7dba376398abc3b": {
+    "client": "Mozilla Thunderbird",
+    "version": "102-114",
+    "platform": "Cross-platform"
+  },
+  "e7d705a3286e19ea42f587b344ee6865": {
+    "client": "Microsoft Outlook",
+    "version": "365/2021+",
+    "platform": "Windows"
+  },
+  "c12f54a1b2c3d4e5f6789012abcd3456": {
+    "client": "Microsoft Outlook",
+    "version": "2019",
+    "platform": "Windows"
+  },
+  "cd08e31494f9531f560d64c695473da9": {
+    "client": "Apple Mail",
+    "version": "16+",
+    "platform": "macOS/iOS"
+  },
+  "3b5074b1b5d032e5620f69f9f700ff0e": {
+    "client": "Apple Mail",
+    "version": "14-15",
+    "platform": "macOS/iOS"
+  },
+  "4d7a28d6f2263ed61de88ca66eb2e04b": {
+    "client": "Gmail IMAP Client",
+    "version": "Latest",
+    "platform": "Android/iOS"
+  },
+  "6734f37431670b3ab4292b8f60f29984": {
+    "client": "Postfix MTA",
+    "version": "3.5+",
+    "platform": "Linux"
+  },
+  "1d095e7b024e3a8b2d34e2f16c0b8a0f": {
+    "client": "Dovecot IMAP",
+    "version": "2.3+",
+    "platform": "Linux"
+  },
+  "d1b1a65a02d203a6a2abb8ca2762e6f4": {
+    "client": "K-9 Mail / Thunderbird Android",
+    "version": "6.0+",
+    "platform": "Android"
+  },
+  "72a589da586844d7f0818ce684948eea": {
+    "client": "Windows Mail",
+    "version": "11",
+    "platform": "Windows"
+  },
+  "f09e50b9a0b9a7c7b9d0e0f3c0a0b0c0": {
+    "client": "Evolution Mail",
+    "version": "3.40+",
+    "platform": "Linux/GNOME"
+  },
+  "ada70206e40642a3e4b24383c4e80a47": {
+    "client": "Mutt/NeoMutt",
+    "version": "2.0+",
+    "platform": "Linux CLI"
+  },
+  "ae4edc6faf64d08308082ad26be60767": {
+    "client": "OpenSSL s_client",
+    "version": "3.0+",
+    "platform": "Cross-platform CLI"
+  },
+  "1d1891b99f29b42e5eb5c19d7f233c71": {
+    "client": "Mozilla Thunderbird",
+    "version": "115+",
+    "platform": "Linux/Windows"
+  }
 }

@@ -270,8 +270,8 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
         is_aead = cipher_entry.get("aead", False)
         pfs = cipher_entry.get("pfs", False)
 
-        # Determine key exchange from cipher name
-        if "ECDHE" in sel_name:
+        # Determine key exchange from cipher name and version
+        if "ECDHE" in sel_name or negotiated_version == "TLS 1.3" or pfs:
             kx = "ECDHE"
         elif "DHE" in sel_name:
             kx = "DHE"

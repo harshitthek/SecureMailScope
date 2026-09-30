@@ -9,6 +9,31 @@ export type TLSVersion =
   | "TLS 1.3"
   | "None (Cleartext)";
 
+export interface RawStreamChunk {
+  offset: string;
+  hex: string;
+  ascii: string;
+  direction: "C->S" | "S->C";
+  protocol_phase: string;
+  is_transition_point?: boolean;
+  highlight_label?: string;
+  highlight_type?: "danger" | "warning" | "secure" | "info";
+}
+
+export interface ProtocolStateStep {
+  step: number;
+  phase: string;
+  direction: "C->S" | "S->C";
+  summary: string;
+  is_transition_point?: boolean;
+  status: "secure" | "compromised" | "downgrade" | "normal";
+}
+
+export interface StreamForensicInspection {
+  state_timeline: ProtocolStateStep[];
+  raw_chunks: RawStreamChunk[];
+}
+
 export interface AnalysisResult {
   analysis_id: string;
   filename: string;
@@ -26,6 +51,16 @@ export interface AnalysisResult {
   protocol_distribution: DistributionItem[];
   cipher_distribution: CipherDistributionItem[];
   certificate_summary: CertSummary[];
+}
+
+export interface ScoringBreakdown {
+  protocol_penalty: number;
+  cipher_penalty: number;
+  pfs_penalty: number;
+  cert_penalty: number;
+  anomaly_penalty: number;
+  raw_score: number;
+  final_score: number;
 }
 
 export interface Session {
@@ -53,15 +88,8 @@ export interface Session {
   session_score: number;
   session_grade: Grade;
   session_severity: Severity;
-  scoring_breakdown: {
-    protocol_penalty: number;
-    cipher_penalty: number;
-    pfs_penalty: number;
-    cert_penalty: number;
-    anomaly_penalty: number;
-    raw_score: number;
-    final_score: number;
-  };
+  scoring_breakdown: ScoringBreakdown;
+  forensic_inspection?: StreamForensicInspection;
 }
 
 export interface CertificateInfo {
@@ -126,4 +154,21 @@ export interface CertSummary {
   is_weak_key: boolean;
   days_remaining: number;
   overall_status: Severity;
+}
+
+export interface EvidenceCase {
+  id: string;
+  case_code: string;
+  name: string;
+  label: string;
+  target_host: string;
+  protocol: string;
+  severity: Severity;
+  packet_count: number;
+  stream_count: number;
+  posture_score: number;
+  posture_grade: Grade;
+  bpf_filter: string;
+  description: string;
+  data: AnalysisResult;
 }

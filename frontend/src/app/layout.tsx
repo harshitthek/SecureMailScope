@@ -15,9 +15,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SecureMailScope // NTRO Cryptographic Posture Assessment",
+  title: "NTRO SECUREMAILSCOPE // Forensic Defense Workstation",
   description:
-    "Passive Forensic Cryptographic Posture Analysis for Defense Email Infrastructure (SMTP, IMAP, POP3) — NTRO SIH26159",
+    "Passive Network Forensic Analyzer for Email Cryptographic Posture Assessment (SMTP, IMAP, POP3) — NTRO SIH26159",
 };
 
 export default function RootLayout({
@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans min-h-screen bg-soc-bg text-slate-100 antialiased selection:bg-cyan-500/20 selection:text-cyan-200`}
+        className={`${geistSans.variable} ${geistMono.variable} font-mono min-h-screen bg-tactical-bg text-tactical-text antialiased selection:bg-phosphor-cyan/20 selection:text-white`}
       >
         {children}
       </body>
