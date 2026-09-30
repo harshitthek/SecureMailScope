@@ -9,6 +9,23 @@ export type TLSVersion =
   | "TLS 1.3"
   | "None (Cleartext)";
 
+export type NavView =
+  | "OVERVIEW"
+  | "SESSIONS"
+  | "FINDINGS"
+  | "CERTIFICATES"
+  | "DISSECTOR"
+  | "STANDARDS"
+  | "REPORTS";
+
+export type SessionDetailTab =
+  | "SUMMARY"
+  | "PROTOCOL_FLOW"
+  | "TLS"
+  | "CERTIFICATE"
+  | "RAW_STREAM"
+  | "STANDARDS";
+
 export interface RawStreamChunk {
   offset: string;
   hex: string;

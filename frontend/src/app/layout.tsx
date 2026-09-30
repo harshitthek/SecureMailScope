@@ -15,9 +15,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "NTRO SECUREMAILSCOPE // Forensic Defense Workstation",
+  title: "SECUREMAILSCOPE // SIH26159 Forensic Defense Workstation",
   description:
-    "Passive Network Forensic Analyzer for Email Cryptographic Posture Assessment (SMTP, IMAP, POP3) — NTRO SIH26159",
+    "Passive Network Forensic Analyzer for Email Cryptographic Posture Assessment (SMTP, IMAP, POP3) — SIH26159 (Demo / Simulated Capture)",
 };
 
 export default function RootLayout({
