@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { Vulnerability } from "@/lib/types";
-import {
-  ShieldAlert,
-  Search,
-  ChevronDown,
-  ChevronRight,
-  Wrench,
-  FileCheck,
-  Network,
-} from "lucide-react";
+import { ShieldAlert, ArrowRight } from "lucide-react";
 
 interface FindingsViewProps {
   vulnerabilities: Vulnerability[];
@@ -21,262 +13,133 @@ interface FindingsViewProps {
 export function FindingsView({
   vulnerabilities,
   onOpenSessionDetail,
-  onNavigateToDissector,
 }: FindingsViewProps) {
   const [severityFilter, setSeverityFilter] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({
-    [vulnerabilities[0]?.id || ""]: true,
-  });
-
-  const toggleExpand = (id: string) => {
-    setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const getCategory = (v: Vulnerability): string => {
-    const text = (v.title + " " + v.description).toLowerCase();
-    if (text.includes("starttls") || text.includes("striptls") || text.includes("cleartext auth")) return "STARTTLS";
-    if (text.includes("cert") || text.includes("x.509") || text.includes("signature")) return "Certificate";
-    if (text.includes("cipher") || text.includes("3des") || text.includes("rc4") || text.includes("aead")) return "Cipher";
-    if (text.includes("tls 1.0") || text.includes("tls 1.1") || text.includes("ssl")) return "TLS";
-    return "Protocol";
+    const text = `${v.title} ${v.description}`.toLowerCase();
+    if (text.includes("starttls") || text.includes("cleartext auth")) return "STARTTLS";
+    if (text.includes("cert") || text.includes("x.509")) return "CERTIFICATE";
+    if (text.includes("cipher") || text.includes("3des")) return "CIPHER";
+    if (text.includes("tls") || text.includes("ssl")) return "TLS";
+    return "PROTOCOL";
   };
 
   const filtered = vulnerabilities.filter((v) => {
     if (severityFilter !== "ALL" && v.severity.toUpperCase() !== severityFilter) return false;
-    const cat = getCategory(v);
-    if (categoryFilter !== "ALL" && cat.toUpperCase() !== categoryFilter) return false;
-
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      v.title.toLowerCase().includes(q) ||
-      v.description.toLowerCase().includes(q) ||
-      (v.nist_reference && v.nist_reference.toLowerCase().includes(q)) ||
-      v.remediation.toLowerCase().includes(q)
-    );
+    return categoryFilter === "ALL" || getCategory(v) === categoryFilter;
   });
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 max-w-[1540px] mx-auto w-full select-none">
-      {/* 1. Header & Filter Toolbar */}
-      <div className="p-4 border border-tactical-border bg-tactical-surface space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-sans font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-phosphor-hazard" />
-              SECURITY VULNERABILITY FINDINGS &amp; REMEDIATION ({vulnerabilities.length})
+    <div className="p-6 lg:p-12 max-w-[1360px] mx-auto w-full select-none font-mono space-y-6">
+      {/* 1. Header & Filter Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-tactical-border/70 gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-phosphor-hazard" />
+            <h2 className="text-xl font-sans font-bold text-white uppercase tracking-wider">
+              CRYPTOGRAPHIC FINDINGS ({vulnerabilities.length})
             </h2>
-            <p className="text-xs text-tactical-dim font-mono mt-0.5">
-              Prioritized cryptographic audit checklist with evidence forensics and configuration guidance
-            </p>
           </div>
-
-          {/* Search Box */}
-          <div className="relative min-w-[260px] font-mono">
-            <Search className="w-3.5 h-3.5 text-tactical-dim absolute left-2.5 top-2.5 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search findings, CVEs, NIST..."
-              className="w-full bg-tactical-bg border border-tactical-border pl-8 pr-3 py-1.5 text-xs text-phosphor-cyan font-mono focus:outline-none focus:border-phosphor-cyan transition-colors"
-            />
-          </div>
+          <p className="text-xs text-tactical-dim mt-1">
+            Prioritized forensic audit records with evidence citations and remediation guidance
+          </p>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-tactical-border/70 text-xs font-mono">
-          {/* Severity Pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] uppercase text-tactical-dim font-bold mr-1">SEVERITY:</span>
-            {["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"].map((sev) => {
-              const isActive = severityFilter === sev;
-              return (
-                <button
-                  key={sev}
-                  onClick={() => setSeverityFilter(sev)}
-                  className={`px-2.5 py-0.5 text-[10px] font-bold border transition-colors ${
-                    isActive
-                      ? sev === "CRITICAL"
-                        ? "border-phosphor-hazard bg-phosphor-hazard/20 text-phosphor-hazard"
-                        : "border-phosphor-cyan bg-phosphor-cyan/20 text-white"
-                      : "border-tactical-border bg-tactical-bg text-tactical-dim hover:text-white"
-                  }`}
-                >
-                  {sev}
-                </button>
-              );
-            })}
+        {/* Severity & Category Filters */}
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex items-center gap-1 border border-tactical-border/80 p-0.5 bg-black/40">
+            {(["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((sev) => (
+              <button
+                key={sev}
+                onClick={() => setSeverityFilter(sev)}
+                className={`px-2 py-0.5 text-[10px] font-bold transition-colors ${severityFilter === sev ? "bg-tactical-elevated text-white border border-phosphor-cyan" : "text-tactical-dim hover:text-white"}`}
+              >
+                {sev}
+              </button>
+            ))}
           </div>
 
-          {/* Category Pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] uppercase text-tactical-dim font-bold mr-1">CATEGORY:</span>
-            {["ALL", "TLS", "CERTIFICATE", "STARTTLS", "CIPHER", "PROTOCOL"].map((cat) => {
-              const isActive = categoryFilter === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`px-2.5 py-0.5 text-[10px] font-bold border transition-colors ${
-                    isActive
-                      ? "border-phosphor-green bg-phosphor-green/20 text-phosphor-green"
-                      : "border-tactical-border bg-tactical-bg text-tactical-dim hover:text-white"
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-1 border border-tactical-border/80 p-0.5 bg-black/40">
+            {(["ALL", "TLS", "STARTTLS", "CERTIFICATE", "CIPHER", "PROTOCOL"] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-2 py-0.5 text-[10px] font-bold transition-colors ${categoryFilter === cat ? "bg-tactical-elevated text-white border border-phosphor-cyan" : "text-tactical-dim hover:text-white"}`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* 2. Findings List */}
-      <div className="space-y-3 font-mono">
+      {/* 2. Compact Forensic Records List (NOT GIANT CARDS) */}
+      <div className="divide-y divide-tactical-border/40 text-xs">
         {filtered.length > 0 ? (
           filtered.map((v) => {
-            const isExpanded = !!expandedIds[v.id];
             const isCrit = v.severity === "critical";
             const isHigh = v.severity === "high";
-            const category = getCategory(v);
+            const firstAffectedSession = v.affected_sessions?.[0] ?? 1;
 
             return (
               <div
                 key={v.id}
-                className={`border transition-all ${
-                  isCrit
-                    ? "border-phosphor-hazard/60 bg-tactical-surface"
-                    : isHigh
-                    ? "border-phosphor-amber/60 bg-tactical-surface"
-                    : "border-tactical-border bg-tactical-surface"
-                }`}
+                className="py-4 hover:bg-tactical-surfaceHover/50 transition-colors border-l-2 border-transparent hover:border-phosphor-cyan pl-4 space-y-2 group"
               >
-                {/* Finding Header (Clickable) */}
-                <div
-                  onClick={() => toggleExpand(v.id)}
-                  className="p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-tactical-surfaceHover transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <button className="text-tactical-dim hover:text-white">
-                      {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-[10px] uppercase font-bold px-2 py-0.5 border ${
-                          isCrit
-                            ? "border-phosphor-hazard text-phosphor-hazard bg-phosphor-hazard/10"
-                            : isHigh
-                            ? "border-phosphor-amber text-phosphor-amber bg-phosphor-amber/10"
-                            : "border-phosphor-cyan text-phosphor-cyan bg-phosphor-cyan/10"
-                        }`}
-                      >
-                        {v.severity}
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 border border-tactical-border bg-black/40 text-tactical-dim font-bold">
-                        {category}
-                      </span>
-                      <span className="text-sm font-sans font-bold text-white tracking-tight">
-                        {v.title}
-                      </span>
-                    </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={`text-[9px] font-bold uppercase px-1.5 py-0.5 border ${
+                        isCrit
+                          ? "border-phosphor-hazard/60 text-phosphor-hazard bg-phosphor-hazard/10"
+                          : isHigh
+                          ? "border-phosphor-amber/60 text-phosphor-amber bg-phosphor-amber/10"
+                          : "border-tactical-border text-tactical-dim"
+                      }`}
+                    >
+                      {v.severity}
+                    </span>
+
+                    <h4 className="font-sans font-bold text-sm text-white uppercase group-hover:text-phosphor-cyan transition-colors">
+                      {v.title}
+                    </h4>
+
+                    <span className="text-[10px] text-tactical-dim uppercase px-1.5 py-0.2 bg-black/40 border border-tactical-border/60">
+                      FLOW #{firstAffectedSession < 10 ? `0${firstAffectedSession}` : firstAffectedSession}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-3 flex-shrink-0 text-xs">
-                    <span className="text-[11px] text-tactical-dim hidden sm:inline">
-                      AFFECTS: {v.affected_sessions.map((sid) => `#${sid}`).join(", ")}
-                    </span>
-                    <span className="text-[10px] text-tactical-muted font-bold">{v.id}</span>
-                  </div>
+                  <button
+                    onClick={() => onOpenSessionDetail(firstAffectedSession)}
+                    className="text-tactical-dim group-hover:text-phosphor-cyan text-[11px] font-bold uppercase inline-flex items-center gap-1 transition-colors"
+                  >
+                    <span>INSPECT FLOW →</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
 
-                {/* Expanded Details Body */}
-                {isExpanded && (
-                  <div className="p-4 border-t border-tactical-border/70 bg-black/40 space-y-4 text-xs">
-                    {/* Description */}
-                    <div>
-                      <span className="text-[10px] uppercase tracking-wider text-tactical-dim font-bold block mb-1">
-                        FORENSIC DESCRIPTION &amp; THREAT VECTOR
-                      </span>
-                      <p className="text-xs font-sans text-tactical-text leading-relaxed bg-tactical-bg p-3 border border-tactical-border">
-                        {v.description}
-                      </p>
-                    </div>
+                <p className="text-tactical-text text-xs font-sans leading-relaxed">
+                  {v.description}
+                </p>
 
-                    {/* Affected Sessions with Direct Jump Actions */}
-                    <div>
-                      <span className="text-[10px] uppercase tracking-wider text-tactical-dim font-bold block mb-1">
-                        AFFECTED EMAIL STREAMS
-                      </span>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {v.affected_sessions.map((sid) => (
-                          <div
-                            key={sid}
-                            className="flex items-center gap-2 p-1.5 border border-tactical-border bg-tactical-surface text-xs"
-                          >
-                            <Network className="w-3.5 h-3.5 text-phosphor-cyan" />
-                            <span className="text-white font-bold">Stream #{sid}</span>
-                            <button
-                              onClick={() => onOpenSessionDetail(sid)}
-                              className="ml-1 text-[10px] text-phosphor-cyan hover:underline font-bold"
-                            >
-                              [INSPECT]
-                            </button>
-                            <button
-                              onClick={() => onNavigateToDissector(sid)}
-                              className="text-[10px] text-phosphor-green hover:underline font-bold"
-                            >
-                              [DISSECT]
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Standard Reference & Citations */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="p-3 border border-tactical-border bg-tactical-bg">
-                        <span className="text-[10px] uppercase tracking-wider text-tactical-dim font-bold block mb-1">
-                          STANDARDS COMPLIANCE MAPPING
-                        </span>
-                        <div className="flex items-center gap-1.5 text-xs text-phosphor-cyan font-bold">
-                          <FileCheck className="w-3.5 h-3.5" />
-                          <span>{v.nist_reference || "NIST SP 800-52r2 Guidelines"}</span>
-                        </div>
-                      </div>
-
-                      <div className="p-3 border border-tactical-border bg-tactical-bg">
-                        <span className="text-[10px] uppercase tracking-wider text-tactical-dim font-bold block mb-1">
-                          CVE REFERENCES
-                        </span>
-                        <div className="text-xs text-white">
-                          {v.cve_references && v.cve_references.length > 0
-                            ? v.cve_references.join(", ")
-                            : "No public CVE directly associated (Configuration Weakness)"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actionable Remediation Guidance */}
-                    <div className="p-3.5 border border-phosphor-green/40 bg-phosphor-green/5 space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-phosphor-green text-xs font-bold uppercase tracking-wider">
-                        <Wrench className="w-3.5 h-3.5" />
-                        <span>ACTIONABLE REMEDIATION GUIDANCE</span>
-                      </div>
-                      <p className="text-xs text-white leading-relaxed font-sans">
-                        {v.remediation}
-                      </p>
-                    </div>
+                <div className="flex flex-wrap items-center gap-6 text-[11px] text-tactical-dim pt-1">
+                  <div>
+                    <span className="text-tactical-muted">STANDARD: </span>
+                    <span className="text-tactical-text font-bold">{v.nist_reference || "NIST SP 800-52r2"}</span>
                   </div>
-                )}
+                  <div>
+                    <span className="text-tactical-muted">REMEDIATION: </span>
+                    <span className="text-tactical-text">{v.remediation}</span>
+                  </div>
+                </div>
               </div>
             );
           })
         ) : (
-          <div className="p-8 text-center text-xs text-tactical-dim border border-tactical-border bg-tactical-surface">
-            No vulnerabilities match the current filter selection.
+          <div className="py-12 text-center text-tactical-dim text-xs">
+            No forensic findings match the selected filters.
           </div>
         )}
       </div>

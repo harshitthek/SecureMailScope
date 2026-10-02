@@ -1,136 +1,144 @@
 "use client";
 
+import { useMemo } from "react";
 import { AnalysisResult } from "@/lib/types";
 import { ExportButtons } from "@/components/export-button";
-import { FileText, ShieldCheck, AlertTriangle } from "lucide-react";
+import { FileText } from "lucide-react";
 
 interface ReportsViewProps {
   data: AnalysisResult;
 }
 
 export function ReportsView({ data }: ReportsViewProps) {
-  const isCritical = data.enterprise_score < 50 || data.enterprise_grade === "F";
+  const {
+    enterprise_score,
+    enterprise_grade,
+    filename,
+    analyzed_at,
+    vulnerabilities,
+    sessions,
+  } = data;
+
+  const critCount = useMemo(
+    () => vulnerabilities.filter((v) => v.severity === "critical").length,
+    [vulnerabilities]
+  );
+  const highCount = useMemo(
+    () => vulnerabilities.filter((v) => v.severity === "high").length,
+    [vulnerabilities]
+  );
+
+  const certStats = useMemo(() => {
+    let dissected = 0;
+    let expired = 0;
+    for (const s of sessions) {
+      if (s.certificate) {
+        dissected++;
+        if (s.certificate.is_expired) expired++;
+      }
+    }
+    return { dissected, expired };
+  }, [sessions]);
+
+  const affectedFlows = useMemo(() => {
+    const list: string[] = [];
+    sessions.forEach((s, idx) => {
+      if (s.session_score < 70) {
+        list.push(`F0${idx + 1}`);
+      }
+    });
+    return list;
+  }, [sessions]);
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-[1440px] mx-auto w-full select-none font-mono">
-      {/* 1. Header & Export Action Hero */}
-      <div className="p-6 border border-tactical-border bg-tactical-surface space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-phosphor-cyan uppercase tracking-wider mb-1">
-              <FileText className="w-4 h-4" />
-              <span>FORENSIC AUDIT EXPORT &amp; REPORTING CENTER</span>
-            </div>
-            <h2 className="text-xl font-sans font-bold text-white tracking-tight">
-              Cryptographic Posture Assessment Report
+    <div className="p-6 lg:p-12 max-w-[1000px] mx-auto w-full select-none font-mono space-y-8">
+      {/* 1. Header & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-tactical-border/70 gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-phosphor-cyan" />
+            <h2 className="text-xl font-sans font-bold text-white uppercase tracking-wider">
+              FORENSIC CASE REPORT PREVIEW
             </h2>
-            <p className="text-xs text-tactical-dim font-mono mt-1">
-              Generate standardized PDF audit certificates and structured JSON forensic archives for evidentiary records
-            </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <ExportButtons analysisId={data.analysis_id || "mock-001"} data={data} />
-          </div>
+          <p className="text-xs text-tactical-dim mt-1">
+            Pre-export verification of cryptographic audit findings and evidentiary records
+          </p>
         </div>
 
-        {/* Forensic Metadata Strip (gap-px pattern) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-tactical-border border border-tactical-border text-xs">
-          <div className="p-3 bg-tactical-surface">
-            <span className="text-[10px] uppercase text-tactical-dim block">Analysis ID</span>
-            <span className="text-xs font-bold text-white break-all">{data.analysis_id}</span>
-          </div>
-
-          <div className="p-3 bg-tactical-surface">
-            <span className="text-[10px] uppercase text-tactical-dim block">Capture File</span>
-            <span className="text-xs font-bold text-white truncate block">{data.filename}</span>
-          </div>
-
-          <div className="p-3 bg-tactical-surface">
-            <span className="text-[10px] uppercase text-tactical-dim block">Analyzed Timestamp</span>
-            <span className="text-xs font-bold text-tactical-text">{data.analyzed_at?.slice(0, 19)}</span>
-          </div>
-
-          <div className="p-3 bg-tactical-surface">
-            <span className="text-[10px] uppercase text-tactical-dim block">Dissect Latency</span>
-            <span className="text-xs font-bold text-phosphor-cyan tabular-nums">{data.processing_time_ms} ms</span>
-          </div>
+        <div className="flex items-center gap-2">
+          <ExportButtons analysisId={data.analysis_id || "mock-001"} data={data} />
         </div>
       </div>
 
-      {/* 2. Audit Report Preview Document */}
-      <div className="border border-tactical-border bg-tactical-surface p-6 space-y-6 shadow-2xl">
-        <div className="border-b border-tactical-border pb-4 flex items-center justify-between">
+      {/* 2. Clean Report Preview Document (Clean, Editorial, Report-like) */}
+      <div className="p-8 bg-tactical-surface/60 border border-tactical-border/80 space-y-6 text-xs text-tactical-text">
+        <div className="border-b border-tactical-border/60 pb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-sans font-bold text-white uppercase tracking-wider">
-              EXECUTIVE COMPLIANCE MEMORANDUM // SIH26159
+            <span className="text-[10px] uppercase tracking-widest text-tactical-dim block">
+              OFFICIAL AUDIT MEMORANDUM // SIH26159
+            </span>
+            <h3 className="text-lg font-sans font-bold text-white uppercase mt-0.5">
+              CASE SUMMARY: {filename || "enterprise_mail_capture.pcap"}
             </h3>
-            <span className="text-[11px] text-tactical-dim font-mono">
-              AUTOMATED STATUTORY CRYPTOGRAPHIC POSTURE REVIEW
+          </div>
+          <span className="text-[11px] text-tactical-dim">
+            {analyzed_at?.slice(0, 19) || new Date().toISOString().slice(0, 19)}
+          </span>
+        </div>
+
+        {/* Posture Block */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-2 border-b border-tactical-border/40">
+          <div>
+            <span className="text-[10px] text-tactical-dim uppercase block">CRYPTOGRAPHIC POSTURE</span>
+            <span className="text-2xl font-sans font-bold text-white">{enterprise_score} / 100</span>
+            <span className="text-xs text-phosphor-hazard font-bold ml-2">GRADE {enterprise_grade}</span>
+          </div>
+
+          <div>
+            <span className="text-[10px] text-tactical-dim uppercase block">VULNERABILITY FINDINGS</span>
+            <span className="text-sm font-bold text-phosphor-hazard">{critCount} Critical</span>
+            <span className="text-tactical-muted"> · </span>
+            <span className="text-sm font-bold text-phosphor-amber">{highCount} High</span>
+          </div>
+
+          <div>
+            <span className="text-[10px] text-tactical-dim uppercase block">AFFECTED FLOWS</span>
+            <span className="text-sm font-bold text-white">
+              {affectedFlows.length > 0 ? affectedFlows.join(", ") : "None"}
             </span>
           </div>
-          <div
-            className={`px-3 py-1.5 border font-bold text-xs flex items-center gap-1.5 ${
-              isCritical
-                ? "border-phosphor-hazard text-phosphor-hazard bg-phosphor-hazard/10"
-                : "border-phosphor-green text-phosphor-green bg-phosphor-green/10"
-            }`}
-          >
-            {isCritical ? <AlertTriangle className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-            <span>VERDICT: GRADE {data.enterprise_grade} ({data.enterprise_score}/100)</span>
-          </div>
         </div>
 
-        {/* Executive Summary Narrative */}
-        <div className="space-y-3 text-xs font-sans leading-relaxed text-tactical-text">
-          <p>
-            This cryptographic assessment report documents passive forensic deep packet inspection conducted across
-            the network capture <strong className="text-white font-mono">{data.filename}</strong>. An aggregate cryptographic posture score of{" "}
-            <strong className="text-white font-mono">{data.enterprise_score} / 100 ({data.enterprise_grade})</strong> was calculated using the statutory
-            penalty deduction formula referencing NIST SP 800-52r2, RFC 8314, and RFC 8996.
-          </p>
-
-          <p>
-            A total of <strong className="text-white font-mono">{data.total_sessions} email protocol streams</strong> ({data.total_packets} wire packets)
-            were reconstructed, spanning ports 25, 587, 465, 143, 993, 110, and 995. The analysis detected{" "}
-            <strong className={isCritical ? "text-phosphor-hazard font-mono" : "text-phosphor-green font-mono"}>
-              {data.vulnerabilities.length} security vulnerabilities
-            </strong>{" "}
-            requiring triage and remediation.
-          </p>
-        </div>
-
-        {/* Executive Highlights Blueprint Grid */}
-        <div className="p-4 border border-tactical-border bg-black/40 space-y-3 font-mono">
-          <span className="text-xs font-bold text-white uppercase tracking-wider block">
-            CRYPTOGRAPHIC COMPLIANCE SUMMARY
+        {/* Certificates Health */}
+        <div className="space-y-2 border-b border-tactical-border/40 pb-4">
+          <span className="text-[10px] text-tactical-dim uppercase tracking-wider block font-bold">
+            X.509 CERTIFICATE TELEMETRY
           </span>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-tactical-border border border-tactical-border text-xs">
-            <div className="p-3 bg-tactical-surface">
-              <span className="text-[10px] text-tactical-dim uppercase block">TLS 1.2+ Adoption</span>
-              <span className="text-sm font-bold text-white">
-                {data.sessions.filter(s => s.tls_version === "TLS 1.3" || s.tls_version === "TLS 1.2").length} / {data.total_sessions} Streams
-              </span>
-            </div>
-            <div className="p-3 bg-tactical-surface">
-              <span className="text-[10px] text-tactical-dim uppercase block">PFS Forward Secrecy</span>
-              <span className="text-sm font-bold text-white">
-                {data.sessions.filter(s => s.has_forward_secrecy).length} / {data.total_sessions} Streams
-              </span>
-            </div>
-            <div className="p-3 bg-tactical-surface">
-              <span className="text-[10px] text-tactical-dim uppercase block">Critical Downgrades</span>
-              <span className={`text-sm font-bold ${data.sessions.some(s => s.starttls_stripped) ? "text-phosphor-hazard" : "text-phosphor-green"}`}>
-                {data.sessions.filter(s => s.starttls_stripped).length} Detected
-              </span>
-            </div>
-          </div>
+          <p className="text-xs font-sans leading-relaxed">
+            {certStats.dissected} leaf certificates dissected across capture streams. {certStats.expired} certificate is currently expired, failing NIST trust validation.
+          </p>
         </div>
 
-        {/* Sign-off Footnote */}
-        <div className="pt-4 border-t border-tactical-border/70 flex flex-wrap items-center justify-between gap-3 text-[10px] text-tactical-dim font-mono">
-          <span>SECUREMAILSCOPE // PASSIVE FORENSIC PROTOCOL DISSECTOR</span>
-          <span>REPORT LAB PDF ENGINE READY • GENERATED LOCALLY</span>
+        {/* Remediation Priorities */}
+        <div className="space-y-3">
+          <span className="text-[10px] text-tactical-dim uppercase tracking-wider block font-bold">
+            REMEDIATION ACTION PLAN
+          </span>
+          <div className="space-y-2 font-sans text-xs">
+            <div className="p-3 bg-black/40 border border-tactical-border/60">
+              <span className="text-white font-bold block mb-1">1. Enforce Mandatory STARTTLS / Reject Plaintext Fallback</span>
+              <p className="text-tactical-dim text-[11px] leading-relaxed">
+                Configure mail transfer agents (MTAs) to reject unencrypted AUTH requests on submission port 587. Transition legacy clients to implicit TLS (Port 465).
+              </p>
+            </div>
+            <div className="p-3 bg-black/40 border border-tactical-border/60">
+              <span className="text-white font-bold block mb-1">2. Deprecate TLS 1.0/1.1 and 3DES Cipher Suites</span>
+              <p className="text-tactical-dim text-[11px] leading-relaxed">
+                Disable CBC ciphers and legacy protocol versions per RFC 8996. Require TLS 1.2+ with AEAD suites (AES-GCM / ChaCha20-Poly1305).
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
