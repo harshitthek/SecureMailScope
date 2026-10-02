@@ -22,7 +22,7 @@ export function FlowInventoryRow({ session, index, onSelect }: FlowInventoryRowP
   const protoDisplay = session.tls_version || "CLEAR";
   const cipherDisplay = session.cipher_suite_name
     ? session.cipher_suite_name.includes("3DES")
-      ? "3DES-EDE"
+      ? "3DES"
       : session.cipher_suite_name.includes("AES_256_GCM")
       ? "AES-256-GCM"
       : session.cipher_suite_name.includes("AES_128_GCM")
@@ -38,92 +38,83 @@ export function FlowInventoryRow({ session, index, onSelect }: FlowInventoryRowP
       : "RSA"
     : "NONE";
 
-  const flowCode = `F0${index + 1}`;
+  const flowIdStr = index < 9 ? `0${index + 1}` : `${index + 1}`;
+  const endpointDisplay = session.server_name
+    ? `${session.server_name}:${session.dst_port}`
+    : `${session.dst_ip}:${session.dst_port}`;
 
   return (
     <div
       onClick={() => onSelect(session.session_id)}
-      className="w-full grid grid-cols-12 gap-3 py-3.5 px-4 items-center hover:bg-tactical-surfaceHover relative group cursor-pointer transition-colors border-l-2 border-transparent hover:border-phosphor-cyan"
+      className="w-full py-3 px-4 hover:bg-tactical-surfaceHover relative group cursor-pointer transition-colors border-l-2 border-transparent hover:border-phosphor-cyan space-y-1 select-none"
     >
-      <div className="col-span-1 font-bold text-white flex items-center gap-1.5">
-        <span
-          className={`w-1.5 h-1.5 rounded-full ${
-            isCrit
-              ? "bg-phosphor-hazard"
-              : isDegraded
-              ? "bg-phosphor-amber"
-              : "bg-phosphor-green"
-          }`}
-        />
-        <span>{flowCode}</span>
+      {/* Line 1: Flow Index, Endpoint, and Score */}
+      <div className="flex items-center justify-between font-mono">
+        <div className="flex items-center gap-3">
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              isCrit
+                ? "bg-phosphor-hazard"
+                : isDegraded
+                ? "bg-phosphor-amber"
+                : "bg-phosphor-green"
+            }`}
+          />
+          <span className="text-tactical-dim font-bold text-xs">{flowIdStr}</span>
+          <span className="text-white font-bold text-sm tracking-tight">
+            {endpointDisplay}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-bold tabular-nums ${scoreColor}`}>
+            {session.session_score} {session.session_grade}
+          </span>
+        </div>
       </div>
 
-      <div className="col-span-3 truncate text-tactical-text">
-        <span className="font-semibold text-white">
-          {session.server_name || session.dst_ip}
-        </span>
-        <span className="text-tactical-dim ml-1.5">:{session.dst_port}</span>
-      </div>
+      {/* Line 2: Telemetry tokens & Inspect action */}
+      <div className="flex items-center justify-between font-mono text-xs text-tactical-dim pl-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-white font-semibold">{session.protocol}</span>
+          <span>·</span>
+          <span
+            className={
+              !session.is_encrypted
+                ? "text-phosphor-hazard font-bold"
+                : session.tls_version === "TLS 1.3"
+                ? "text-phosphor-green font-semibold"
+                : "text-phosphor-amber"
+            }
+          >
+            {protoDisplay}
+          </span>
+          <span>·</span>
+          <span
+            className={
+              cipherDisplay === "3DES" || cipherDisplay === "NONE"
+                ? "text-phosphor-hazard font-semibold"
+                : "text-tactical-text"
+            }
+          >
+            {cipherDisplay}
+          </span>
+          <span>·</span>
+          <span
+            className={
+              session.has_forward_secrecy
+                ? "text-phosphor-green font-semibold"
+                : "text-phosphor-hazard font-semibold"
+            }
+          >
+            {kexDisplay}
+          </span>
+        </div>
 
-      <div className="col-span-1 text-tactical-dim font-semibold">
-        {session.protocol}
-      </div>
-
-      <div className="col-span-2">
-        <span
-          className={
-            !session.is_encrypted
-              ? "text-phosphor-hazard font-bold"
-              : session.tls_version === "TLS 1.3"
-              ? "text-phosphor-green font-bold"
-              : "text-phosphor-amber"
-          }
-        >
-          {protoDisplay}
-        </span>
-      </div>
-
-      <div className="col-span-2 truncate text-tactical-text">
-        <span
-          className={
-            cipherDisplay.includes("3DES") || cipherDisplay === "NONE"
-              ? "text-phosphor-hazard font-semibold"
-              : ""
-          }
-        >
-          {cipherDisplay}
-        </span>
-      </div>
-
-      <div className="col-span-1">
-        <span
-          className={
-            session.has_forward_secrecy
-              ? "text-phosphor-green font-semibold"
-              : "text-phosphor-hazard font-semibold"
-          }
-        >
-          {kexDisplay}
-        </span>
-      </div>
-
-      <div className="col-span-1 text-right">
-        <span className={`font-bold tabular-nums ${scoreColor}`}>
-          {session.session_score} {session.session_grade}
-        </span>
-      </div>
-
-      <div className="col-span-1 text-right">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(session.session_id);
-          }}
-          className="text-tactical-dim group-hover:text-phosphor-cyan text-[11px] font-bold uppercase inline-flex items-center gap-1 transition-colors"
-        >
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] text-phosphor-cyan font-bold uppercase">
           <span>INSPECT</span>
           <ArrowRight className="w-3 h-3" />
-        </button>
+        </div>
       </div>
     </div>
   );

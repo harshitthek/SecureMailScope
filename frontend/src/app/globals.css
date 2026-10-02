@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #080a0e;
-  --foreground: #e8edf2;
+  --background: #07090c;
+  --foreground: #f2f4f5;
 }
 
 /* Enforce absolute mechanical brutalism: 90-degree corners everywhere */

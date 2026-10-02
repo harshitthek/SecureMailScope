@@ -45,7 +45,7 @@ export function PrimaryFindingHero({
       : `${affectedSession.session_id}`;
 
   return (
-    <section className="w-full py-12 border-b border-tactical-border/40 select-none">
+    <section className="w-full py-6 border-b border-tactical-border/40 select-none">
       {/* Category Marker */}
       <div className="flex items-center gap-2 mb-4">
         <span className="w-2 h-2 bg-phosphor-hazard inline-block" />

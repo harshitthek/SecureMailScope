@@ -13,8 +13,8 @@ export function FlowInventoryList({
   onSelectFlow,
 }: FlowInventoryListProps) {
   return (
-    <section className="w-full py-12 border-b border-tactical-border/40 select-none">
-      <div className="flex items-center justify-between pb-6">
+    <section className="w-full py-6 border-b border-tactical-border/40 select-none">
+      <div className="flex items-center justify-between pb-3">
         <div>
           <span className="text-[10px] font-mono tracking-widest text-tactical-dim uppercase block">
             WIRE RECONSTRUCTION
@@ -28,16 +28,10 @@ export function FlowInventoryList({
         </div>
       </div>
 
-      {/* Aligned Column Header */}
-      <div className="w-full grid grid-cols-12 gap-3 pb-3 border-b border-tactical-border/80 text-[10px] font-mono uppercase tracking-widest text-tactical-dim px-4">
-        <div className="col-span-1">FLOW</div>
-        <div className="col-span-3">ENDPOINT</div>
-        <div className="col-span-1">PROTOCOL</div>
-        <div className="col-span-2">TLS VERSION</div>
-        <div className="col-span-2">CIPHER SUITE</div>
-        <div className="col-span-1">KEX / PFS</div>
-        <div className="col-span-1 text-right">POSTURE</div>
-        <div className="col-span-1 text-right">ACTION</div>
+      {/* Forensic Ledger Header */}
+      <div className="w-full flex items-center justify-between pb-2 border-b border-tactical-border/80 text-[10px] font-mono uppercase tracking-widest text-tactical-dim px-4">
+        <span>FLOW // ENDPOINT &amp; TELEMETRY</span>
+        <span>POSTURE SCORE</span>
       </div>
 
       {/* Data Rows */}

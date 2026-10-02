@@ -7,9 +7,12 @@ interface PostureScaleProps {
 
 export function PostureScale({ score, semanticColor }: PostureScaleProps) {
   const clampedScore = Math.min(Math.max(score, 0), 100);
+  // Ensure the CURRENT label doesn't overlap 0 FAIL on left or 80 NIST on right
+  const labelLeftPercent = Math.min(Math.max(clampedScore, 18), 62);
 
   return (
-    <div className="w-full max-w-md pt-1 space-y-1.5 font-mono">
+    <div className="w-full max-w-md pt-1 font-mono">
+      {/* Horizontal Instrument Bar */}
       <div className="relative w-full h-2 bg-black/60 border border-tactical-border/80">
         <div
           className="h-full transition-all duration-700"
@@ -32,11 +35,29 @@ export function PostureScale({ score, semanticColor }: PostureScaleProps) {
         />
       </div>
 
-      <div className="flex items-center justify-between text-[10px] text-tactical-dim">
-        <span>0 FAIL</span>
-        <span>50 DEGRADED</span>
-        <span className="text-phosphor-green font-semibold">80 NIST BASELINE</span>
-        <span>100</span>
+      {/* Measurement Ticks & Scale Labels */}
+      <div className="relative w-full h-5 mt-1.5 text-[10px] text-tactical-dim select-none">
+        <span className="absolute left-0">0 FAIL</span>
+
+        {/* Dynamic Current Marker */}
+        <span
+          className="absolute font-bold whitespace-nowrap -translate-x-1/2 flex items-center gap-1"
+          style={{
+            left: `${labelLeftPercent}%`,
+            color: semanticColor,
+          }}
+        >
+          <span>{score}</span>
+          <span>●</span>
+          <span>CURRENT ↑</span>
+        </span>
+
+        {/* 80 NIST Baseline Marker */}
+        <span className="absolute right-12 text-phosphor-green font-semibold">
+          80 NIST BASELINE
+        </span>
+
+        <span className="absolute right-0">100</span>
       </div>
     </div>
   );

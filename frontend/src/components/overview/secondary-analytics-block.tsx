@@ -63,8 +63,8 @@ export function SecondaryAnalyticsBlock({ sessions }: SecondaryAnalyticsBlockPro
   }, [sessions]);
 
   return (
-    <section className="w-full py-12 select-none">
-      <div className="flex items-center justify-between pb-6">
+    <section className="w-full py-8 select-none">
+      <div className="flex items-center justify-between pb-4">
         <div>
           <span className="text-[10px] font-mono tracking-widest text-tactical-dim uppercase block">
             TELEMETRY BREAKDOWN
