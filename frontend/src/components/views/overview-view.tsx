@@ -30,7 +30,7 @@ export function OverviewView({
   } = data;
 
   return (
-    <div className="p-6 lg:p-12 max-w-[1400px] mx-auto w-full select-none space-y-2">
+    <div className="px-6 py-4 lg:px-8 lg:py-6 max-w-[1400px] mx-auto w-full select-none space-y-2">
       {/* 1. QUIET TOP CASE METADATA */}
       <CaseContextStrip
         caseCode={caseCode}
