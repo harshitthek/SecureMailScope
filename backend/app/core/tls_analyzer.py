@@ -29,6 +29,12 @@ class TlsAnalysis:
     ja3_extensions: list[int]
     ja3_curves: list[int]
     ja3_point_formats: list[int]
+    ja3s_version: int = 0
+    ja3s_cipher: int = 0
+    ja3s_extensions: list[int] = field(default_factory=list)
+    certificate_chain_ders: list[bytes] = field(default_factory=list)
+    alpn_protocols: list[str] = field(default_factory=list)
+
 
 
 # Load cipher database once at module level
@@ -86,12 +92,21 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
         sni: str | None = None
         cert_der: bytes | None = None
 
-        # JA3 components
+        # JA3 components (Client Hello)
         ja3_version = 0x0303
         ja3_ciphers: list[int] = []
         ja3_extensions: list[int] = []
         ja3_curves: list[int] = []
         ja3_point_formats: list[int] = []
+
+        # JA3S components (Server Hello)
+        ja3s_version = 0
+        ja3s_cipher = 0
+        ja3s_extensions: list[int] = []
+
+        # Extension and Certificate extraction
+        cert_chain_ders: list[bytes] = []
+        alpn_protocols: list[str] = []
 
         # Supported versions (for TLS 1.3 detection)
         sv_ext_version: int | None = None
@@ -176,6 +191,18 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                             if sni_type == 0 and 5 + sni_name_len <= len(ext_data):
                                 sni = ext_data[5:5 + sni_name_len].decode("ascii", errors="replace")
 
+                        elif ext_type == 0x0010 and len(ext_data) >= 2:
+                            # ALPN (Application-Layer Protocol Negotiation)
+                            alpn_total = struct.unpack("!H", ext_data[0:2])[0]
+                            ai = 2
+                            while ai < 2 + alpn_total and ai < len(ext_data):
+                                p_len = ext_data[ai]
+                                ai += 1
+                                if ai + p_len <= len(ext_data):
+                                    proto_str = ext_data[ai:ai + p_len].decode("ascii", errors="replace")
+                                    alpn_protocols.append(proto_str)
+                                ai += p_len
+
                         elif ext_type == 0x000A and len(ext_data) >= 2:
                             # Supported Groups / Elliptic Curves
                             curves_len = struct.unpack("!H", ext_data[0:2])[0]
@@ -209,6 +236,7 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                 if len(hs_body) < 38:
                     break
                 sh_major, sh_minor = hs_body[0], hs_body[1]
+                ja3s_version = (sh_major << 8) | sh_minor
                 negotiated_version = _ver_str(sh_major, sh_minor)
                 # Random: 32 bytes (skip)
                 idx = 34
@@ -221,6 +249,7 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                 if idx + 2 > len(hs_body):
                     break
                 selected_cipher_code = struct.unpack("!H", hs_body[idx:idx + 2])[0]
+                ja3s_cipher = selected_cipher_code
                 idx += 2
                 # Compression method
                 idx += 1
@@ -233,6 +262,7 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                         ext_type = struct.unpack("!H", hs_body[idx:idx + 2])[0]
                         ext_len = struct.unpack("!H", hs_body[idx + 2:idx + 4])[0]
                         ext_data = hs_body[idx + 4:idx + 4 + ext_len]
+                        ja3s_extensions.append(ext_type)
 
                         if ext_type == 0x002B and len(ext_data) >= 2:
                             # Supported Versions (Server Hello variant: single value)
@@ -242,16 +272,22 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
 
                         idx += 4 + ext_len
 
-            elif hs_type == 0x0B and cert_der is None:
+            elif hs_type == 0x0B and not cert_chain_ders:
                 # === CERTIFICATE MESSAGE ===
-                if len(hs_body) < 6:
-                    pass
-                else:
+                if len(hs_body) >= 6:
                     certs_total_len = struct.unpack("!I", b'\x00' + hs_body[0:3])[0]
-                    if len(hs_body) >= 6:
-                        first_cert_len = struct.unpack("!I", b'\x00' + hs_body[3:6])[0]
-                        if 6 + first_cert_len <= len(hs_body):
-                            cert_der = bytes(hs_body[6:6 + first_cert_len])
+                    c_idx = 3
+                    while c_idx + 3 <= len(hs_body) and c_idx < 3 + certs_total_len:
+                        c_len = struct.unpack("!I", b'\x00' + hs_body[c_idx:c_idx + 3])[0]
+                        c_idx += 3
+                        if c_idx + c_len <= len(hs_body):
+                            c_bytes = bytes(hs_body[c_idx:c_idx + c_len])
+                            cert_chain_ders.append(c_bytes)
+                            c_idx += c_len
+                        else:
+                            break
+                    if cert_chain_ders:
+                        cert_der = cert_chain_ders[0]
 
             # Move to next TLS record
             pos = _find_tls_record(payload, pos + 5 + rec_len)
@@ -295,6 +331,11 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
             ja3_extensions=ja3_extensions,
             ja3_curves=ja3_curves,
             ja3_point_formats=ja3_point_formats,
+            ja3s_version=ja3s_version,
+            ja3s_cipher=ja3s_cipher,
+            ja3s_extensions=ja3s_extensions,
+            certificate_chain_ders=cert_chain_ders,
+            alpn_protocols=alpn_protocols,
         )
 
     except Exception as e:

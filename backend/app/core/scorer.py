@@ -13,6 +13,22 @@ class ScoringResult:
     grade: str
     severity: str
 
+def calculate_grade_and_severity(score: int) -> tuple[str, str]:
+    """Map a 0-100 score to letter grade and risk severity."""
+    score_clamped = max(0, min(100, score))
+    if score_clamped >= 90:
+        return 'A+', 'secure'
+    elif score_clamped >= 80:
+        return 'A', 'low'
+    elif score_clamped >= 70:
+        return 'B', 'low'
+    elif score_clamped >= 60:
+        return 'C', 'medium'
+    elif score_clamped >= 50:
+        return 'D', 'medium'
+    else:
+        return 'F', ('critical' if score_clamped < 25 else 'high')
+
 def score_session(tls_version: str | None, cipher_category: str | None, cipher_is_aead: bool, key_exchange: str | None, cert: CertificateInfo | None, ja3_known: bool, is_cleartext: bool) -> ScoringResult:
     """Compute cryptographic posture score for a single TLS session."""
     if is_cleartext:
@@ -70,25 +86,9 @@ def score_session(tls_version: str | None, cipher_category: str | None, cipher_i
 
     raw_score = 100 - (v_proto + v_cipher + v_pfs + v_cert + v_anomaly)
     final_score = max(0, min(100, raw_score))
+    grade, severity = calculate_grade_and_severity(final_score)
 
-    if final_score >= 90:
-        grade = 'A+'
-        severity = 'secure'
-    elif final_score >= 80:
-        grade = 'A'
-        severity = 'low'
-    elif final_score >= 70:
-        grade = 'B'
-        severity = 'low'
-    elif final_score >= 60:
-        grade = 'C'
-        severity = 'medium'
-    elif final_score >= 50:
-        grade = 'D'
-        severity = 'medium'
-    else:
-        grade = 'F'
-        severity = 'critical' if final_score < 25 else 'high'
+
 
     return ScoringResult(
         protocol_penalty=v_proto,

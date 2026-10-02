@@ -23,35 +23,35 @@ export function StandardsView({ compliance, sessions }: StandardsViewProps) {
   });
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 font-mono max-w-[1500px] mx-auto w-full">
-      {/* Header and Compliance Scorecard */}
+    <div className="p-4 lg:p-6 space-y-4 max-w-[1540px] mx-auto w-full select-none font-mono">
+      {/* 1. Header & Compliance Scorecard */}
       <div className="p-4 border border-tactical-border bg-tactical-surface space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <h2 className="text-sm font-sans font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <FileCheck className="w-4 h-4 text-phosphor-cyan" />
               STATUTORY STANDARDS &amp; COMPLIANCE AUDIT MATRIX
             </h2>
-            <p className="text-xs text-tactical-dim mt-0.5">
+            <p className="text-xs text-tactical-dim font-mono mt-0.5">
               Automated verification against NIST SP 800-52r2, RFC 8314 (Implicit TLS), and RFC 8996 across {sessions.length} sessions
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <span className="text-[10px] uppercase text-tactical-dim block">Overall Pass Rate</span>
-              <span className={`text-xl font-bold tabular-nums ${passRate >= 80 ? "text-phosphor-green" : "text-phosphor-hazard"}`}>
+              <span className="text-[10px] uppercase text-tactical-dim block">Overall Compliance Rate</span>
+              <span className={`text-2xl font-mono font-bold tabular-nums ${passRate >= 80 ? "text-phosphor-green" : "text-phosphor-hazard"}`}>
                 {passRate}% COMPLIANT
               </span>
             </div>
-            <div className="w-10 h-10 border border-tactical-border bg-black/50 flex items-center justify-center">
+            <div className="w-10 h-10 border border-tactical-border bg-black/60 flex items-center justify-center">
               <Award className={`w-5 h-5 ${passRate >= 80 ? "text-phosphor-green" : "text-phosphor-hazard"}`} />
             </div>
           </div>
         </div>
 
         {/* Filters and Counters */}
-        <div className="flex items-center justify-between pt-2 border-t border-tactical-border/70 text-xs">
+        <div className="flex items-center justify-between pt-2.5 border-t border-tactical-border/70 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-tactical-dim">AUDIT STATUS:</span>
             <span className="text-phosphor-green font-bold tabular-nums">{passCount} PASS</span>
@@ -59,12 +59,12 @@ export function StandardsView({ compliance, sessions }: StandardsViewProps) {
             <span className="text-phosphor-hazard font-bold tabular-nums">{failCount} NON-COMPLIANT</span>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {(["ALL", "FAIL", "PASS"] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setFilter(status)}
-                className={`px-2.5 py-0.5 text-[10px] font-bold border transition-colors ${
+                className={`px-3 py-0.5 text-[10px] font-bold border transition-colors ${
                   filter === status
                     ? status === "FAIL"
                       ? "border-phosphor-hazard bg-phosphor-hazard/20 text-phosphor-hazard"
@@ -79,7 +79,7 @@ export function StandardsView({ compliance, sessions }: StandardsViewProps) {
         </div>
       </div>
 
-      {/* Compliance Rules Table */}
+      {/* 2. Compliance Rules Table */}
       <div className="space-y-3">
         {filtered.map((item) => {
           const isPass = item.status === "pass";
@@ -94,7 +94,7 @@ export function StandardsView({ compliance, sessions }: StandardsViewProps) {
               }`}
             >
               <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   {isPass ? (
                     <CheckCircle2 className="w-4 h-4 text-phosphor-green flex-shrink-0" />
                   ) : isWarn ? (
@@ -104,19 +104,19 @@ export function StandardsView({ compliance, sessions }: StandardsViewProps) {
                   )}
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white tracking-tight">
+                      <span className="text-sm font-sans font-bold text-white tracking-tight">
                         {item.standard} {item.section}
                       </span>
                       <span className="text-[10px] px-1.5 py-0.2 border border-tactical-border bg-black/40 text-tactical-dim font-bold">
                         {item.id}
                       </span>
                     </div>
-                    <p className="text-xs text-tactical-text mt-0.5">{item.requirement}</p>
+                    <p className="text-xs font-sans text-tactical-text mt-1">{item.requirement}</p>
                   </div>
                 </div>
 
                 <span
-                  className={`px-2 py-0.5 border text-xs font-bold uppercase ${
+                  className={`px-2.5 py-0.5 border text-xs font-bold uppercase ${
                     isPass
                       ? "border-phosphor-green text-phosphor-green bg-phosphor-green/10"
                       : isWarn
@@ -128,7 +128,7 @@ export function StandardsView({ compliance, sessions }: StandardsViewProps) {
                 </span>
               </div>
 
-              <div className="mt-2 pt-2 border-t border-tactical-border/60 text-xs text-tactical-dim flex items-center justify-between">
+              <div className="mt-3 pt-2.5 border-t border-tactical-border/60 text-xs text-tactical-dim flex items-center justify-between">
                 <div>
                   OBSERVED EVIDENCE: <strong className="text-white">{item.details}</strong>
                 </div>

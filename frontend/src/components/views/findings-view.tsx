@@ -59,35 +59,35 @@ export function FindingsView({
   });
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 font-mono max-w-[1500px] mx-auto w-full">
-      {/* Header and Filter Toolbar */}
+    <div className="p-4 lg:p-6 space-y-4 max-w-[1540px] mx-auto w-full select-none">
+      {/* 1. Header & Filter Toolbar */}
       <div className="p-4 border border-tactical-border bg-tactical-surface space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <h2 className="text-sm font-sans font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-phosphor-hazard" />
               SECURITY VULNERABILITY FINDINGS &amp; REMEDIATION ({vulnerabilities.length})
             </h2>
-            <p className="text-xs text-tactical-dim mt-0.5">
+            <p className="text-xs text-tactical-dim font-mono mt-0.5">
               Prioritized cryptographic audit checklist with evidence forensics and configuration guidance
             </p>
           </div>
 
           {/* Search Box */}
-          <div className="relative min-w-[240px]">
+          <div className="relative min-w-[260px] font-mono">
             <Search className="w-3.5 h-3.5 text-tactical-dim absolute left-2.5 top-2.5 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search findings, CVEs, NIST..."
-              className="w-full bg-tactical-bg border border-tactical-border pl-8 pr-3 py-1.5 text-xs text-phosphor-cyan font-mono focus-visible:outline-none focus-visible:border-phosphor-cyan"
+              className="w-full bg-tactical-bg border border-tactical-border pl-8 pr-3 py-1.5 text-xs text-phosphor-cyan font-mono focus:outline-none focus:border-phosphor-cyan transition-colors"
             />
           </div>
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-tactical-border/70 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-tactical-border/70 text-xs font-mono">
           {/* Severity Pills */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[10px] uppercase text-tactical-dim font-bold mr-1">SEVERITY:</span>
@@ -97,7 +97,7 @@ export function FindingsView({
                 <button
                   key={sev}
                   onClick={() => setSeverityFilter(sev)}
-                  className={`px-2 py-0.5 text-[10px] font-bold border transition-colors ${
+                  className={`px-2.5 py-0.5 text-[10px] font-bold border transition-colors ${
                     isActive
                       ? sev === "CRITICAL"
                         ? "border-phosphor-hazard bg-phosphor-hazard/20 text-phosphor-hazard"
@@ -120,7 +120,7 @@ export function FindingsView({
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
-                  className={`px-2 py-0.5 text-[10px] font-bold border transition-colors ${
+                  className={`px-2.5 py-0.5 text-[10px] font-bold border transition-colors ${
                     isActive
                       ? "border-phosphor-green bg-phosphor-green/20 text-phosphor-green"
                       : "border-tactical-border bg-tactical-bg text-tactical-dim hover:text-white"
@@ -134,8 +134,8 @@ export function FindingsView({
         </div>
       </div>
 
-      {/* Findings List */}
-      <div className="space-y-3">
+      {/* 2. Findings List */}
+      <div className="space-y-3 font-mono">
         {filtered.length > 0 ? (
           filtered.map((v) => {
             const isExpanded = !!expandedIds[v.id];
@@ -178,14 +178,14 @@ export function FindingsView({
                       <span className="text-[10px] px-1.5 py-0.5 border border-tactical-border bg-black/40 text-tactical-dim font-bold">
                         {category}
                       </span>
-                      <span className="text-xs font-bold text-white tracking-tight">
+                      <span className="text-sm font-sans font-bold text-white tracking-tight">
                         {v.title}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3 flex-shrink-0 text-xs">
-                    <span className="text-[10px] text-tactical-dim hidden sm:inline">
+                    <span className="text-[11px] text-tactical-dim hidden sm:inline">
                       AFFECTS: {v.affected_sessions.map((sid) => `#${sid}`).join(", ")}
                     </span>
                     <span className="text-[10px] text-tactical-muted font-bold">{v.id}</span>
@@ -200,7 +200,7 @@ export function FindingsView({
                       <span className="text-[10px] uppercase tracking-wider text-tactical-dim font-bold block mb-1">
                         FORENSIC DESCRIPTION &amp; THREAT VECTOR
                       </span>
-                      <p className="text-xs text-tactical-text leading-relaxed bg-tactical-bg p-3 border border-tactical-border">
+                      <p className="text-xs font-sans text-tactical-text leading-relaxed bg-tactical-bg p-3 border border-tactical-border">
                         {v.description}
                       </p>
                     </div>
@@ -214,7 +214,7 @@ export function FindingsView({
                         {v.affected_sessions.map((sid) => (
                           <div
                             key={sid}
-                            className="flex items-center gap-1.5 p-1.5 border border-tactical-border bg-tactical-surface text-xs"
+                            className="flex items-center gap-2 p-1.5 border border-tactical-border bg-tactical-surface text-xs"
                           >
                             <Network className="w-3.5 h-3.5 text-phosphor-cyan" />
                             <span className="text-white font-bold">Stream #{sid}</span>
@@ -260,7 +260,7 @@ export function FindingsView({
                     </div>
 
                     {/* Actionable Remediation Guidance */}
-                    <div className="p-3.5 border border-phosphor-green/40 bg-phosphor-green/5 space-y-1">
+                    <div className="p-3.5 border border-phosphor-green/40 bg-phosphor-green/5 space-y-1.5">
                       <div className="flex items-center gap-1.5 text-phosphor-green text-xs font-bold uppercase tracking-wider">
                         <Wrench className="w-3.5 h-3.5" />
                         <span>ACTIONABLE REMEDIATION GUIDANCE</span>

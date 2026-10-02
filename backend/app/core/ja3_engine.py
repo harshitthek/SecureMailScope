@@ -54,3 +54,19 @@ def compute_ja3(version: int, ciphers: list[int], extensions: list[int], curves:
         client_version=client_version,
         is_known=is_known
     )
+
+@dataclass
+class Ja3sResult:
+    ja3s_string: str
+    ja3s_hash: str
+
+def compute_ja3s(version: int, cipher: int, extensions: list[int]) -> Ja3sResult:
+    """Compute JA3S server fingerprint hash from TLS Server Hello parameters."""
+    exts_filtered = filter_grease(extensions)
+    ja3s_string = f"{version},{cipher},{'-'.join(str(e) for e in exts_filtered)}"
+    ja3s_hash = hashlib.md5(ja3s_string.encode()).hexdigest()
+    return Ja3sResult(
+        ja3s_string=ja3s_string,
+        ja3s_hash=ja3s_hash
+    )
+

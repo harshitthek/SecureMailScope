@@ -45,10 +45,10 @@ export default function Home() {
   } = useWorkstation();
 
   return (
-    <div className="min-h-screen bg-tactical-bg text-tactical-text font-mono flex flex-col bg-tactical-grid selection:bg-phosphor-cyan/20 selection:text-white relative">
+    <div className="min-h-screen bg-tactical-bg text-tactical-text flex flex-col bg-tactical-grid selection:bg-phosphor-cyan/20 selection:text-white relative">
       {/* Subtle CRT Scanline Atmospheric Overlay */}
       <div
-        className="crt-scanlines fixed inset-0 pointer-events-none z-40 opacity-30"
+        className="crt-scanlines fixed inset-0 pointer-events-none z-40 opacity-20"
         aria-hidden="true"
       />
 
@@ -64,7 +64,7 @@ export default function Home() {
 
       {/* Upload Error Banner if any */}
       {uploadError && (
-        <div className="w-full bg-phosphor-hazard/10 border-b border-phosphor-hazard/40 px-4 py-1.5 flex items-center justify-between text-xs text-phosphor-hazard z-30">
+        <div className="w-full bg-phosphor-hazard/10 border-b border-phosphor-hazard/40 px-4 py-1.5 flex items-center justify-between text-xs text-phosphor-hazard z-30 font-mono">
           <span>{uploadError}</span>
           <button
             onClick={clearUploadError}

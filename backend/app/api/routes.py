@@ -24,8 +24,8 @@ from app.core.pcap_parser import parse_pcap, StreamData
 from app.core.starttls_detector import detect_starttls
 from app.core.tls_analyzer import analyze_tls
 from app.core.cert_validator import validate_certificate
-from app.core.ja3_engine import compute_ja3, Ja3Result
-from app.core.scorer import score_session, score_enterprise, ScoringResult
+from app.core.ja3_engine import compute_ja3, compute_ja3s, Ja3Result, Ja3sResult
+from app.core.scorer import score_session, score_enterprise, ScoringResult, calculate_grade_and_severity
 from app.core.anomaly import build_feature_vector, detect_anomalies
 from app.reports.pdf_exporter import generate_pdf_report
 from app.reports.json_exporter import format_json_report
@@ -275,6 +275,15 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
                 point_formats=tls.ja3_point_formats,
             )
 
+        # Compute JA3S (Server Hello fingerprint) if available
+        ja3s = None
+        if tls and tls.ja3s_version and tls.ja3s_cipher:
+            ja3s = compute_ja3s(
+                version=tls.ja3s_version,
+                cipher=tls.ja3s_cipher,
+                extensions=tls.ja3s_extensions,
+            )
+
         # Determine parameters for scoring
         is_cleartext = starttls.is_cleartext_only
         tls_version = tls.negotiated_version if tls else ("None (Cleartext)" if is_cleartext else None)
@@ -332,6 +341,9 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
             "ja3_hash": ja3.ja3_hash if ja3 else None,
             "ja3_client_name": ja3.client_name if ja3 else None,
             "ja3_is_known": ja3.is_known if ja3 else False,
+            "ja3s_hash": ja3s.ja3s_hash if ja3s else None,
+            "certificate_chain_length": len(tls.certificate_chain_ders) if tls and tls.certificate_chain_ders else (1 if cert_info else 0),
+            "alpn_protocols": tls.alpn_protocols if tls else [],
             "certificate": _cert_to_dict(cert_info) if cert_info else None,
             "session_score": scoring.final_score,
             "session_grade": scoring.grade,
@@ -350,7 +362,7 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
         sessions.append(session)
 
         # Generate vulnerabilities from this session
-        session_vulns = _generate_vulns(session_id, starttls, tls, cert_info, scoring, vuln_counter)
+        session_vulns = _generate_vulns(session_id, starttls, tls, cert_info, scoring, vuln_counter, ja3)
         vuln_counter += len(session_vulns)
         all_vulns.extend(session_vulns)
 
@@ -358,8 +370,14 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
     anomaly_results = detect_anomalies(feature_vectors)
     for i, anom in enumerate(anomaly_results):
         if anom.is_anomaly and sessions[i]["session_score"] > 0:
-            sessions[i]["scoring_breakdown"]["anomaly_penalty"] = -15
-            sessions[i]["session_score"] = max(0, sessions[i]["session_score"] - 15)
+            sessions[i]["scoring_breakdown"]["anomaly_penalty"] = 15
+            new_score = max(0, sessions[i]["session_score"] - 15)
+            sessions[i]["session_score"] = new_score
+            sessions[i]["scoring_breakdown"]["final_score"] = new_score
+            new_grade, new_sev = calculate_grade_and_severity(new_score)
+            sessions[i]["session_grade"] = new_grade
+            sessions[i]["session_severity"] = new_sev
+
 
     # Step 7: Enterprise scoring
     session_scores = [s["session_score"] for s in sessions]
@@ -447,6 +465,7 @@ def _generate_vulns(
     cert,
     scoring: ScoringResult,
     counter: int,
+    ja3: Ja3Result | None = None,
 ) -> list[dict[str, Any]]:
     """Generate vulnerability findings from a single session's analysis."""
     vulns = []
@@ -525,6 +544,17 @@ def _generate_vulns(
                 "nist_reference": "NIST SP 800-52r2 Section 3.3.2",
                 "remediation": "Remove this cipher suite from server configuration. Use AES-GCM or ChaCha20-Poly1305 AEAD ciphers.",
             })
+        elif cat == "CBC":
+            vulns.append({
+                "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                "severity": "medium",
+                "title": f"CBC Mode Cipher Suite in Use: {tls.selected_cipher_name}",
+                "description": f"Session #{session_id} negotiated {tls.selected_cipher_name} which uses CBC mode. CBC mode in TLS 1.2 is susceptible to timing side-channel attacks (Lucky 13, POODLE). NIST SP 800-52r2 Section 3.3.2 recommends AEAD cipher suites (AES-GCM or ChaCha20-Poly1305).",
+                "affected_sessions": [session_id],
+                "cve_references": ["CVE-2013-0169"],
+                "nist_reference": "NIST SP 800-52r2 Section 3.3.2",
+                "remediation": "Configure the mail server to disable CBC-mode cipher suites and mandate AEAD ciphers (e.g. ECDHE-ECDSA-AES256-GCM-SHA384 or ECDHE-RSA-AES256-GCM-SHA384).",
+            })
 
         if not tls.has_forward_secrecy and tls.key_exchange == "RSA":
             vulns.append({
@@ -583,6 +613,18 @@ def _generate_vulns(
                 "nist_reference": "NIST SP 800-52r2 Section 3.5",
                 "remediation": f"Re-issue with minimum {2048 if cert.public_key_type == 'RSA' else 256}-bit {cert.public_key_type} key.",
             })
+
+    if tls and ja3 and not ja3.is_known and not starttls.is_cleartext_only:
+        vulns.append({
+            "id": f"VULN-{counter + len(vulns) + 1:03d}",
+            "severity": "medium",
+            "title": f"Unrecognized Client JA3 Fingerprint: {ja3.ja3_hash[:16]}...",
+            "description": f"Session #{session_id} connects with an unverified ClientHello fingerprint (JA3: {ja3.ja3_hash}). The cryptographic signature does not match verified email user agents (Thunderbird, Outlook, Apple Mail), suggesting potential automated scripts or rogue client agents.",
+            "affected_sessions": [session_id],
+            "cve_references": [],
+            "nist_reference": "NIST SP 800-52r2 Section 3.1",
+            "remediation": "Inspect endpoint process telemetry for anomalous mail clients connecting to the mail transfer agent.",
+        })
 
     return vulns
 

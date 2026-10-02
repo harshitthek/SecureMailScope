@@ -48,13 +48,13 @@ export function SessionDetailModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm font-mono animate-in fade-in duration-200">
-      <div className="w-full max-w-5xl h-[88vh] max-h-[820px] bg-tactical-surface border border-tactical-borderHighlight flex flex-col shadow-2xl text-tactical-text relative">
-        {/* Modal Header */}
-        <div className="px-5 py-3.5 border-b border-tactical-border bg-black/60 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-sm select-none">
+      <div className="w-full max-w-5xl h-[88vh] max-h-[840px] bg-tactical-surface border border-tactical-borderHighlight flex flex-col shadow-2xl text-tactical-text relative">
+        {/* 1. Modal Header */}
+        <div className="px-5 py-4 border-b border-tactical-border bg-black/60 flex items-center justify-between gap-4 flex-shrink-0">
+          <div className="flex items-center gap-3.5 min-w-0">
             <div
-              className={`w-9 h-9 border flex items-center justify-center flex-shrink-0 ${
+              className={`w-10 h-10 border flex items-center justify-center flex-shrink-0 ${
                 isCritical
                   ? "border-phosphor-hazard/60 bg-phosphor-hazard/10 text-phosphor-hazard"
                   : "border-phosphor-green/60 bg-phosphor-green/10 text-phosphor-green"
@@ -63,15 +63,15 @@ export function SessionDetailModal({
               {isCritical ? <ShieldAlert className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-bold text-white tracking-wide truncate">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="text-base font-sans font-bold text-white tracking-wide truncate">
                   {session.server_name || "TARGET HOST"}
                 </span>
-                <span className="text-xs px-2 py-0.5 border border-tactical-border bg-tactical-elevated text-phosphor-cyan font-bold">
+                <span className="text-xs font-mono px-2 py-0.5 border border-tactical-border bg-tactical-elevated text-phosphor-cyan font-bold">
                   {session.protocol}
                 </span>
                 <span
-                  className={`text-xs px-2 py-0.5 border font-bold ${
+                  className={`text-xs font-mono px-2 py-0.5 border font-bold ${
                     isCritical
                       ? "border-phosphor-hazard/50 bg-phosphor-hazard/15 text-phosphor-hazard"
                       : "border-phosphor-green/50 bg-phosphor-green/15 text-phosphor-green"
@@ -80,10 +80,10 @@ export function SessionDetailModal({
                   SCORE: {session.session_score} ({session.session_grade})
                 </span>
               </div>
-              <div className="text-xs text-tactical-dim flex items-center gap-2 mt-1">
-                <span>VECTOR:</span>
+              <div className="text-xs font-mono text-tactical-dim flex items-center gap-2 mt-1">
+                <span>FLOW VECTOR:</span>
                 <span className="text-tactical-text font-bold">
-                  {session.src_ip}:{session.src_port} → {session.dst_ip}:{session.dst_port}
+                  {session.src_ip}:{session.src_port} &rarr; {session.dst_ip}:{session.dst_port}
                 </span>
                 <span>•</span>
                 <span>TIME: {session.timestamp?.slice(11, 19) || "N/A"}</span>
@@ -91,11 +91,11 @@ export function SessionDetailModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 font-mono">
             {onNavigateToDissector && (
               <button
                 onClick={() => onNavigateToDissector(session.session_id)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1 border border-phosphor-cyan/60 bg-phosphor-cyan/10 hover:bg-phosphor-cyan/20 text-phosphor-cyan text-xs font-bold transition-colors"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-phosphor-cyan/60 bg-phosphor-cyan/10 hover:bg-phosphor-cyan/20 active:translate-y-[1px] text-phosphor-cyan text-xs font-bold transition-all"
               >
                 <Binary className="w-3.5 h-3.5" />
                 <span>FULL DISSECTOR</span>
@@ -110,8 +110,8 @@ export function SessionDetailModal({
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center border-b border-tactical-border bg-black/30 px-3 overflow-x-auto">
+        {/* 2. Navigation Tabs */}
+        <div className="flex items-center border-b border-tactical-border bg-black/30 px-3 overflow-x-auto flex-shrink-0 font-mono">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -119,7 +119,7 @@ export function SessionDetailModal({
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
                   isActive
                     ? "border-phosphor-cyan text-white bg-tactical-elevated/50"
                     : "border-transparent text-tactical-dim hover:text-white hover:bg-tactical-surfaceHover"
@@ -132,14 +132,14 @@ export function SessionDetailModal({
           })}
         </div>
 
-        {/* Tab Content Body */}
+        {/* 3. Tab Content Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* TAB 1: SUMMARY */}
           {activeTab === "SUMMARY" && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Findings & Evidence */}
-                <div className="border border-tactical-border bg-tactical-bg p-4 space-y-3">
+                <div className="border border-tactical-border bg-tactical-bg p-4 space-y-3 font-mono">
                   <div className="flex items-center justify-between border-b border-tactical-border pb-2 text-xs font-bold text-white">
                     <span>FORENSIC FINDING SUMMARY</span>
                     <span className={`px-2 py-0.5 border text-[10px] ${
@@ -150,12 +150,12 @@ export function SessionDetailModal({
                   </div>
 
                   {session.starttls_stripped && (
-                    <div className="border border-phosphor-hazard/40 bg-phosphor-hazard/10 p-3 space-y-1">
+                    <div className="border border-phosphor-hazard/40 bg-phosphor-hazard/10 p-3 space-y-1.5">
                       <div className="flex items-center gap-2 text-phosphor-hazard text-xs font-bold">
                         <AlertTriangle className="w-3.5 h-3.5" />
                         <span>STRIPTLS / Cleartext Fallback Detected</span>
                       </div>
-                      <p className="text-xs text-tactical-text leading-relaxed">
+                      <p className="text-xs font-sans text-tactical-text leading-relaxed">
                         Potential STARTTLS downgrade / cleartext fallback detected. Server greeting omitted 
                         STARTTLS capability on submission port 587, resulting in unencrypted client credentials.
                       </p>
@@ -163,12 +163,12 @@ export function SessionDetailModal({
                   )}
 
                   {!session.is_encrypted && !session.starttls_stripped && (
-                    <div className="border border-phosphor-hazard/40 bg-phosphor-hazard/10 p-3 space-y-1">
+                    <div className="border border-phosphor-hazard/40 bg-phosphor-hazard/10 p-3 space-y-1.5">
                       <div className="flex items-center gap-2 text-phosphor-hazard text-xs font-bold">
                         <Unlock className="w-3.5 h-3.5" />
                         <span>Cleartext Wire Transmission</span>
                       </div>
-                      <p className="text-xs text-tactical-text leading-relaxed">
+                      <p className="text-xs font-sans text-tactical-text leading-relaxed">
                         Session transmitted completely unencrypted on port {session.dst_port} ({session.protocol}).
                         Sensitive email envelopes and credentials observed in cleartext.
                       </p>
@@ -196,9 +196,9 @@ export function SessionDetailModal({
                 </div>
 
                 {/* Mathematical Posture Scoring Deductions */}
-                <div className="border border-tactical-border bg-tactical-bg p-4 space-y-3">
+                <div className="border border-tactical-border bg-tactical-bg p-4 space-y-3 font-mono">
                   <div className="flex items-center justify-between border-b border-tactical-border pb-2 text-xs font-bold text-white">
-                    <span>SCORING PENALTY BREAKDOWN</span>
+                    <span>SCORING PENALTY DEDUCTION LEDGER</span>
                     <span className="text-xs text-tactical-dim">NIST FORMULA</span>
                   </div>
 
@@ -233,7 +233,7 @@ export function SessionDetailModal({
                         -{session.scoring_breakdown.anomaly_penalty} pts
                       </span>
                     </div>
-                    <div className="flex items-center justify-between pt-2 text-sm font-bold">
+                    <div className="flex items-center justify-between pt-2.5 text-sm font-bold">
                       <span className="text-white">FINAL SESSION SCORE:</span>
                       <span className={`tabular-nums ${isCritical ? "text-phosphor-hazard" : "text-phosphor-green"}`}>
                         {session.session_score} / 100 ({session.session_grade})
@@ -247,9 +247,9 @@ export function SessionDetailModal({
 
           {/* TAB 2: PROTOCOL FLOW */}
           {activeTab === "PROTOCOL_FLOW" && (
-            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-4">
+            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-4 font-mono">
               <div className="flex items-center justify-between border-b border-tactical-border pb-2 text-xs">
-                <span className="font-bold text-white">RECONSTRUCTED PROTOCOL STATE MACHINE</span>
+                <span className="font-bold text-white uppercase">RECONSTRUCTED PROTOCOL STATE MACHINE</span>
                 <span className="text-tactical-dim">SEQUENTIAL FORENSIC TIMELINE</span>
               </div>
 
@@ -261,9 +261,9 @@ export function SessionDetailModal({
                     const isSecure = step.status === "secure";
                     return (
                       <div key={step.step} className="relative group">
-                        {/* Dot indicator on timeline */}
+                        {/* Square mechanical indicator on timeline */}
                         <div
-                          className={`absolute -left-6 top-1.5 w-3.5 h-3.5 rounded-full border-2 ${
+                          className={`absolute -left-6 top-2 w-3.5 h-3.5 border-2 ${
                             isDowngrade
                               ? "bg-phosphor-hazard border-black"
                               : isSecure
@@ -272,9 +272,9 @@ export function SessionDetailModal({
                           }`}
                         />
                         <div
-                          className={`border p-3 ${
+                          className={`border p-3.5 ${
                             isDowngrade
-                              ? "border-phosphor-hazard/50 bg-phosphor-hazard/10"
+                              ? "border-phosphor-hazard/60 bg-phosphor-hazard/10"
                               : isSecure
                               ? "border-phosphor-green/40 bg-phosphor-green/5"
                               : "border-tactical-border bg-black/40"
@@ -316,14 +316,14 @@ export function SessionDetailModal({
 
           {/* TAB 3: TLS */}
           {activeTab === "TLS" && (
-            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-4">
-              <div className="border-b border-tactical-border pb-2 text-xs font-bold text-white">
-                CRYPTOGRAPHIC PARAMETERS & HANDSHAKE INSPECTION
+            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-4 font-mono">
+              <div className="border-b border-tactical-border pb-2 text-xs font-bold text-white uppercase">
+                CRYPTOGRAPHIC PARAMETERS &amp; HANDSHAKE DISSECTION
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div className="space-y-3">
-                  <div className="p-3 border border-tactical-border bg-black/40 space-y-2">
+                  <div className="p-3 border border-tactical-border bg-black/40 space-y-1.5">
                     <span className="text-[10px] uppercase text-tactical-dim font-bold block">Protocol Version</span>
                     <div className="text-sm font-bold text-white">{session.tls_version || "None (Plaintext)"}</div>
                     <div className="text-xs text-tactical-dim">
@@ -335,33 +335,33 @@ export function SessionDetailModal({
                     </div>
                   </div>
 
-                  <div className="p-3 border border-tactical-border bg-black/40 space-y-2">
+                  <div className="p-3 border border-tactical-border bg-black/40 space-y-1.5">
                     <span className="text-[10px] uppercase text-tactical-dim font-bold block">Negotiated Cipher Suite</span>
                     <div className="text-sm font-bold text-phosphor-cyan break-all">
                       {session.cipher_suite_name || "None (Cleartext Fallback)"}
                     </div>
                     <div className="text-xs text-tactical-dim">
-                      IANA Hex ID: <span className="text-tactical-text">{session.cipher_suite_hex || "0x0000"}</span>
+                      IANA Hex ID: <span className="text-tactical-text font-bold">{session.cipher_suite_hex || "0x0000"}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="p-3 border border-tactical-border bg-black/40 space-y-2">
-                    <span className="text-[10px] uppercase text-tactical-dim font-bold block">Key Exchange & PFS</span>
+                  <div className="p-3 border border-tactical-border bg-black/40 space-y-1.5">
+                    <span className="text-[10px] uppercase text-tactical-dim font-bold block">Key Exchange &amp; PFS</span>
                     <div className="text-sm font-bold text-white">{session.key_exchange || "None"}</div>
                     <div className={session.has_forward_secrecy ? "text-phosphor-green font-bold text-xs" : "text-phosphor-hazard font-bold text-xs"}>
                       {session.has_forward_secrecy ? "✓ Ephemeral Key Exchange (PFS Enforced)" : "✗ Static Key Exchange (No Forward Secrecy)"}
                     </div>
                   </div>
 
-                  <div className="p-3 border border-tactical-border bg-black/40 space-y-2">
-                    <span className="text-[10px] uppercase text-tactical-dim font-bold block">JA3 Fingerprint Analysis</span>
-                    <div className="text-xs font-mono text-tactical-text truncate">
+                  <div className="p-3 border border-tactical-border bg-black/40 space-y-1.5">
+                    <span className="text-[10px] uppercase text-tactical-dim font-bold block">JA3 Client Fingerprint</span>
+                    <div className="text-xs font-mono text-tactical-text truncate" title={session.ja3_hash || ""}>
                       {session.ja3_hash || "No ClientHello JA3 Available"}
                     </div>
                     <div className="text-xs text-tactical-dim">
-                      Client Signature:{" "}
+                      Signature Profile:{" "}
                       <span className={session.ja3_is_known ? "text-phosphor-green font-bold" : "text-phosphor-amber font-bold"}>
                         {session.ja3_client_name || "Unknown / Unregistered Client"}
                       </span>
@@ -374,9 +374,9 @@ export function SessionDetailModal({
 
           {/* TAB 4: CERTIFICATE */}
           {activeTab === "CERTIFICATE" && (
-            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-4">
+            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-4 font-mono">
               <div className="flex items-center justify-between border-b border-tactical-border pb-2 text-xs">
-                <span className="font-bold text-white">X.509 SERVER CERTIFICATE INSPECTION</span>
+                <span className="font-bold text-white uppercase">X.509 SERVER CERTIFICATE INSPECTION</span>
                 <span className="text-[10px] text-tactical-dim italic">
                   Cryptographic properties verified from leaf certificate. CA trust chain not asserted.
                 </span>
@@ -391,7 +391,7 @@ export function SessionDetailModal({
                     </div>
 
                     <div className="p-3 border border-tactical-border bg-black/40 space-y-1">
-                      <span className="text-[10px] uppercase text-tactical-dim font-bold block">Issuer Common Name</span>
+                      <span className="text-[10px] uppercase text-tactical-dim font-bold block">Issuer Common Name (CA)</span>
                       <div className="text-xs font-bold text-tactical-text break-all">{cert.issuer_cn}</div>
                     </div>
 
@@ -409,7 +409,7 @@ export function SessionDetailModal({
 
                   <div className="space-y-3">
                     <div className="p-3 border border-tactical-border bg-black/40 space-y-1">
-                      <span className="text-[10px] uppercase text-tactical-dim font-bold block">Public Key & Size</span>
+                      <span className="text-[10px] uppercase text-tactical-dim font-bold block">Public Key &amp; Size</span>
                       <div className="text-sm font-bold text-white">
                         {cert.public_key_type} {cert.public_key_bits}-bit
                       </div>
@@ -444,9 +444,9 @@ export function SessionDetailModal({
 
           {/* TAB 5: RAW STREAM */}
           {activeTab === "RAW_STREAM" && (
-            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-3">
+            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-3 font-mono">
               <div className="flex items-center justify-between border-b border-tactical-border pb-2 text-xs">
-                <span className="font-bold text-white">DISSECTED WIRE STREAM (HEX / ASCII)</span>
+                <span className="font-bold text-white uppercase">DISSECTED WIRE STREAM (HEX / ASCII)</span>
                 <span className="text-[10px] text-tactical-dim">RECORD LAYER BYTE BOUNDARIES</span>
               </div>
 
@@ -496,12 +496,12 @@ export function SessionDetailModal({
 
           {/* TAB 6: STANDARDS */}
           {activeTab === "STANDARDS" && (
-            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-4">
-              <div className="border-b border-tactical-border pb-2 text-xs font-bold text-white">
+            <div className="border border-tactical-border bg-tactical-bg p-4 space-y-4 font-mono">
+              <div className="border-b border-tactical-border pb-2 text-xs font-bold text-white uppercase">
                 STATUTORY COMPLIANCE AUDIT MAPPING
               </div>
 
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2.5 text-xs">
                 {/* Rule 1: NIST SP 800-52r2 TLS Version */}
                 <div className="p-3 border border-tactical-border bg-black/40 flex items-center justify-between">
                   <div>

@@ -32,3 +32,14 @@ async def root():
         "status": "operational",
         "docs": "/docs",
     }
+
+
+@app.get("/api/health")
+async def health():
+    return {
+        "status": "ok",
+        "engine": "nominal",
+        "version": "1.0.0",
+        "service": "SecureMailScope Passive Forensic Engine",
+    }
+

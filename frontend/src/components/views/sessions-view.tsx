@@ -7,6 +7,7 @@ import {
   Search,
   Binary,
   Layers,
+  ShieldCheck,
 } from "lucide-react";
 
 interface SessionsViewProps {
@@ -49,30 +50,30 @@ export function SessionsView({
   const protocols = Array.from(new Set(sessions.map((s) => s.protocol)));
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 font-mono max-w-[1700px] mx-auto w-full">
-      {/* Header and Filter Toolbar */}
+    <div className="p-4 lg:p-6 space-y-4 max-w-[1700px] mx-auto w-full select-none">
+      {/* 1. Header & Filter Toolbar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 border border-tactical-border bg-tactical-surface">
         <div>
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-sm font-sans font-bold text-white uppercase tracking-wider flex items-center gap-2">
             <Network className="w-4 h-4 text-phosphor-cyan" />
             RECONSTRUCTED EMAIL STREAM MATRIX ({sessions.length} TOTAL STREAMS)
           </h2>
-          <p className="text-xs text-tactical-dim mt-0.5">
+          <p className="text-xs text-tactical-dim font-mono mt-0.5">
             Full-width forensic wire flows with protocol parameters and cryptographic risk scores
           </p>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2.5 text-xs font-mono">
           {/* Search Input */}
-          <div className="relative min-w-[220px]">
+          <div className="relative min-w-[240px]">
             <Search className="w-3.5 h-3.5 text-tactical-dim absolute left-2.5 top-2.5 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search IP, port, cipher..."
-              className="w-full bg-tactical-bg border border-tactical-border pl-8 pr-3 py-1.5 text-xs text-phosphor-cyan font-mono focus-visible:outline-none focus-visible:border-phosphor-cyan"
+              placeholder="Search IP, port, cipher, host..."
+              className="w-full bg-tactical-bg border border-tactical-border pl-8 pr-3 py-1.5 text-xs text-phosphor-cyan font-mono focus:outline-none focus:border-phosphor-cyan transition-colors"
             />
           </div>
 
@@ -80,7 +81,7 @@ export function SessionsView({
           <select
             value={protocolFilter}
             onChange={(e) => setProtocolFilter(e.target.value)}
-            className="bg-tactical-bg border border-tactical-border px-2.5 py-1.5 text-xs text-tactical-text font-mono focus-visible:outline-none"
+            className="bg-tactical-bg border border-tactical-border px-3 py-1.5 text-xs text-tactical-text font-mono focus:outline-none cursor-pointer"
           >
             <option value="ALL">ALL PROTOCOLS</option>
             {protocols.map((p) => (
@@ -94,7 +95,7 @@ export function SessionsView({
           <select
             value={riskFilter}
             onChange={(e) => setRiskFilter(e.target.value)}
-            className="bg-tactical-bg border border-tactical-border px-2.5 py-1.5 text-xs text-tactical-text font-mono focus-visible:outline-none"
+            className="bg-tactical-bg border border-tactical-border px-3 py-1.5 text-xs text-tactical-text font-mono focus:outline-none cursor-pointer"
           >
             <option value="ALL">ALL RISK LEVELS</option>
             <option value="CRITICAL">CRITICAL / GRADE F</option>
@@ -103,16 +104,16 @@ export function SessionsView({
         </div>
       </div>
 
-      {/* Main Full-Width Sessions Table */}
-      <div className="border border-tactical-border bg-tactical-surface overflow-x-auto shadow-xl">
-        <table className="w-full text-left text-xs border-collapse">
+      {/* 2. Main Full-Width Sessions Table */}
+      <div className="border border-tactical-border bg-tactical-surface overflow-x-auto shadow-2xl">
+        <table className="w-full text-left text-xs font-mono border-collapse">
           <thead>
-            <tr className="border-b border-tactical-border text-[10px] text-tactical-dim uppercase bg-black/50">
-              <th className="py-3 px-3 w-12 text-center">SESSION</th>
-              <th className="py-3 px-4 min-w-[260px]">SOURCE &rarr; DESTINATION</th>
+            <tr className="border-b border-tactical-border text-[10px] text-tactical-dim uppercase bg-black/60">
+              <th className="py-3 px-3 w-14 text-center">SESSION</th>
+              <th className="py-3 px-4 min-w-[270px]">SOURCE ➔ DESTINATION</th>
               <th className="py-3 px-3">PROTOCOL</th>
               <th className="py-3 px-3">TLS VERSION</th>
-              <th className="py-3 px-4 min-w-[240px]">CIPHER SUITE</th>
+              <th className="py-3 px-4 min-w-[260px]">CIPHER SUITE</th>
               <th className="py-3 px-3">KEY EXCHANGE / PFS</th>
               <th className="py-3 px-3 min-w-[180px]">SNI / HOST</th>
               <th className="py-3 px-3 text-right">SCORE</th>
@@ -132,7 +133,7 @@ export function SessionsView({
                     className="hover:bg-tactical-surfaceHover transition-colors cursor-pointer group"
                   >
                     {/* Session ID */}
-                    <td className="py-3 px-3 text-center font-bold text-tactical-dim">
+                    <td className="py-3 px-3 text-center font-bold text-tactical-dim tabular-nums">
                       #{s.session_id}
                     </td>
 
@@ -142,7 +143,7 @@ export function SessionsView({
                         {s.src_ip}:{s.src_port} &rarr; {s.dst_ip}:{s.dst_port}
                       </div>
                       <div className="text-[10px] text-tactical-dim mt-0.5">
-                        {s.timestamp?.slice(11, 19) || "CAPTURE TIME"}
+                        CAPTURE TIME: {s.timestamp?.slice(11, 19) || "N/A"}
                       </div>
                     </td>
 
@@ -170,7 +171,7 @@ export function SessionsView({
 
                     {/* Cipher Suite */}
                     <td className="py-3 px-4">
-                      <div className="text-xs text-white font-bold truncate max-w-[280px]">
+                      <div className="text-xs text-white font-bold truncate max-w-[280px]" title={s.cipher_suite_name || undefined}>
                         {s.cipher_suite_name || "None (Plaintext Fallback)"}
                       </div>
                       <div className="text-[10px] text-tactical-dim">
@@ -181,20 +182,20 @@ export function SessionsView({
                     {/* Key Exchange / PFS */}
                     <td className="py-3 px-3">
                       {s.has_forward_secrecy ? (
-                        <div className="text-phosphor-green font-bold text-xs">
-                          {s.key_exchange || "ECDHE"}
-                          <span className="text-[9px] block text-phosphor-green/70">PFS ENFORCED</span>
+                        <div className="text-phosphor-green font-bold text-xs flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>{s.key_exchange || "ECDHE"}</span>
                         </div>
                       ) : (
                         <div className="text-phosphor-hazard font-bold text-xs">
-                          {s.key_exchange || "RSA"}
-                          <span className="text-[9px] block text-phosphor-hazard/70">NO FORWARD SECRECY</span>
+                          <span>{s.key_exchange || "STATIC RSA"}</span>
+                          <span className="text-[9px] block text-phosphor-hazard/70">NO PFS</span>
                         </div>
                       )}
                     </td>
 
                     {/* SNI / Host */}
-                    <td className="py-3 px-3 text-xs text-tactical-text font-bold truncate max-w-[200px]">
+                    <td className="py-3 px-3 text-xs text-tactical-text font-bold truncate max-w-[200px]" title={s.server_name || undefined}>
                       {s.server_name || "N/A"}
                     </td>
 
@@ -216,7 +217,7 @@ export function SessionsView({
                     {/* Risk */}
                     <td className="py-3 px-3 text-center">
                       <span
-                        className={`text-[9px] uppercase font-bold px-1.5 py-0.5 border ${
+                        className={`text-[9px] uppercase font-bold px-2 py-0.5 border ${
                           isCrit
                             ? "border-phosphor-hazard text-phosphor-hazard bg-phosphor-hazard/10"
                             : isSecure
@@ -236,7 +237,7 @@ export function SessionsView({
                             e.stopPropagation();
                             onOpenSessionDetail(s.session_id);
                           }}
-                          className="px-2 py-1 border border-tactical-border bg-tactical-elevated hover:border-phosphor-cyan text-white text-[10px] font-bold transition-colors flex items-center gap-1"
+                          className="px-2.5 py-1 border border-tactical-border bg-tactical-elevated hover:border-phosphor-cyan text-white text-[10px] font-bold transition-all active:translate-y-[1px] flex items-center gap-1"
                         >
                           <Layers className="w-3 h-3 text-phosphor-cyan" />
                           <span>DETAIL</span>
@@ -246,7 +247,7 @@ export function SessionsView({
                             e.stopPropagation();
                             onNavigateToDissector(s.session_id);
                           }}
-                          className="px-2 py-1 border border-tactical-border bg-tactical-elevated hover:border-phosphor-green text-white text-[10px] font-bold transition-colors flex items-center gap-1"
+                          className="px-2.5 py-1 border border-tactical-border bg-tactical-elevated hover:border-phosphor-green text-white text-[10px] font-bold transition-all active:translate-y-[1px] flex items-center gap-1"
                         >
                           <Binary className="w-3 h-3 text-phosphor-green" />
                           <span>DISSECT</span>
@@ -258,7 +259,7 @@ export function SessionsView({
               })
             ) : (
               <tr>
-                <td colSpan={10} className="py-8 text-center text-xs text-tactical-dim">
+                <td colSpan={10} className="py-10 text-center text-xs text-tactical-dim font-mono">
                   No email streams match the current search or filter criteria.
                 </td>
               </tr>

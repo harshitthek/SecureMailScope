@@ -12,15 +12,15 @@ interface PostureDialProps {
 
 export function PostureDial({ score, grade, caseCode }: PostureDialProps) {
   const isCritical = score < 60 || grade === "F" || grade === "D";
-  const strokeColor = isCritical ? "#ef4444" : score >= 80 ? "#22c55e" : "#f59e0b";
+  const strokeColor = isCritical ? "#ff3333" : score >= 80 ? "#22c55e" : "#f59e0b";
 
-  // Pre-generate radial tick marks around dial circumference
+  // Pre-generate radial tick marks around dial circumference (60 ticks)
   const ticks = useMemo(() => {
     const list = [];
-    const count = 48;
-    const center = 70;
-    const rInner = 56;
-    const rOuter = 63;
+    const count = 60;
+    const center = 80;
+    const rInner = 64;
+    const rOuter = 72;
 
     for (let i = 0; i < count; i++) {
       const angle = (i * 360) / count - 90;
@@ -29,7 +29,7 @@ export function PostureDial({ score, grade, caseCode }: PostureDialProps) {
       const y1 = center + rInner * Math.sin(rad);
       const x2 = center + rOuter * Math.cos(rad);
       const y2 = center + rOuter * Math.sin(rad);
-      const isMajor = i % 4 === 0;
+      const isMajor = i % 5 === 0;
       const tickScore = (i / count) * 100;
       const isLit = tickScore <= score;
 
@@ -39,19 +39,22 @@ export function PostureDial({ score, grade, caseCode }: PostureDialProps) {
   }, [score]);
 
   return (
-    <div className="border border-tactical-border bg-tactical-surface p-3 font-mono text-xs flex flex-col justify-between h-full relative">
+    <div className="border border-tactical-border bg-tactical-surface p-4 flex flex-col justify-between h-full relative select-none">
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/70 text-[10px] text-tactical-dim uppercase">
-        <span className="font-bold text-tactical-text">CRYPTOGRAPHIC POSTURE INDEX</span>
-        <span className="text-tactical-dim">{caseCode}</span>
+      <div className="flex items-center justify-between pb-2 border-b border-tactical-border text-xs font-mono uppercase">
+        <span className="font-bold text-white tracking-wider flex items-center gap-1.5">
+          <span className="w-2 h-2 bg-phosphor-cyan" />
+          CRYPTOGRAPHIC POSTURE INDEX
+        </span>
+        <span className="text-tactical-dim font-bold">{caseCode}</span>
       </div>
 
-      {/* Radial Tactile Dial */}
-      <div className="flex items-center justify-center py-2">
-        <div className="relative w-36 h-36 flex items-center justify-center">
-          <svg className="w-full h-full" viewBox="0 0 140 140">
+      {/* Radial Tactile Dial & Massive Macro-Score */}
+      <div className="flex items-center justify-center py-4">
+        <div className="relative w-44 h-44 flex items-center justify-center">
+          <svg className="w-full h-full" viewBox="0 0 160 160">
             {/* Background ring */}
-            <circle cx="70" cy="70" r="48" fill="none" stroke="#161b24" strokeWidth="6" />
+            <circle cx="80" cy="80" r="54" fill="none" stroke="#121822" strokeWidth="6" />
 
             {/* Tactile tick marks */}
             {ticks.map((t, idx) => (
@@ -61,43 +64,43 @@ export function PostureDial({ score, grade, caseCode }: PostureDialProps) {
                 y1={t.y1}
                 x2={t.x2}
                 y2={t.y2}
-                stroke={t.isLit ? strokeColor : "#1e2633"}
-                strokeWidth={t.isMajor ? "1.5" : "0.75"}
+                stroke={t.isLit ? strokeColor : "#1b2330"}
+                strokeWidth={t.isMajor ? "1.75" : "0.75"}
               />
             ))}
 
             {/* Score Arc */}
             <circle
-              cx="70"
-              cy="70"
-              r="48"
+              cx="80"
+              cy="80"
+              r="54"
               fill="none"
               stroke={strokeColor}
               strokeWidth="6"
-              strokeDasharray={`${2 * Math.PI * 48}`}
-              strokeDashoffset={`${2 * Math.PI * 48 * (1 - score / 100)}`}
+              strokeDasharray={`${2 * Math.PI * 54}`}
+              strokeDashoffset={`${2 * Math.PI * 54 * (1 - score / 100)}`}
               strokeLinecap="butt"
-              transform="rotate(-90 70 70)"
+              transform="rotate(-90 80 80)"
               className="transition-all duration-700 ease-out"
             />
           </svg>
 
           {/* Central Telemetry readout */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-3xl font-extrabold tracking-tight tabular-nums text-white">
+            <span className="text-5xl font-mono font-black tracking-tight tabular-nums text-white">
               {score}
             </span>
-            <span className="text-[9px] uppercase tracking-widest text-tactical-dim -mt-1">
-              / 100 PTS
+            <span className="text-[10px] font-mono uppercase tracking-widest text-tactical-dim mt-0.5">
+              INDEX / 100
             </span>
           </div>
         </div>
       </div>
 
       {/* Alarm / Verdict Status Banner */}
-      <div className="pt-2 border-t border-tactical-border/70 flex items-center justify-between gap-1 text-[10px]">
+      <div className="pt-3 border-t border-tactical-border flex items-center justify-between gap-2 text-xs font-mono">
         <div
-          className={`flex items-center gap-1.5 px-2 py-0.5 border font-bold uppercase tracking-wider ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 border font-bold uppercase tracking-wider text-[11px] ${
             isCritical
               ? "border-phosphor-hazard/50 bg-phosphor-hazard/10 text-phosphor-hazard"
               : "border-phosphor-green/50 bg-phosphor-green/10 text-phosphor-green"
@@ -105,18 +108,18 @@ export function PostureDial({ score, grade, caseCode }: PostureDialProps) {
         >
           {isCritical ? (
             <>
-              <AlertTriangle className="w-3 h-3 text-phosphor-hazard" />
+              <AlertTriangle className="w-3.5 h-3.5 text-phosphor-hazard" />
               <span>DEFENSE ALARM: DEGRADED</span>
             </>
           ) : (
             <>
-              <ShieldCheck className="w-3 h-3 text-phosphor-green" />
+              <ShieldCheck className="w-3.5 h-3.5 text-phosphor-green" />
               <span>POSTURE: HARDENED</span>
             </>
           )}
         </div>
 
-        <span className="font-bold text-white uppercase px-1.5 py-0.5 border border-tactical-border bg-black/40">
+        <span className="font-bold text-white uppercase px-2 py-1 border border-tactical-border bg-black/40 text-xs">
           GRADE {grade}
         </span>
       </div>

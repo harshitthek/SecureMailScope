@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from typing import Optional
 from .pcap_parser import StreamData
@@ -14,7 +15,21 @@ class StarttlsResult:
     cleartext_auth_detected: bool
     server_banner: str | None
 
+def _find_tls_offset(payload: bytes) -> int | None:
+    """Find the byte offset where TLS Record Layer (Handshake 0x16 0x03 0x00..0x04) begins."""
+    if not payload:
+        return None
+    for i in range(len(payload) - 3):
+        if payload[i] == 0x16 and payload[i + 1] == 0x03 and payload[i + 2] in (0x00, 0x01, 0x02, 0x03, 0x04):
+            return i
+    return None
+
 def detect_starttls(stream: StreamData) -> StarttlsResult:
+    """
+    Forensic protocol state machine for detecting explicit STARTTLS / STLS negotiation,
+    downgrade attacks (STRIPTLS), and unencrypted credential transmission across
+    SMTP, IMAP, and POP3.
+    """
     if stream.is_implicit_tls:
         return StarttlsResult(
             is_implicit_tls=True,
@@ -28,41 +43,100 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
             server_banner=None
         )
 
-    server_pl = stream.server_payload
-    client_pl = stream.client_payload
+    server_pl = stream.server_payload or b""
+    client_pl = stream.client_payload or b""
+    server_pl_upper = server_pl.upper()
+    client_pl_upper = client_pl.upper()
 
-    starttls_advertised = b"250-STARTTLS" in server_pl or b"250 STARTTLS" in server_pl or b"STARTTLS" in server_pl
-    starttls_initiated = b"STARTTLS\r\n" in client_pl
-    
-    # Very basic check, in reality should parse responses based on protocol
-    starttls_accepted = b"220" in server_pl.split(b"STARTTLS")[-1] if b"STARTTLS" in server_pl else (b"220 " in server_pl or b"OK" in server_pl)
+    server_port = stream.dst_port
+    proto = stream.protocol
 
-    # Find offset
-    tls_offset = None
-    combined = server_pl + client_pl # naive way to search for offset in this simplified model
-    
-    # Better: look for 0x16 0x03 in client payload since client starts TLS handshake
-    c_idx = client_pl.find(b"\x16\x03")
-    if c_idx != -1:
-        tls_offset = c_idx
-
-    is_cleartext = tls_offset is None
-    
-    starttls_stripped = (stream.dst_port == 587 and not starttls_advertised)
-
-    # Auth check before TLS
-    pre_tls_client = client_pl[:tls_offset] if tls_offset is not None else client_pl
-    auth_detected = (
-        b"AUTH PLAIN" in pre_tls_client
-        or b"AUTH LOGIN" in pre_tls_client
-        or (b"USER " in pre_tls_client and b"PASS " in pre_tls_client)
-        or b"LOGIN " in pre_tls_client
-    )
-
+    # Extract initial service banner
     server_banner = None
-    first_line = server_pl.split(b"\r\n")[0] if b"\r\n" in server_pl else server_pl
-    if first_line:
-        server_banner = first_line.decode('utf-8', errors='ignore')
+    if server_pl:
+        first_line = server_pl.split(b"\r\n")[0] if b"\r\n" in server_pl else server_pl.split(b"\n")[0]
+        if first_line:
+            server_banner = first_line.decode('utf-8', errors='ignore').strip()
+
+    starttls_advertised = False
+    starttls_initiated = False
+    starttls_accepted = False
+
+    # 1. Protocol-specific STARTTLS negotiation detection
+    if proto == 'SMTP':
+        # RFC 3207: Server advertises 250-STARTTLS or 250 STARTTLS
+        starttls_advertised = bool(
+            re.search(rb"250[- ]STARTTLS", server_pl_upper) or
+            b"STARTTLS" in server_pl_upper
+        )
+        # Client initiates STARTTLS\r\n
+        starttls_initiated = bool(re.search(rb"\bSTARTTLS\b", client_pl_upper))
+        # Server accepts with 220
+        if starttls_initiated:
+            # Look for 220 response following STARTTLS command
+            cmd_pos = client_pl_upper.find(b"STARTTLS")
+            if cmd_pos != -1:
+                starttls_accepted = bool(re.search(rb"\b220\b", server_pl))
+            else:
+                starttls_accepted = b"220 " in server_pl or b"220-" in server_pl
+        else:
+            starttls_accepted = False
+
+    elif proto == 'IMAP':
+        # RFC 2595 / RFC 9051: Capability list includes STARTTLS
+        starttls_advertised = b"STARTTLS" in server_pl_upper
+        # Client sends tagged STARTTLS: e.g. "a01 STARTTLS" or "STARTTLS"
+        starttls_initiated = bool(re.search(rb"\bSTARTTLS\b", client_pl_upper))
+        # Server accepts with tagged OK or status OK
+        if starttls_initiated:
+            starttls_accepted = bool(re.search(rb"\bOK\b", server_pl_upper))
+        else:
+            starttls_accepted = False
+
+    elif proto == 'POP3':
+        # RFC 2595: Capability list response to CAPA includes STLS
+        starttls_advertised = bool(b"STLS" in server_pl_upper)
+        # Client sends STLS command
+        starttls_initiated = bool(re.search(rb"\bSTLS\b", client_pl_upper))
+        # Server responds +OK
+        if starttls_initiated:
+            starttls_accepted = bool(re.search(rb"\+OK", server_pl))
+        else:
+            starttls_accepted = False
+
+    else:
+        # Generic heuristic
+        starttls_advertised = b"STARTTLS" in server_pl_upper or b"STLS" in server_pl_upper
+        starttls_initiated = b"STARTTLS" in client_pl_upper or b"STLS" in client_pl_upper
+        starttls_accepted = b"220" in server_pl or b"+OK" in server_pl or b" OK " in server_pl_upper
+
+    # 2. Precise TLS Handshake start offset in client stream
+    tls_offset = _find_tls_offset(client_pl)
+    is_cleartext = (tls_offset is None)
+
+    # 3. Detect STRIPTLS downgrade attack
+    # Submission port 587 RFC 6409 requires TLS; if STARTTLS is not offered or stripped, flag attack
+    starttls_stripped = False
+    if server_port == 587 and not starttls_advertised:
+        starttls_stripped = True
+    elif starttls_initiated and not starttls_accepted and is_cleartext:
+        starttls_stripped = True
+
+    # 4. Cleartext Authentication Credentials Detection
+    # Inspect payloads occurring before encryption was established
+    pre_tls_client = client_pl[:tls_offset] if tls_offset is not None else client_pl
+    pre_tls_upper = pre_tls_client.upper()
+
+    cleartext_auth = bool(
+        # SMTP AUTH PLAIN / LOGIN
+        re.search(rb"AUTH\s+(PLAIN|LOGIN|CRAM-MD5)", pre_tls_upper) or
+        # IMAP LOGIN username password
+        re.search(rb"\bLOGIN\s+[^\r\n]+\s+[^\r\n]+", pre_tls_upper) or
+        # POP3 USER / PASS sequence
+        (b"USER " in pre_tls_upper and b"PASS " in pre_tls_upper) or
+        # Base64 encoded auth exchange in pre-TLS
+        re.search(rb"\bAUTH\b", pre_tls_upper)
+    )
 
     return StarttlsResult(
         is_implicit_tls=False,
@@ -72,6 +146,6 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
         tls_offset=tls_offset,
         is_cleartext_only=is_cleartext,
         starttls_stripped=starttls_stripped,
-        cleartext_auth_detected=auth_detected,
+        cleartext_auth_detected=cleartext_auth,
         server_banner=server_banner
     )

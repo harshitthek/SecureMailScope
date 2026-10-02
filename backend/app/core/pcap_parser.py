@@ -17,6 +17,50 @@ class StreamData:
     timestamp: str
     packet_count: int
 
+def reassemble_tcp_payload(packets: list) -> bytes:
+    """
+    Reassemble TCP segment payloads handling retransmissions and segment overlaps.
+    """
+    if not packets:
+        return b""
+    
+    segments = []
+    for pkt in packets:
+        if TCP in pkt and pkt[TCP].payload:
+            payload = bytes(pkt[TCP].payload)
+            if payload:
+                seq = int(pkt[TCP].seq)
+                time_val = float(pkt.time) if hasattr(pkt, "time") else 0.0
+                segments.append((seq, time_val, payload))
+    
+    if not segments:
+        return b""
+        
+    # Sort primarily by sequence number, secondarily by packet timestamp
+    segments.sort(key=lambda s: (s[0], s[1]))
+    
+    reassembled = bytearray()
+    last_seq = None
+    
+    for seq, _, payload in segments:
+        if last_seq is None:
+            reassembled.extend(payload)
+            last_seq = seq + len(payload)
+        else:
+            if seq >= last_seq:
+                reassembled.extend(payload)
+                last_seq = seq + len(payload)
+            elif seq + len(payload) > last_seq:
+                # Partial overlap from retransmitted slice
+                overlap = last_seq - seq
+                reassembled.extend(payload[overlap:])
+                last_seq = seq + len(payload)
+            else:
+                # Full duplicate / retransmission: ignore
+                pass
+                
+    return bytes(reassembled)
+
 def parse_pcap(file_path: str) -> list[StreamData]:
     """Reads a PCAP file, filters email protocols, and reassembles TCP streams."""
     try:
@@ -37,59 +81,95 @@ def parse_pcap(file_path: str) -> list[StreamData]:
     }
     implicit_tls_ports = {465, 993, 995}
 
+    # Group packets into conversation streams
     streams_raw: Dict[Tuple[str, int, str, int], List] = {}
 
     for pkt in packets:
         if IP in pkt and TCP in pkt:
             src_ip = pkt[IP].src
             dst_ip = pkt[IP].dst
-            src_port = pkt[TCP].sport
-            dst_port = pkt[TCP].dport
+            src_port = int(pkt[TCP].sport)
+            dst_port = int(pkt[TCP].dport)
 
             if src_port in email_ports or dst_port in email_ports:
-                # Normalize tuple so both directions go to same stream
-                if (src_ip, src_port, dst_ip, dst_port) in streams_raw:
-                    key = (src_ip, src_port, dst_ip, dst_port)
-                elif (dst_ip, dst_port, src_ip, src_port) in streams_raw:
-                    key = (dst_ip, dst_port, src_ip, src_port)
-                else:
-                    # Client is typically the one with the non-standard port
-                    if dst_port in email_ports:
-                        key = (src_ip, src_port, dst_ip, dst_port)
-                    else:
-                        key = (dst_ip, dst_port, src_ip, src_port)
+                # Direction-invariant stream key (canonical pair)
+                pair1 = (src_ip, src_port, dst_ip, dst_port)
+                pair2 = (dst_ip, dst_port, src_ip, src_port)
                 
-                if key not in streams_raw:
-                    streams_raw[key] = []
-                streams_raw[key].append(pkt)
+                if pair1 in streams_raw:
+                    streams_raw[pair1].append(pkt)
+                elif pair2 in streams_raw:
+                    streams_raw[pair2].append(pkt)
+                else:
+                    # Determine client vs server orientation for initial key
+                    # Check for TCP SYN (without ACK)
+                    tcp_flags = pkt[TCP].flags
+                    is_syn_init = bool(tcp_flags & 0x02) and not bool(tcp_flags & 0x10)
+                    
+                    if is_syn_init:
+                        canonical_key = pair1
+                    elif dst_port in email_ports and src_port not in email_ports:
+                        canonical_key = pair1
+                    elif src_port in email_ports and dst_port not in email_ports:
+                        canonical_key = pair2
+                    else:
+                        canonical_key = pair1
+                    
+                    streams_raw[canonical_key] = [pkt]
 
     streams_result = []
-    stream_id = 0
+    stream_id = 1  # 1-indexed for forensic clarity
 
     for key, pkt_list in streams_raw.items():
         if not pkt_list:
             continue
             
-        client_ip, client_port, server_ip, server_port = key
+        ip_a, port_a, ip_b, port_b = key
         
-        # Determine protocol
+        # Determine actual client and server roles from the stream's packets
+        client_ip, client_port = ip_a, port_a
+        server_ip, server_port = ip_b, port_b
+        
+        # Role refinement: check for SYN flag initiation in packet history
+        client_identified = False
+        for p in pkt_list:
+            if TCP in p and IP in p:
+                flags = p[TCP].flags
+                if bool(flags & 0x02) and not bool(flags & 0x10):
+                    client_ip = p[IP].src
+                    client_port = int(p[TCP].sport)
+                    server_ip = p[IP].dst
+                    server_port = int(p[TCP].dport)
+                    client_identified = True
+                    break
+        
+        if not client_identified:
+            # Fall back to well-known service port convention
+            if port_a in email_ports and port_b not in email_ports:
+                client_ip, client_port = ip_b, port_b
+                server_ip, server_port = ip_a, port_a
+            elif port_b in email_ports and port_a not in email_ports:
+                client_ip, client_port = ip_a, port_a
+                server_ip, server_port = ip_b, port_b
+
+        # Determine protocol & TLS mode
         proto = port_to_proto.get(server_port, 'UNKNOWN')
-        is_implicit = server_port in implicit_tls_ports
+        if proto == 'UNKNOWN':
+            # Check client port if server port was non-standard
+            proto = port_to_proto.get(client_port, 'UNKNOWN')
+            
+        is_implicit = server_port in implicit_tls_ports or client_port in implicit_tls_ports
 
         client_pkts = [p for p in pkt_list if p[IP].src == client_ip]
         server_pkts = [p for p in pkt_list if p[IP].src == server_ip]
 
-        # Sort by sequence number
-        client_pkts.sort(key=lambda p: p[TCP].seq)
-        server_pkts.sort(key=lambda p: p[TCP].seq)
-
-        # Reassemble
-        client_payload = b"".join(bytes(p[TCP].payload) for p in client_pkts if p[TCP].payload)
-        server_payload = b"".join(bytes(p[TCP].payload) for p in server_pkts if p[TCP].payload)
+        # Robust TCP payload reassembly with deduplication
+        client_payload = reassemble_tcp_payload(client_pkts)
+        server_payload = reassemble_tcp_payload(server_pkts)
 
         try:
             ts = datetime.fromtimestamp(float(pkt_list[0].time)).isoformat()
-        except:
+        except Exception:
             ts = ""
 
         sd = StreamData(

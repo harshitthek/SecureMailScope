@@ -38,16 +38,16 @@ export function DissectorView({
   const isCritical = currentStream.session_score < 50 || currentStream.session_severity === "critical";
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 font-mono max-w-[1600px] mx-auto w-full">
-      {/* Stream Selector Bar */}
+    <div className="p-4 lg:p-6 space-y-4 max-w-[1680px] mx-auto w-full select-none font-mono">
+      {/* 1. Stream Selector Bar */}
       <div className="p-4 border border-tactical-border bg-tactical-surface space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div>
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <h2 className="text-sm font-sans font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <Binary className="w-4 h-4 text-phosphor-cyan" />
               DEEP PROTOCOL DISSECTOR &amp; WIRE INSPECTOR
             </h2>
-            <p className="text-xs text-tactical-dim mt-0.5">
+            <p className="text-xs text-tactical-dim font-mono mt-0.5">
               Select an email flow to inspect reassembled TCP streams, cryptographic handshakes, and wire frames
             </p>
           </div>
@@ -67,7 +67,7 @@ export function DissectorView({
                 onClick={() => onSelectStream(s.session_id)}
                 className={`px-3 py-1.5 border text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
                   isSelected
-                    ? "border-phosphor-cyan bg-tactical-elevated text-white shadow-[0_0_10px_rgba(56,189,248,0.2)]"
+                    ? "border-phosphor-cyan bg-tactical-elevated text-white shadow-[0_0_8px_rgba(0,216,246,0.2)]"
                     : "border-tactical-border bg-black/40 text-tactical-dim hover:text-white hover:border-tactical-borderHighlight"
                 }`}
               >
@@ -88,10 +88,10 @@ export function DissectorView({
         </div>
 
         {/* Active Stream Summary Banner */}
-        <div className="p-3 border border-tactical-border bg-black/50 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="p-3 border border-tactical-border bg-black/60 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
             <div
-              className={`w-7 h-7 border flex items-center justify-center ${
+              className={`w-8 h-8 border flex items-center justify-center flex-shrink-0 ${
                 isCritical
                   ? "border-phosphor-hazard text-phosphor-hazard bg-phosphor-hazard/10"
                   : "border-phosphor-green text-phosphor-green bg-phosphor-green/10"
@@ -100,16 +100,16 @@ export function DissectorView({
               {isCritical ? <ShieldAlert className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
             </div>
             <div>
-              <div className="text-white font-bold tracking-tight">
+              <div className="text-white font-sans font-bold text-sm tracking-tight">
                 {currentStream.server_name}
               </div>
-              <div className="text-[10px] text-tactical-dim">
+              <div className="text-[11px] text-tactical-dim font-mono">
                 {currentStream.src_ip}:{currentStream.src_port} &rarr; {currentStream.dst_ip}:{currentStream.dst_port} ({currentStream.protocol})
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-5 text-xs font-mono">
             <div>
               <span className="text-[9px] uppercase text-tactical-dim block">Protocol Version</span>
               <span className="text-white font-bold">{currentStream.tls_version || "Plaintext"}</span>
@@ -121,7 +121,7 @@ export function DissectorView({
               </span>
             </div>
             <div>
-              <span className="text-[9px] uppercase text-tactical-dim block">Score</span>
+              <span className="text-[9px] uppercase text-tactical-dim block">Posture Score</span>
               <span className={`font-bold tabular-nums ${isCritical ? "text-phosphor-hazard" : "text-phosphor-green"}`}>
                 {currentStream.session_score} ({currentStream.session_grade})
               </span>
@@ -130,11 +130,11 @@ export function DissectorView({
         </div>
       </div>
 
-      {/* Dissector Mode Tabs */}
+      {/* 2. Dissector Mode Tabs */}
       <div className="flex items-center border-b border-tactical-border bg-tactical-surface px-3">
         <button
           onClick={() => setActiveTab("TIMELINE")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "TIMELINE"
               ? "border-phosphor-cyan text-white bg-tactical-elevated/40"
               : "border-transparent text-tactical-dim hover:text-white"
@@ -146,7 +146,7 @@ export function DissectorView({
 
         <button
           onClick={() => setActiveTab("CRYPTANALYSIS")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "CRYPTANALYSIS"
               ? "border-phosphor-cyan text-white bg-tactical-elevated/40"
               : "border-transparent text-tactical-dim hover:text-white"
@@ -158,7 +158,7 @@ export function DissectorView({
 
         <button
           onClick={() => setActiveTab("RAW_STREAM")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "RAW_STREAM"
               ? "border-phosphor-cyan text-white bg-tactical-elevated/40"
               : "border-transparent text-tactical-dim hover:text-white"
@@ -169,12 +169,12 @@ export function DissectorView({
         </button>
       </div>
 
-      {/* Mode View Body */}
+      {/* 3. Mode View Body */}
       <div className="border border-tactical-border bg-tactical-surface p-4">
         {activeTab === "TIMELINE" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-tactical-border text-xs">
-              <span className="font-bold text-white uppercase">Reassembled Protocol State Machine</span>
+              <span className="font-bold text-white uppercase">Reassembled Protocol State Machine Transitions</span>
               <span className="text-tactical-dim">FLOW #{currentStream.session_id}</span>
             </div>
 
@@ -188,7 +188,7 @@ export function DissectorView({
                   return (
                     <div key={step.step} className="relative group">
                       <div
-                        className={`absolute -left-6 top-2 w-3.5 h-3.5 rounded-full border-2 ${
+                        className={`absolute -left-6 top-2 w-3.5 h-3.5 border-2 ${
                           isDowngrade
                             ? "bg-phosphor-hazard border-black"
                             : isSecure
@@ -197,7 +197,7 @@ export function DissectorView({
                         }`}
                       />
                       <div
-                        className={`border p-3 ${
+                        className={`border p-3.5 ${
                           isDowngrade
                             ? "border-phosphor-hazard/60 bg-phosphor-hazard/10"
                             : isSecure
