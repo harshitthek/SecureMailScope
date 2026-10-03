@@ -10,45 +10,73 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
+        sans: ["var(--font-geist-sans)", "Inter", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "JetBrains Mono", "SF Mono", "Cascadia Code", "Consolas", "monospace"],
       },
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        tactical: {
-          bg: "rgb(var(--tactical-bg) / <alpha-value>)",
-          surface: "rgb(var(--tactical-surface) / <alpha-value>)",
-          surfaceHover: "rgb(var(--tactical-surface-hover) / <alpha-value>)",
-          elevated: "rgb(var(--tactical-elevated) / <alpha-value>)",
-          raw: "rgb(var(--tactical-raw) / <alpha-value>)",
-          recessed: "rgb(var(--tactical-recessed) / <alpha-value>)",
-          border: "rgb(var(--tactical-border) / <alpha-value>)",
-          borderHighlight: "rgb(var(--tactical-border-highlight) / <alpha-value>)",
-          highlight: "rgb(var(--tactical-border-highlight) / <alpha-value>)",
-          text: "rgb(var(--tactical-text) / <alpha-value>)",
-          primary: "rgb(var(--tactical-text) / <alpha-value>)",
-          dim: "rgb(var(--tactical-dim) / <alpha-value>)",
-          muted: "rgb(var(--tactical-muted) / <alpha-value>)",
-          selected: "rgb(var(--tactical-selected) / <alpha-value>)",
-          rail: "rgb(var(--tactical-rail) / <alpha-value>)",
-        },
-        phosphor: {
-          green: "rgb(var(--phosphor-green) / <alpha-value>)",
-          hazard: "rgb(var(--phosphor-hazard) / <alpha-value>)",
-          amber: "rgb(var(--phosphor-amber) / <alpha-value>)",
-          cyan: "rgb(var(--phosphor-cyan) / <alpha-value>)",
-          cyanActive: "rgb(var(--phosphor-cyan-active) / <alpha-value>)",
+        sms: {
+          canvas: "var(--sms-canvas)",
+          surface: {
+            primary: "var(--sms-surface-primary)",
+            secondary: "var(--sms-surface-secondary)",
+            hover: "var(--sms-surface-hover)",
+            selected: "var(--sms-surface-selected)",
+            raw: "var(--sms-surface-raw)",
+          },
+          border: {
+            subtle: "var(--sms-border)",
+            strong: "var(--sms-border-strong)",
+            selectedRail: "var(--sms-selected-rail)",
+          },
+          text: {
+            primary: "var(--sms-text-primary)",
+            secondary: "var(--sms-text-secondary)",
+            muted: "var(--sms-text-muted)",
+            raw: "var(--sms-raw-text)",
+            offset: "var(--sms-raw-offset)",
+          },
+          cyan: {
+            DEFAULT: "var(--sms-accent-cyan)",
+            hover: "var(--sms-accent-cyan-hover)",
+            dim: "var(--sms-accent-cyan-dim)",
+          },
+          green: {
+            DEFAULT: "var(--sms-status-green)",
+            dim: "var(--sms-status-green-dim)",
+          },
+          amber: {
+            DEFAULT: "var(--sms-status-amber)",
+            dim: "var(--sms-status-amber-dim)",
+          },
+          red: {
+            DEFAULT: "var(--sms-status-red)",
+            dim: "var(--sms-status-red-dim)",
+          },
+          btnPrimary: {
+            bg: "var(--sms-btn-primary-bg)",
+            hover: "var(--sms-btn-primary-hover)",
+            text: "var(--sms-btn-primary-text)",
+            border: "var(--sms-btn-primary-border)",
+          },
         },
       },
+      borderRadius: {
+        tag: "var(--sms-radius-tag)",
+        btn: "var(--sms-radius-btn)",
+        surface: "var(--sms-radius-surface)",
+        modal: "var(--sms-radius-modal)",
+      },
       boxShadow: {
-        "tactical-sm": "var(--tactical-shadow)",
-        "tactical-cyan": "0 0 12px -2px rgba(8, 126, 159, 0.25)",
-        "tactical-hazard": "0 0 12px -2px rgba(198, 40, 53, 0.25)",
-        "tactical-green": "0 0 12px -2px rgba(22, 122, 69, 0.25)",
+        modal: "var(--sms-shadow-modal)",
+      },
+      transitionDuration: {
+        fast: "100ms",
+        state: "150ms",
+        view: "200ms",
       },
     },
   },
   plugins: [],
 };
+
 export default config;

@@ -2,156 +2,229 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   SECUREMAILSCOPE DESIGN SYSTEM TOKENS
+   Arctic Forensics (Light) & Night Operations (Dark)
+   ============================================================ */
+
 :root {
-  --background: #07090c;
-  --foreground: #f2f4f5;
+  /* LIGHT THEME: Arctic Forensics */
+  --sms-canvas: #F1F5F8;
+  --sms-surface-primary: #FFFFFF;
+  --sms-surface-secondary: #E8EEF3;
+  --sms-surface-hover: #DEE8EE;
+  --sms-surface-selected: #E3F2F4;
+  --sms-surface-raw: #E5EBF0;
 
-  /* Tactical Color Palette Channels (R, G, B) - Dark Mode Default */
-  --tactical-bg: 7 9 12;
-  --tactical-surface: 13 17 23;
-  --tactical-surface-hover: 17 23 32;
-  --tactical-elevated: 22 29 40;
-  --tactical-raw: 8 10 14;
-  --tactical-recessed: 5 7 10;
-  --tactical-border: 30 38 51;
-  --tactical-border-highlight: 46 58 78;
-  --tactical-text: 242 244 245;
-  --tactical-dim: 139 152 167;
-  --tactical-muted: 78 93 112;
-  --tactical-selected: 22 29 40;
-  --tactical-rail: 34 211 238;
+  --sms-border: #CBD7E1;
+  --sms-border-strong: #AEBECD;
+  --sms-selected-rail: #006273;
 
-  /* Phosphor Telemetry Channels (R, G, B) */
-  --phosphor-green: 34 197 94;
-  --phosphor-hazard: 239 51 64;
-  --phosphor-amber: 245 158 11;
-  --phosphor-cyan: 34 211 238;
-  --phosphor-cyan-active: 56 189 248;
+  --sms-text-primary: #0B1724;
+  --sms-text-secondary: #405366;
+  --sms-text-muted: #6D7E8E;
 
-  /* Grid & Accents */
-  --tactical-grid-line: rgba(255, 255, 255, 0.025);
-  --tactical-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.6);
+  --sms-raw-text: #243646;
+  --sms-raw-offset: #66798A;
 
-  /* Scrollbars */
-  --scrollbar-track: #080a0e;
-  --scrollbar-thumb: #1b2330;
-  --scrollbar-thumb-hover: #2c384e;
-  --scrollbar-border: #0d1117;
+  --sms-accent-cyan: #007C91;       /* Brand Teal */
+  --sms-accent-cyan-hover: #006273; /* Active Teal */
+  --sms-accent-cyan-dim: rgba(0, 124, 145, 0.08);
+
+  --sms-status-green: #18794E;
+  --sms-status-green-dim: rgba(24, 121, 78, 0.10);
+  --sms-status-amber: #A65B00;
+  --sms-status-amber-dim: rgba(166, 91, 0, 0.10);
+  --sms-status-red: #C52F3C;
+  --sms-status-red-dim: rgba(197, 47, 60, 0.10);
+
+  --sms-btn-primary-bg: #006273;
+  --sms-btn-primary-hover: #004F5E;
+  --sms-btn-primary-text: #FFFFFF;
+  --sms-btn-primary-border: #006273;
+
+  --sms-radius-tag: 4px;
+  --sms-radius-btn: 6px;
+  --sms-radius-surface: 8px;
+  --sms-radius-modal: 10px;
+
+  --sms-shadow-modal: 0 20px 48px -12px rgba(11, 23, 36, 0.18), 0 0 0 1px #CBD7E1;
 }
 
-.light, [data-theme="light"] {
-  --background: #fbf6e8;
-  --foreground: #1c160f;
+.dark {
+  /* DARK THEME: Night-Time Security Operations */
+  --sms-canvas: #07090C;
+  --sms-surface-primary: #0D1117;
+  --sms-surface-secondary: #111720;
+  --sms-surface-hover: #16202D;
+  --sms-surface-selected: #1C2737;
+  --sms-surface-raw: #090C10;
 
-  /* Tactical Forensic Channels (R, G, B) - Warm Daylight Mode (Zero Eye Strain) */
-  --tactical-bg: 246 238 218;
-  --tactical-surface: 253 250 242;
-  --tactical-surface-hover: 243 235 214;
-  --tactical-elevated: 247 240 223;
-  --tactical-raw: 240 231 209;
-  --tactical-recessed: 242 234 212;
-  --tactical-border: 222 210 183;
-  --tactical-border-highlight: 198 181 146;
-  --tactical-text: 28 22 15;
-  --tactical-dim: 99 85 66;
-  --tactical-muted: 143 128 106;
-  --tactical-selected: 248 236 200;
-  --tactical-rail: 180 83 9;
+  --sms-border: #161D28;
+  --sms-border-strong: #232F42;
+  --sms-selected-rail: #22D3EE;
 
-  /* Phosphor Channels (R, G, B) - Daylight Mode */
-  --phosphor-green: 21 128 61;
-  --phosphor-hazard: 185 28 28;
-  --phosphor-amber: 217 119 6;
-  --phosphor-cyan: 14 116 144;
-  --phosphor-cyan-active: 3 105 161;
+  --sms-text-primary: #F2F4F5;
+  --sms-text-secondary: #8C98A6;
+  --sms-text-muted: #5A6675;
 
-  /* Grid & Accents */
-  --tactical-grid-line: rgba(198, 181, 146, 0.20);
-  --tactical-shadow: 0 1px 3px rgba(35, 25, 10, 0.05);
+  --sms-raw-text: #E2E8F0;
+  --sms-raw-offset: #64748B;
 
-  /* Scrollbars */
-  --scrollbar-track: #f0e7d1;
-  --scrollbar-thumb: #ded2b7;
-  --scrollbar-thumb-hover: #c6b592;
-  --scrollbar-border: #ded2b7;
+  --sms-accent-cyan: #22D3EE;
+  --sms-accent-cyan-hover: #38BDF8;
+  --sms-accent-cyan-dim: rgba(34, 211, 238, 0.12);
+
+  --sms-status-green: #22C55E;
+  --sms-status-green-dim: rgba(34, 197, 94, 0.14);
+  --sms-status-amber: #F59E0B;
+  --sms-status-amber-dim: rgba(245, 158, 11, 0.14);
+  --sms-status-red: #EF3340;
+  --sms-status-red-dim: rgba(239, 51, 64, 0.14);
+
+  --sms-btn-primary-bg: rgba(34, 211, 238, 0.14);
+  --sms-btn-primary-hover: #22D3EE;
+  --sms-btn-primary-text: #22D3EE;
+  --sms-btn-primary-border: rgba(34, 211, 238, 0.40);
+
+  --sms-radius-tag: 4px;
+  --sms-radius-btn: 6px;
+  --sms-radius-surface: 8px;
+  --sms-radius-modal: 10px;
+
+  --sms-shadow-modal: 0 24px 64px -16px rgba(0, 0, 0, 0.8), 0 0 0 1px #232F42;
 }
 
-/* Light Theme Ambient Warm Yellow Gradient */
-.light body,
-[data-theme="light"] body {
-  background-color: #fbf6e8;
-  background-image: 
-    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(251, 191, 36, 0.16), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(245, 158, 11, 0.09), transparent),
-    linear-gradient(180deg, #fbf6e8 0%, #f6ecd5 45%, #efe2bd 100%);
-  background-attachment: fixed;
+/* ============================================================
+   BASE TYPOGRAPHY & RESET
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-.light header,
-[data-theme="light"] header {
-  background: linear-gradient(90deg, #fbf6e8 0%, #fefcf5 50%, #fbf6e8 100%);
-  border-bottom-color: #ded2b7;
-}
-
-/* Enforce absolute mechanical brutalism: 90-degree corners everywhere */
-*,
-*::before,
-*::after {
-  border-radius: 0px !important;
+html {
+  color-scheme: dark light;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
-  overflow-x: hidden;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background-color: var(--sms-canvas);
+  color: var(--sms-text-primary);
+  font-family: var(--font-geist-sans), Inter, system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Tactical Telemetry Mechanical Grid */
-.bg-tactical-grid {
-  background-image: 
-    linear-gradient(to right, var(--tactical-grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--tactical-grid-line) 1px, transparent 1px);
-  background-size: 32px 32px;
+/* ============================================================
+   TYPOGRAPHY UTILITIES
+   ============================================================ */
+
+.font-mono-tech {
+  font-family: var(--font-geist-mono), "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-feature-settings: "tnum" 1, "zero" 1;
 }
 
-/* Tabular Numbers */
-.tabular-nums {
+.tnum {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
-/* Precision Mechanical Scrollbar */
+/* Typography scale tokens */
+.text-hero {
+  font-size: clamp(80px, 7vw, 104px);
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.text-headline {
+  font-size: clamp(26px, 2.2vw, 32px);
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.text-heading-2 {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.text-body-p {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.text-body-s {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.text-ui {
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.text-table {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.text-meta {
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.text-bytes {
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   TRANSITIONS & ELEVATION
+   ============================================================ */
+
+.transition-fast {
+  transition: all 100ms ease-in-out;
+}
+
+.transition-state {
+  transition: all 150ms ease-out;
+}
+
+.transition-view {
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+}
+
+/* Focus outline */
+:focus-visible {
+  outline: 2px solid var(--sms-accent-cyan);
+  outline-offset: 1px;
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border: 1px solid var(--scrollbar-border);
+  background: var(--sms-border);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
-
-/* Monospace telemetry data styling */
-.telemetry-mono {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.03em;
-}
-
-/* Raw Hex Dump Monospace Styling */
-.hex-byte {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  letter-spacing: 0.05em;
-  font-variant-numeric: tabular-nums;
+  background: var(--sms-border-strong);
 }

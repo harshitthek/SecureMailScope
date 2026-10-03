@@ -1,148 +1,164 @@
-# SecureMailScope — Agent Task Delegation Guide
+# AGENTS.md — Antigravity Assistant Instructions for SecureMailScope
 
-## Purpose
-This file defines how to split work across AI coding agents (or team members) for maximum parallelism. Each agent has a clear scope, inputs, outputs, and zero overlap with other agents.
+## Project Identity & Problem Statement
+
+- **Project**: SecureMailScope (SIH26159)
+- **Sponsor**: National Technical Research Organisation (NTRO), Government of India
+- **Core Mission**: Passive email network forensics for cryptographic security posture assessment across SMTP, SMTPS, IMAP, IMAPS, POP3, and POP3S.
+- **Forensic Pipeline**:
+  `PCAP Ingestion` → `TCP Stream Reassembly` → `Email Protocol Parser` → `TLS / STARTTLS Boundary Detection` → `X.509 Certificate Validation` → `Cryptographic Posture Scoring (0-100)` → `Wire Evidence Extraction` → `Forensic Report Generation`
 
 ---
 
-## Agent Architecture
+## Workspace Structure & Services
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      ORCHESTRATOR (You / Lead)                   │
-│  Reads: prd.md, memory.md, phases.md                            │
-│  Delegates tasks to agents below                                │
-│  Integrates outputs, resolves API contract mismatches            │
-└──────────────┬──────────────┬──────────────┬────────────────────┘
-               │              │              │
-    ┌──────────▼──────┐ ┌─────▼───────┐ ┌───▼────────────────┐
-    │  AGENT 1:       │ │  AGENT 2:   │ │  AGENT 3:          │
-    │  Backend Core   │ │  Frontend   │ │  Data & Reports    │
-    │  (Packet Engine)│ │  (Dashboard)│ │  (PCAPs + PDF)     │
-    └─────────────────┘ └─────────────┘ └────────────────────┘
+SecureMailScope/
+├── backend/                  # Python 3.10+ FastAPI backend
+│   ├── app/
+│   │   ├── main.py           # Application entry point with CORS
+│   │   ├── api/routes.py     # Endpoints: /api/upload, /api/analysis/{id}, /api/report/...
+│   │   └── core/             # Parsers: scapy, cryptography, JA3 engine, scorer
+│   └── requirements.txt
+├── frontend/                 # Next.js 14 App Router (TypeScript, Tailwind CSS)
+│   ├── src/
+│   │   ├── app/              # layout.tsx, page.tsx, globals.css
+│   │   ├── components/
+│   │   │   ├── shell/        # Top header, telemetry banner, case selector, tab navigation
+│   │   │   └── overview/     # Posture hero, protocol divergence tracks, flow ledger preview
+│   │   └── lib/
+│   │       ├── api.ts        # Backend fetch wrapper
+│   │       ├── types.ts      # TypeScript interfaces for AnalysisResult, Session, etc.
+│   │       └── mock-data.ts  # 4 preset offline forensic cases (CASE-01 to CASE-04)
+│   ├── API_AND_DATA_CONTRACTS.md
+│   └── package.json
+├── AGENTS.md                 # This file (authoritative Antigravity instructions)
+├── DESIGN_HANDBOOK.md        # Complete visual specifications and component reference
+└── README.md
 ```
 
----
+### Development Commands
 
-## Agent 1: Backend Core Engine
-
-### Role
-Build the entire Python FastAPI backend that ingests PCAP files, parses packets, extracts TLS metadata, validates certificates, computes scores, and serves JSON results.
-
-### Input Context Files
-- `prd.md` — Feature requirements (MUST-have items 1–10)
-- `memory.md` — Monorepo structure, API contract, scoring formula, naming conventions
-- `SIH26159_SecureMailScope_Master_Dossier.md` — Domain knowledge (TLS versions, cipher classifications, X.509 rules, STARTTLS state machine, JA3 spec)
-
-### Deliverables
-1. `backend/app/main.py` — FastAPI app with CORS, file upload endpoint
-2. `backend/app/api/routes.py` — `/api/upload`, `/api/analysis/{id}`, `/api/report/{id}/json`, `/api/report/{id}/pdf`
-3. `backend/app/core/pcap_parser.py` — Read PCAP with scapy, filter email ports, reassemble TCP streams
-4. `backend/app/core/tls_analyzer.py` — Parse TLS Client Hello / Server Hello, extract version, cipher suite, extensions, key exchange
-5. `backend/app/core/cert_validator.py` — Extract X.509 DER cert from TLS Certificate message, decode with `cryptography` library, check expiry, key length, sig algo, self-signed
-6. `backend/app/core/starttls_detector.py` — Track EHLO → 250-STARTTLS → STARTTLS command → 220 Ready → TLS transition. Flag if STARTTLS advertised but never upgraded.
-7. `backend/app/core/ja3_engine.py` — Compute JA3 hash from Client Hello fields. Lookup against `ja3_known.json`.
-8. `backend/app/core/scorer.py` — Implement the weighted scoring formula from memory.md exactly.
-9. `backend/app/core/anomaly.py` — Isolation Forest on feature vector [tls_version_int, cipher_strength, key_length, pfs_bool, cert_days_remaining, ja3_known_bool]
-10. `backend/app/data/cipher_db.json` — Comprehensive IANA cipher suite hex code → {name, severity, category, pfs, aead} mapping
-11. `backend/app/data/ja3_known.json` — 10-15 known-good JA3 hashes for common email clients
-12. `backend/app/data/nist_rules.json` — NIST SP 800-52r2 compliance checklist items
-13. `backend/requirements.txt` — fastapi, uvicorn, scapy, dpkt, cryptography, scikit-learn, reportlab, python-multipart
-
-### Key Technical Notes for This Agent
-- Use `scapy` for PCAP reading (`rdpcap()` or `PcapReader` for streaming).
-- Use `dpkt` as fallback for faster raw byte parsing of TLS records if scapy is too slow.
-- For X.509 parsing, use `cryptography.x509.load_der_x509_certificate()`.
-- JA3 hash: `md5(f"{version},{cipher_list},{ext_list},{curves},{point_formats}")`.
-- Store results in a global `dict[str, AnalysisResult]` keyed by UUID. No database.
-- CORS: Allow `http://localhost:3000` origin.
+- **Backend Daemon**:
+  ```powershell
+  & "backend\.venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+  ```
+- **Frontend Development Server**:
+  ```powershell
+  cd frontend
+  npm run dev
+  ```
+- **Frontend Production Build & Linter**:
+  ```powershell
+  cd frontend
+  npm run lint
+  npm run build
+  ```
 
 ---
 
-## Agent 2: Frontend Dashboard
+## Design System & Theme Rules
 
-### Role
-Build the Next.js 14 frontend with a single-page dashboard that looks polished enough for a prototype demo video. Uses shadcn/ui components and Recharts for charts.
+The UI operates with two intentional visual themes:
+1. **Light Theme — "Arctic Forensics"**: Daylight forensic workstation. Cool, tinted slate canvas (`#F1F5F8`), crisp white surfaces (`#FFFFFF`), dark slate typography (`#0B1724`), deep teal accents (`#007C91` / `#006273`), 1px borders (`#D4DFE6`).
+2. **Dark Theme — "Night Operations"**: Security operations center console. Deep obsidian canvas (`#0A0D10`), charcoal surfaces (`#101418`), neutral text (`#F2F4F5`), teal telemetry accents (`#00A3BF`), subtle borders (`#1B2228`).
 
-### Input Context Files
-- `prd.md` — UI requirements (items 9, 10)
-- `memory.md` — Component list, API contract, TypeScript interfaces
-- `design.md` — Visual design spec, color palette, layout, component details
+### Color Token Mapping (`frontend/src/app/globals.css`)
 
-### Deliverables
-1. `frontend/src/app/layout.tsx` — Root layout with dark SOC theme
-2. `frontend/src/app/page.tsx` — Main page orchestrating upload → analysis → dashboard flow
-3. `frontend/src/lib/types.ts` — TypeScript interfaces matching backend API response
-4. `frontend/src/lib/api.ts` — Fetch wrapper functions (`uploadPcap`, `getAnalysis`, `downloadReport`)
-5. `frontend/src/hooks/use-analysis.ts` — React state hook managing upload/loading/result states
-6. `frontend/src/components/upload-zone.tsx` — Drag-and-drop PCAP file uploader with file icon
-7. `frontend/src/components/score-gauge.tsx` — Large circular gauge (0–100) with color gradient
-8. `frontend/src/components/grade-badge.tsx` — Letter grade badge (A+ green, B yellow, F red)
-9. `frontend/src/components/session-table.tsx` — Data table of analyzed sessions (columns: #, Server, Protocol, TLS Version, Cipher, PFS, Score, Severity)
-10. `frontend/src/components/session-detail.tsx` — Expandable panel showing full session metadata + certificate info
-11. `frontend/src/components/protocol-chart.tsx` — Recharts PieChart of TLS version distribution
-12. `frontend/src/components/cipher-chart.tsx` — Recharts BarChart of cipher suites by severity
-13. `frontend/src/components/vulnerability-list.tsx` — Sorted list of findings with severity badges
-14. `frontend/src/components/alert-banner.tsx` — Full-width red banner for CRITICAL findings (STRIPTLS)
-15. `frontend/src/components/export-button.tsx` — Buttons to trigger PDF and JSON download
-16. `frontend/src/components/compliance-checklist.tsx` — NIST checklist with pass/fail/warn icons
+Always use the semantic Tailwind tokens rather than hardcoded hex values:
 
-### Key Technical Notes for This Agent
-- Backend runs on `http://localhost:8000`. Use Next.js `rewrites` or direct fetch.
-- Use `shadcn/ui` Card, Table, Badge, Button, Progress, Alert components.
-- Use `recharts` for PieChart and BarChart. Keep chart configs minimal.
-- The page has two states: (a) Upload state — centered upload zone, (b) Dashboard state — full analysis view.
-- No routing needed. Single page only.
-- No auth. No dark mode toggle. No settings page.
+| Semantic Token | Light Theme ("Arctic") | Dark Theme ("Night") | Usage |
+| :--- | :--- | :--- | :--- |
+| `sms-canvas` | `#F1F5F8` | `#0A0D10` | App background |
+| `sms-surface` | `#FFFFFF` | `#101418` | Primary surface |
+| `sms-surface-secondary` | `#E8EEF3` | `#141A20` | Secondary wells, headers |
+| `sms-surface-hover` | `#DEE8EE` | `#1A222A` | Interactive hover states |
+| `sms-surface-selected` | `#E3F2F4` | `#16262E` | Active selection rows |
+| `sms-border` | `#D4DFE6` | `#1B2228` | Structural 1px borders |
+| `sms-border-subtle` | `#E2EAF0` | `#161C22` | Internal dividers |
+| `sms-text-primary` | `#0B1724` | `#F2F4F5` | Main headings, scores |
+| `sms-text-secondary` | `#405366` | `#A8B3BC` | Flow labels, explanations |
+| `sms-text-muted` | `#6D7E8E` | `#707D88` | Metadata, timestamps, ports |
+| `sms-cyan` | `#007C91` | `#00A3BF` | Brand accent, expected rails |
+| `sms-red` | `#C52F3C` | `#EF4444` | Critical findings, downgrade rails |
+| `sms-amber` | `#A65B00` | `#F59E0B` | Medium / high severity warnings |
+| `sms-green` | `#18794E` | `#10B981` | Hardened / secure indicators |
 
----
+### Typography Guidelines
 
-## Agent 3: Data Generation & Report Templates
+- **Primary Interface**: Geist Sans (`font-sans`)
+- **Technical & Wire Data**: JetBrains Mono (`font-mono`) for IP addresses, port numbers, hex dumps, cipher suite strings, JA3 hashes, timestamps, and packet counts.
+- **Numbers**: Always enforce tabular numbers (`tabular-nums`) on all scores, measurements, and table values.
+- **Minimum Text Size**: Never use UI text below `12px` (`text-xs`).
 
-### Role
-Create the synthetic test PCAP files for the demo, the PDF report generator, and the static data files.
+### Anti-Slop Rules
 
-### Input Context Files
-- `memory.md` — PCAP scenario matrix, scoring formula
-- `SIH26159_SecureMailScope_Master_Dossier.md` — Cipher suite classifications, cert rules
-
-### Deliverables
-1. `backend/test_pcaps/generate_test_pcaps.py` — Python script that creates 4 synthetic PCAPs using scapy packet crafting:
-   - `hardened_tls13.pcap` — TLS 1.3, AES-256-GCM, valid cert
-   - `legacy_tls10.pcap` — TLS 1.0, 3DES, SHA-1 cert, 1024-bit RSA
-   - `striptls_attack.pcap` — SMTP session where STARTTLS is stripped, cleartext auth visible
-   - `rogue_client.pcap` — TLS 1.2, valid cipher but anomalous client cipher ordering
-2. `backend/app/reports/pdf_exporter.py` — ReportLab PDF generator that takes an AnalysisResult dict and produces a formatted multi-page forensic report with:
-   - Cover page with enterprise grade
-   - Executive summary
-   - Session detail table
-   - Vulnerability findings
-   - NIST compliance checklist
-   - Remediation recommendations
-3. `backend/app/reports/json_exporter.py` — Simple JSON formatter with pretty-printing and metadata headers
-4. `backend/app/data/cipher_db.json` — Complete mapping of ~40 common cipher suite hex codes to security metadata
-5. `backend/app/data/ja3_known.json` — Known JA3 hashes for legitimate email clients
-6. `backend/app/data/nist_rules.json` — Structured NIST compliance rules
-
-### Key Technical Notes for This Agent
-- For PCAP generation, use `scapy` to craft raw TCP + TLS packets. The TLS handshake doesn't need to be cryptographically valid — it just needs the correct byte structure for our parser to extract metadata.
-- The STRIPTLS PCAP should show a plaintext SMTP exchange: EHLO → 250 (without STARTTLS) → AUTH PLAIN → cleartext credentials.
-- For the PDF, use ReportLab with the same styling approach as the dossier PDF (Segoe UI font, navy/blue color scheme).
+- **Zero Marketing Fluff**: No generic landing page cards, promotional banners, or empty drag-and-drop boxes taking over the screen.
+- **Zero Decorative AI Slop**: No neon cyan drop-shadows, blurred glowing blobs, or glassmorphism.
+- **Evidence-Based Phrasing**: Use precise wire-grounded terms (`STARTTLS Capability Absent from Observed Response`, `Plaintext Auth Observed`, `TLS Record Layer Boundary 0x16 0x03`). Avoid speculative accusations (`Compromised`, `Hacked`).
+- **Micro-Component Architecture**: Split complex views into discrete files under 150 lines of code.
 
 ---
 
-## Parallel Execution Strategy
+## View Routing & Architecture
 
-```
-Time ─────────────────────────────────────────────────────▶
+The application layout consists of:
+1. **Persistent Chrome** (`frontend/src/components/shell/`):
+   - Top Header: Product badge `SECUREMAILSCOPE [SIH26159]`, sensor indicator `NTRO SENSOR`, case selector dropdown, Upload PCAP button, Export button, and Theme Toggle.
+   - Secondary Tab Bar: `OVERVIEW`, `FLOWS 4`, `FINDINGS 4`, `CERTIFICATES`, `DISSECTOR`, `STANDARDS`, `REPORT`.
+   - Metadata Strip: PCAP file name, packet count, reconstructed stream count, SHA-256 hash, capture timestamp, and Scope toggle.
+2. **View Routing** (`frontend/src/app/page.tsx`):
+   - Controlled by the `activeTab` state (`overview`, `flows`, `findings`, `certificates`, `dissector`, `standards`, `report`).
+   - Active case state is synchronized with URL query parameter (`?case=CASE-04`).
 
-Agent 1 (Backend):   [pcap_parser] → [tls_analyzer] → [scorer] → [API routes]
-                                                                        │
-Agent 2 (Frontend):  [layout + upload] → [dashboard skeleton] ─────────▶ [wire to API]
-                                                                        │
-Agent 3 (Data):      [cipher_db.json] → [generate PCAPs] → [pdf_exporter] ─▶ [test]
-```
+### Specifications for Views to Implement
 
-- Agents 1, 2, and 3 can start simultaneously.
-- Agent 2 can build the entire UI using mock/hardcoded data first, then swap in real API calls at the end.
-- Agent 3's PCAPs are needed for Agent 1's testing, but Agent 1 can use any publicly available PCAP (e.g., Wireshark samples) during development.
+1. **`FLOWS` Tab**:
+   - Dense interactive table of all reconstructed TCP streams.
+   - Columns: Stream ID, Protocol (:port), Source endpoint, Destination endpoint, TLS version, Negotiated cipher suite, PFS indicator, JA3 client match, Posture score, Severity badge.
+   - Filter bar: Protocol filter (SMTP, SMTPS, IMAP, etc.), Encryption status (Encrypted, Cleartext, Downgraded), Severity filter.
+   - Clicking a row transitions to the `DISSECTOR` tab with that stream selected.
+
+2. **`FINDINGS` Tab**:
+   - Comprehensive inventory of identified vulnerabilities across all streams.
+   - Grouping: Critical (STRIPTLS downgrades, cleartext passwords), High (Deprecated TLS 1.0, 3DES, expired certs), Medium (CBC ciphers, SHA-1 signatures), Low (non-AEAD TLS 1.2).
+   - Card/Row layout showing Affected Vector, Wire Evidence snippet, NIST SP 800-52r2 clause reference, and recommended remediation.
+
+3. **`CERTIFICATES` Tab**:
+   - X.509 leaf certificate inspector and trust chain viewer.
+   - Detailed inspection card for each detected certificate: Subject Common Name (CN), Issuer CN, Serial Number, Validity Window (Not Before - Not After, Days Remaining), Public Key Algorithm and Bit Length, Signature Algorithm and Digest, Subject Alternative Names (SANs).
+   - Visual alerts for expired certificates, weak keys (< 2048-bit RSA), and self-signed certificates.
+
+4. **`DISSECTOR` Tab**:
+   - Deep inspection workbench with two selectable modes:
+     - **Mode A (Cryptanalysis & Audit)**: Parsed TLS handshake tree (Client Hello extensions, cipher list, Server Hello negotiated parameters, JA3 fingerprint calculation, scoring deduction ledger).
+     - **Mode B (Raw Stream & Protocol State Machine)**: Dual-pane monospaced ASCII and Hex stream dump highlighting the exact byte offset of the STARTTLS downgrade (`250-STARTTLS` stripped) or the TLS record boundary (`0x16 0x03`).
+
+5. **`STANDARDS` Tab**:
+   - Compliance matrices for NIST SP 800-52r2 and RFC 8314.
+   - Itemized checklist with Pass / Warn / Fail status per requirement.
+
+6. **`REPORT` Tab**:
+   - Official executive forensic audit summary ready for printing or export.
+   - Download actions wired to `/api/report/{id}/pdf` (ReportLab PDF) and `/api/report/{id}/json`.
+
+---
+
+## Data Integration & Contracts
+
+- **Mock Data**: Use `frontend/src/lib/mock-data.ts` to render cases offline (`CASE-01` to `CASE-04`).
+- **Live API**: Use `frontend/src/lib/api.ts` to communicate with the FastAPI backend:
+  - `uploadPcap(file: File)`: POST `/api/upload` -> `{ analysis_id }`
+  - `getAnalysis(id: string)`: GET `/api/analysis/{id}` -> `AnalysisResult`
+  - `downloadPdf(id: string)`: GET `/api/report/{id}/pdf` -> triggers file download
+  - `downloadJson(id: string)`: GET `/api/report/{id}/json` -> triggers file download
+- See `frontend/API_AND_DATA_CONTRACTS.md` for full TypeScript schema definitions.
+
+---
+
+## Verification Checklist
+
+Before finishing any task, run:
+1. `npm run lint` in `frontend/` — ensure 0 warnings, 0 errors.
+2. `npm run build` in `frontend/` — ensure clean production compilation.
+3. Test both Light and Dark themes to ensure all text and borders maintain sufficient contrast.
