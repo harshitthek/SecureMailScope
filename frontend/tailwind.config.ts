@@ -24,6 +24,7 @@ const config: Config = {
             raw: "var(--sms-surface-raw)",
           },
           border: {
+            DEFAULT: "var(--sms-border)",
             subtle: "var(--sms-border)",
             strong: "var(--sms-border-strong)",
             selectedRail: "var(--sms-selected-rail)",
@@ -43,14 +44,21 @@ const config: Config = {
           green: {
             DEFAULT: "var(--sms-status-green)",
             dim: "var(--sms-status-green-dim)",
+            border: "var(--sms-status-green-border)",
           },
           amber: {
             DEFAULT: "var(--sms-status-amber)",
             dim: "var(--sms-status-amber-dim)",
+            border: "var(--sms-status-amber-border)",
           },
           red: {
             DEFAULT: "var(--sms-status-red)",
             dim: "var(--sms-status-red-dim)",
+            border: "var(--sms-status-red-border)",
+          },
+          blue: {
+            DEFAULT: "var(--sms-status-blue)",
+            dim: "var(--sms-status-blue-dim)",
           },
           btnPrimary: {
             bg: "var(--sms-btn-primary-bg)",
@@ -67,12 +75,14 @@ const config: Config = {
         modal: "var(--sms-radius-modal)",
       },
       boxShadow: {
+        card: "var(--sms-shadow-card)",
+        cardHover: "var(--sms-shadow-card-hover)",
+        header: "var(--sms-shadow-header)",
         modal: "var(--sms-shadow-modal)",
       },
       transitionDuration: {
-        fast: "100ms",
-        state: "150ms",
-        view: "200ms",
+        fast: "150ms",
+        smooth: "250ms",
       },
     },
   },

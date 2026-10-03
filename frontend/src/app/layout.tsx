@@ -19,9 +19,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SecureMailScope // SIH26159 — Forensic Analyzer",
+  title: "SecureMailScope // Enterprise Email Forensic Posture Assessment",
   description:
-    "Passive Network Forensic Analyzer for Email Cryptographic Posture Assessment (SMTP, IMAP, POP3) — SIH26159",
+    "Passive Network Forensic Analyzer for Email Cryptographic Security Posture Assessment (SMTP, IMAP, POP3) — SIH26159",
 };
 
 export default function RootLayout({
@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -38,15 +38,7 @@ export default function RootLayout({
               (function() {
                 try {
                   var stored = localStorage.getItem('sms_theme');
-                  var isDark = true;
-                  if (stored === 'light') {
-                    isDark = false;
-                  } else if (stored === 'dark') {
-                    isDark = true;
-                  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-                    isDark = false;
-                  }
-                  if (isDark) {
+                  if (stored === 'dark') {
                     document.documentElement.classList.add('dark');
                   } else {
                     document.documentElement.classList.remove('dark');
@@ -58,7 +50,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans min-h-screen bg-sms-canvas text-sms-text-primary antialiased selection:bg-sms-cyan/20 selection:text-sms-cyan`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans min-h-screen bg-sms-canvas text-sms-text-primary antialiased selection:bg-sms-accent-cyan/20 selection:text-sms-accent-cyan`}
       >
         {children}
       </body>

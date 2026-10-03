@@ -4,95 +4,119 @@
 
 /* ============================================================
    SECUREMAILSCOPE DESIGN SYSTEM TOKENS
-   Arctic Forensics (Light) & Night Operations (Dark)
+   Enterprise Cybersecurity Theme: Light Mode First & Dark Operations
    ============================================================ */
 
 :root {
-  /* LIGHT THEME: Arctic Forensics */
-  --sms-canvas: #F1F5F8;
+  /* LIGHT THEME (Default): Modern Enterprise Cybersecurity Dashboard */
+  --sms-canvas: #F8FAFC;
   --sms-surface-primary: #FFFFFF;
-  --sms-surface-secondary: #E8EEF3;
-  --sms-surface-hover: #DEE8EE;
-  --sms-surface-selected: #E3F2F4;
-  --sms-surface-raw: #E5EBF0;
+  --sms-surface-secondary: #F1F5F9;
+  --sms-surface-hover: #E2E8F0;
+  --sms-surface-selected: #EFF6FF;
+  --sms-surface-raw: #F8FAFC;
 
-  --sms-border: #CBD7E1;
-  --sms-border-strong: #AEBECD;
-  --sms-selected-rail: #006273;
+  --sms-border: #E2E8F0;
+  --sms-border-strong: #CBD5E1;
+  --sms-selected-rail: #2563EB;
 
-  --sms-text-primary: #0B1724;
-  --sms-text-secondary: #405366;
-  --sms-text-muted: #6D7E8E;
+  --sms-text-primary: #0F172A;
+  --sms-text-secondary: #334155;
+  --sms-text-muted: #64748B;
 
-  --sms-raw-text: #243646;
-  --sms-raw-offset: #66798A;
+  --sms-raw-text: #1E293B;
+  --sms-raw-offset: #64748B;
 
-  --sms-accent-cyan: #007C91;       /* Brand Teal */
-  --sms-accent-cyan-hover: #006273; /* Active Teal */
-  --sms-accent-cyan-dim: rgba(0, 124, 145, 0.08);
+  /* Primary Brand & Accents */
+  --sms-accent-cyan: #0284C7;       /* Cyber Blue/Teal */
+  --sms-accent-cyan-hover: #0369A1;
+  --sms-accent-cyan-dim: rgba(2, 132, 199, 0.08);
 
-  --sms-status-green: #18794E;
-  --sms-status-green-dim: rgba(24, 121, 78, 0.10);
-  --sms-status-amber: #A65B00;
-  --sms-status-amber-dim: rgba(166, 91, 0, 0.10);
-  --sms-status-red: #C52F3C;
-  --sms-status-red-dim: rgba(197, 47, 60, 0.10);
+  /* Primary Semantic Cybersecurity Accents: Green #22C55E & Red #EF4444 */
+  --sms-status-green: #22C55E;
+  --sms-status-green-dim: rgba(34, 197, 94, 0.12);
+  --sms-status-green-border: rgba(34, 197, 94, 0.35);
 
-  --sms-btn-primary-bg: #006273;
-  --sms-btn-primary-hover: #004F5E;
+  --sms-status-red: #EF4444;
+  --sms-status-red-dim: rgba(239, 68, 68, 0.12);
+  --sms-status-red-border: rgba(239, 68, 68, 0.35);
+
+  --sms-status-amber: #F59E0B;
+  --sms-status-amber-dim: rgba(245, 158, 11, 0.12);
+  --sms-status-amber-border: rgba(245, 158, 11, 0.35);
+
+  --sms-status-blue: #3B82F6;
+  --sms-status-blue-dim: rgba(59, 130, 246, 0.12);
+
+  --sms-btn-primary-bg: #0F172A;
+  --sms-btn-primary-hover: #1E293B;
   --sms-btn-primary-text: #FFFFFF;
-  --sms-btn-primary-border: #006273;
+  --sms-btn-primary-border: #0F172A;
 
-  --sms-radius-tag: 4px;
-  --sms-radius-btn: 6px;
-  --sms-radius-surface: 8px;
-  --sms-radius-modal: 10px;
+  --sms-radius-tag: 6px;
+  --sms-radius-btn: 8px;
+  --sms-radius-surface: 14px;
+  --sms-radius-modal: 16px;
 
-  --sms-shadow-modal: 0 20px 48px -12px rgba(11, 23, 36, 0.18), 0 0 0 1px #CBD7E1;
+  --sms-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --sms-shadow-card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.07), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --sms-shadow-header: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
+  --sms-shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px #E2E8F0;
 }
 
 .dark {
-  /* DARK THEME: Night-Time Security Operations */
-  --sms-canvas: #07090C;
-  --sms-surface-primary: #0D1117;
-  --sms-surface-secondary: #111720;
-  --sms-surface-hover: #16202D;
-  --sms-surface-selected: #1C2737;
-  --sms-surface-raw: #090C10;
+  /* DARK THEME: Night Security Operations Console */
+  --sms-canvas: #0B0F17;
+  --sms-surface-primary: #111827;
+  --sms-surface-secondary: #1F2937;
+  --sms-surface-hover: #2D3748;
+  --sms-surface-selected: #1E293B;
+  --sms-surface-raw: #0D121D;
 
-  --sms-border: #161D28;
-  --sms-border-strong: #232F42;
-  --sms-selected-rail: #22D3EE;
+  --sms-border: #1E293B;
+  --sms-border-strong: #334155;
+  --sms-selected-rail: #38BDF8;
 
-  --sms-text-primary: #F2F4F5;
-  --sms-text-secondary: #8C98A6;
-  --sms-text-muted: #5A6675;
+  --sms-text-primary: #F8FAFC;
+  --sms-text-secondary: #CBD5E1;
+  --sms-text-muted: #94A3B8;
 
   --sms-raw-text: #E2E8F0;
   --sms-raw-offset: #64748B;
 
-  --sms-accent-cyan: #22D3EE;
-  --sms-accent-cyan-hover: #38BDF8;
-  --sms-accent-cyan-dim: rgba(34, 211, 238, 0.12);
+  --sms-accent-cyan: #38BDF8;
+  --sms-accent-cyan-hover: #7DD3FC;
+  --sms-accent-cyan-dim: rgba(56, 189, 248, 0.12);
 
   --sms-status-green: #22C55E;
-  --sms-status-green-dim: rgba(34, 197, 94, 0.14);
+  --sms-status-green-dim: rgba(34, 197, 94, 0.16);
+  --sms-status-green-border: rgba(34, 197, 94, 0.40);
+
+  --sms-status-red: #EF4444;
+  --sms-status-red-dim: rgba(239, 68, 68, 0.16);
+  --sms-status-red-border: rgba(239, 68, 68, 0.40);
+
   --sms-status-amber: #F59E0B;
-  --sms-status-amber-dim: rgba(245, 158, 11, 0.14);
-  --sms-status-red: #EF3340;
-  --sms-status-red-dim: rgba(239, 51, 64, 0.14);
+  --sms-status-amber-dim: rgba(245, 158, 11, 0.16);
+  --sms-status-amber-border: rgba(245, 158, 11, 0.40);
 
-  --sms-btn-primary-bg: rgba(34, 211, 238, 0.14);
-  --sms-btn-primary-hover: #22D3EE;
-  --sms-btn-primary-text: #22D3EE;
-  --sms-btn-primary-border: rgba(34, 211, 238, 0.40);
+  --sms-status-blue: #60A5FA;
+  --sms-status-blue-dim: rgba(96, 165, 250, 0.16);
 
-  --sms-radius-tag: 4px;
-  --sms-radius-btn: 6px;
-  --sms-radius-surface: 8px;
-  --sms-radius-modal: 10px;
+  --sms-btn-primary-bg: #38BDF8;
+  --sms-btn-primary-hover: #7DD3FC;
+  --sms-btn-primary-text: #0B0F17;
+  --sms-btn-primary-border: #38BDF8;
 
-  --sms-shadow-modal: 0 24px 64px -16px rgba(0, 0, 0, 0.8), 0 0 0 1px #232F42;
+  --sms-radius-tag: 6px;
+  --sms-radius-btn: 8px;
+  --sms-radius-surface: 14px;
+  --sms-radius-modal: 16px;
+
+  --sms-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+  --sms-shadow-card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  --sms-shadow-header: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  --sms-shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px #334155;
 }
 
 /* ============================================================
@@ -104,14 +128,14 @@
 }
 
 html {
-  color-scheme: dark light;
+  color-scheme: light dark;
 }
 
 body {
   background-color: var(--sms-canvas);
   color: var(--sms-text-primary);
   font-family: var(--font-geist-sans), Inter, system-ui, -apple-system, sans-serif;
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
@@ -132,82 +156,33 @@ body {
   font-feature-settings: "tnum" 1;
 }
 
-/* Typography scale tokens */
-.text-hero {
-  font-size: clamp(80px, 7vw, 104px);
-  line-height: 1;
-  font-weight: 600;
-  letter-spacing: -0.04em;
+/* Modern Card Styling */
+.sms-card {
+  background-color: var(--sms-surface-primary);
+  border: 1px solid var(--sms-border);
+  border-radius: var(--sms-radius-surface);
+  box-shadow: var(--sms-shadow-card);
+  transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease;
 }
 
-.text-headline {
-  font-size: clamp(26px, 2.2vw, 32px);
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.sms-card:hover {
+  box-shadow: var(--sms-shadow-card-hover);
+  border-color: var(--sms-border-strong);
 }
 
-.text-heading-2 {
-  font-size: 20px;
-  line-height: 1.3;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-.text-body-p {
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.text-body-s {
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-.text-ui {
-  font-size: 13px;
-  line-height: 1.3;
-  font-weight: 500;
-}
-
-.text-table {
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.text-meta {
-  font-size: 12px;
-  line-height: 1.25;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-
-.text-bytes {
-  font-size: 12px;
-  line-height: 1.5;
-  letter-spacing: 0.02em;
-}
-
-/* ============================================================
-   TRANSITIONS & ELEVATION
-   ============================================================ */
-
+/* Interactive transitions */
 .transition-fast {
-  transition: all 100ms ease-in-out;
+  transition: all 150ms ease-in-out;
 }
 
-.transition-state {
-  transition: all 150ms ease-out;
-}
-
-.transition-view {
-  transition: opacity 180ms ease-out, transform 180ms ease-out;
+.transition-smooth {
+  transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Focus outline */
 :focus-visible {
   outline: 2px solid var(--sms-accent-cyan);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 /* Custom Scrollbars */
@@ -221,10 +196,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--sms-border);
-  border-radius: 3px;
+  background: var(--sms-border-strong);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--sms-border-strong);
+  background: var(--sms-text-muted);
 }

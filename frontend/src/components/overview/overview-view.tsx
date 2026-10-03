@@ -24,14 +24,14 @@ export function OverviewView({ activeCase, onNavigateToFlow }: OverviewViewProps
   };
 
   return (
-    <main className="flex-1 w-full max-w-[1440px] mx-auto px-6 sm:px-8 py-3 flex flex-col gap-3">
-      {/* 1. Asymmetric Posture Hero (45% Posture / 55% Interpretation & Primary Finding) */}
+    <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col gap-6 sm:gap-7 pb-16">
+      {/* 1. Asymmetric Posture Hero Cards (Posture Score & Primary Wire Finding) */}
       <PostureHero activeCase={activeCase} onInspectFlow={handleInspect} />
 
-      {/* 2. Expected vs Observed Protocol Divergence & Supporting Facts */}
+      {/* 2. Expected vs Observed Protocol Divergence & Forensic Inventory */}
       <ProtocolDivergenceStrip activeCase={activeCase} />
 
-      {/* 3. Reconstructed Flow Inventory Ledger */}
+      {/* 3. Differentiated Overview Flow: Reconstructed Email Streams & Forensic Ledger */}
       <FlowLedgerPreview
         activeCase={activeCase}
         selectedFlowId={selectedFlowId}

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <div
-        className="w-10 h-[38px] rounded-btn border border-sms-border bg-sms-surface-primary"
+        className="w-10 h-10 rounded-xl border border-sms-border bg-sms-surface-primary"
         aria-hidden="true"
       />
     );
@@ -42,14 +42,14 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      title={theme === "dark" ? "Switch to daylight forensic mode (Light)" : "Switch to night operations mode (Dark)"}
-      className="w-10 h-[38px] rounded-btn border border-sms-border hover:border-sms-border-strong bg-sms-surface-primary hover:bg-sms-surface-hover text-sms-text-secondary hover:text-sms-text-primary flex items-center justify-center transition-fast focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sms-cyan"
+      title={theme === "dark" ? "Switch to Day Forensic Mode (Light)" : "Switch to Night Operations Mode (Dark)"}
+      className="w-10 h-10 rounded-xl border border-sms-border hover:border-sms-border-strong bg-sms-surface-primary hover:bg-sms-surface-hover text-sms-text-secondary hover:text-sms-text-primary flex items-center justify-center transition-all duration-150 shadow-sm hover:shadow"
       aria-label="Toggle visual theme"
     >
       {theme === "dark" ? (
-        <Sun className="w-4 h-4 text-sms-amber" strokeWidth={1.5} />
+        <Sun className="w-4 h-4 text-amber-400 hover:rotate-45 transition-transform duration-200" strokeWidth={1.8} />
       ) : (
-        <Moon className="w-4 h-4 text-sms-cyan" strokeWidth={1.5} />
+        <Moon className="w-4 h-4 text-slate-700 hover:-rotate-12 transition-transform duration-200" strokeWidth={1.8} />
       )}
     </button>
   );
