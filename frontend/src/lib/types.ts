@@ -108,6 +108,10 @@ export interface Session {
   session_severity: Severity;
   scoring_breakdown: ScoringBreakdown;
   forensic_inspection?: StreamForensicInspection;
+  pqc_status?: "PQC_RESISTANT" | "CLASSICAL_TRANSITIONAL" | "CRQC_HARVEST_CRITICAL" | "UNENCRYPTED_EXPOSED";
+  pqc_group_name?: string;
+  pqc_hndl_risk?: "NONE" | "MODERATE" | "CRITICAL";
+  pqc_negotiated_group_hex?: string | null;
 }
 
 export interface CertificateInfo {
@@ -128,6 +132,8 @@ export interface CertificateInfo {
   public_key_bits: number;
   is_weak_key: boolean;
   san_entries: string[];
+  pem_data?: string;
+  raw_der_hex?: string;
 }
 
 export interface Vulnerability {
@@ -139,6 +145,9 @@ export interface Vulnerability {
   cve_references: string[];
   nist_reference: string | null;
   remediation: string;
+  mitre_attack_id?: string;
+  mitre_attack_technique?: string;
+  mitre_d3fend_id?: string;
 }
 
 export interface ComplianceCheck {

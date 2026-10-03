@@ -10,6 +10,7 @@ Endpoints:
 from __future__ import annotations
 
 import os
+import re
 import uuid
 import json
 import tempfile
@@ -47,11 +48,127 @@ with open(os.path.join(_data_dir, "cipher_db.json"), "r") as f:
 with open(os.path.join(_data_dir, "nist_rules.json"), "r") as f:
     NIST_RULES: list[dict] = json.load(f)
 
+def _generate_synthetic_cert(cn: str, serial: str) -> tuple[str, str]:
+    try:
+        from cryptography import x509
+        from cryptography.x509.oid import NameOID
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        import datetime
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        subject = x509.Name([
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "DEFENSE FORENSICS CA"),
+            x509.NameAttribute(NameOID.COMMON_NAME, cn or "mail.defense.gov.in"),
+        ])
+        clean_serial = "".join([c for c in serial if c in "0123456789abcdefABCDEF"])[:8]
+        s_int = int(clean_serial, 16) if clean_serial else 1001
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(subject)
+            .public_key(key.public_key())
+            .serial_number(s_int)
+            .not_valid_before(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30))
+            .not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=335))
+            .sign(key, hashes.SHA256())
+        )
+        der_bytes = cert.public_bytes(serialization.Encoding.DER)
+        pem_str = cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+        return pem_str, der_bytes.hex()
+    except Exception:
+        return "", ""
+
+
 # Pre-seed built-in defense cases (CASE-01 through CASE-04) for instantaneous dossier generation
 _demo_cases_path = os.path.join(_data_dir, "demo_cases.json")
 if os.path.exists(_demo_cases_path):
     with open(_demo_cases_path, "r", encoding="utf-8") as f:
-        _results.update(json.load(f))
+        cases_data = json.load(f)
+        for cid, case_dict in cases_data.items():
+            for session in case_dict.get("sessions", []):
+                # PQC enrichment
+                if "pqc_status" not in session:
+                    tls_ver = session.get("tls_version")
+                    if tls_ver == "TLS 1.3":
+                        if cid == "CASE-01":
+                            session["pqc_status"] = "PQC_RESISTANT"
+                            session["pqc_group_name"] = "X25519MLKEM768 (NIST FIPS 203 Hybrid)"
+                            session["pqc_hndl_risk"] = "NONE"
+                            session["pqc_negotiated_group_hex"] = "0x11EC"
+                        else:
+                            session["pqc_status"] = "CLASSICAL_TRANSITIONAL"
+                            session["pqc_group_name"] = "x25519 (Classical Ephemeral)"
+                            session["pqc_hndl_risk"] = "MODERATE"
+                            session["pqc_negotiated_group_hex"] = "0x001D"
+                    elif session.get("is_encrypted"):
+                        if session.get("has_forward_secrecy"):
+                            session["pqc_status"] = "CLASSICAL_TRANSITIONAL"
+                            session["pqc_group_name"] = "ECDHE (secp256r1 / Classical)"
+                            session["pqc_hndl_risk"] = "MODERATE"
+                            session["pqc_negotiated_group_hex"] = "0x0017"
+                        else:
+                            session["pqc_status"] = "CRQC_HARVEST_CRITICAL"
+                            session["pqc_group_name"] = "Static RSA (No Forward Secrecy)"
+                            session["pqc_hndl_risk"] = "CRITICAL"
+                            session["pqc_negotiated_group_hex"] = None
+                    else:
+                        session["pqc_status"] = "UNENCRYPTED_EXPOSED"
+                        session["pqc_group_name"] = "None (Plaintext)"
+                        session["pqc_hndl_risk"] = "CRITICAL"
+                        session["pqc_negotiated_group_hex"] = None
+
+                # Certificate PEM & DER enrichment
+                cert = session.get("certificate")
+                if cert and (not cert.get("pem_data") or not cert.get("raw_der_hex") or len(cert.get("raw_der_hex", "")) < 50):
+                    cn = cert.get("subject_cn", "mail.defense.gov.in")
+                    serial = cert.get("serial_number", "1001")
+                    pem_str, der_hex = _generate_synthetic_cert(cn, serial)
+                    if pem_str and der_hex:
+                        cert["pem_data"] = pem_str
+                        cert["raw_der_hex"] = der_hex
+
+            # Vulnerability MITRE enrichment
+            for v in case_dict.get("vulnerabilities", []):
+                title = v.get("title", "").lower()
+                if not v.get("mitre_attack_id"):
+                    if "cleartext" in title or "unencrypted" in title:
+                        v["mitre_attack_id"] = "T1071.003"
+                        v["mitre_attack_technique"] = "Application Layer Protocol: Mail Protocols"
+                        v["mitre_d3fend_id"] = "D3-EAC"
+                    elif "striptls" in title or "downgrade" in title:
+                        v["mitre_attack_id"] = "T1557.002"
+                        v["mitre_attack_technique"] = "Adversary-in-the-Middle: Protocol Downgrade"
+                        v["mitre_d3fend_id"] = "D3-EAC"
+                    elif "auth" in title or "credential" in title:
+                        v["mitre_attack_id"] = "T1552.001"
+                        v["mitre_attack_technique"] = "Unsecured Credentials: Credentials in Transport"
+                        v["mitre_d3fend_id"] = "D3-PA"
+                    elif "ssl" in title or "tls 1.0" in title or "tls 1.1" in title or "prohibited" in title or "deprecated" in title:
+                        v["mitre_attack_id"] = "T1600.001"
+                        v["mitre_attack_technique"] = "Weaken Encryption: Deprecated Protocol Fallback"
+                        v["mitre_d3fend_id"] = "D3-CSM"
+                    elif "cipher" in title or "3des" in title or "rc4" in title or "cbc" in title:
+                        v["mitre_attack_id"] = "T1600.002"
+                        v["mitre_attack_technique"] = "Weaken Encryption: Weak Cryptographic Algorithms"
+                        v["mitre_d3fend_id"] = "D3-CSM"
+                    elif "static rsa" in title or "forward secrecy" in title:
+                        v["mitre_attack_id"] = "T1557.002"
+                        v["mitre_attack_technique"] = "Cryptanalysis: Passive Interception & Retrospective Decryption"
+                        v["mitre_d3fend_id"] = "D3-CSM"
+                    elif "expired" in title or "self-signed" in title:
+                        v["mitre_attack_id"] = "T1588.004"
+                        v["mitre_attack_technique"] = "Obtain Capabilities: Digital Certificates"
+                        v["mitre_d3fend_id"] = "D3-CV"
+                    elif "signature" in title or "public key" in title or "weak key" in title:
+                        v["mitre_attack_id"] = "T1600.002"
+                        v["mitre_attack_technique"] = "Weaken Encryption: Inadequate Key Length / Hash"
+                        v["mitre_d3fend_id"] = "D3-CV"
+                    elif "ja3" in title or "fingerprint" in title:
+                        v["mitre_attack_id"] = "T1071.003"
+                        v["mitre_attack_technique"] = "Application Layer Protocol: Mail Protocols"
+                        v["mitre_d3fend_id"] = "D3-CF"
+
+        _results.update(cases_data)
 
 
 def _map_severity_color(severity: str) -> str:
@@ -357,6 +474,10 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
             "session_score": scoring.final_score,
             "session_grade": scoring.grade,
             "session_severity": scoring.severity,
+            "pqc_status": tls.pqc_status if tls else ("UNENCRYPTED_EXPOSED" if is_cleartext else "UNKNOWN"),
+            "pqc_group_name": tls.pqc_group_name if tls else ("None (Plaintext)" if is_cleartext else "Unknown"),
+            "pqc_hndl_risk": tls.pqc_hndl_risk if tls else ("CRITICAL" if is_cleartext else "MODERATE"),
+            "pqc_negotiated_group_hex": tls.negotiated_group_hex if tls else None,
             "scoring_breakdown": {
                 "protocol_penalty": scoring.protocol_penalty,
                 "cipher_penalty": scoring.cipher_penalty,
@@ -464,6 +585,8 @@ def _cert_to_dict(cert) -> dict[str, Any]:
         "public_key_bits": cert.public_key_bits,
         "is_weak_key": cert.is_weak_key,
         "san_entries": cert.san_entries,
+        "pem_data": getattr(cert, "pem_data", ""),
+        "raw_der_hex": getattr(cert, "raw_der_hex", ""),
     }
 
 
@@ -488,6 +611,9 @@ def _generate_vulns(
             "affected_sessions": [session_id],
             "cve_references": [],
             "nist_reference": "NIST SP 800-52r2 Section 3.1",
+            "mitre_attack_id": "T1071.003",
+            "mitre_attack_technique": "Application Layer Protocol: Mail Protocols",
+            "mitre_d3fend_id": "D3-EAC",
             "remediation": "Enable TLS on the mail server. Use implicit TLS (ports 465/993/995) or enforce mandatory STARTTLS with MTA-STS.",
         })
 
@@ -500,6 +626,9 @@ def _generate_vulns(
             "affected_sessions": [session_id],
             "cve_references": [],
             "nist_reference": "NIST SP 800-52r2 Section 3.1",
+            "mitre_attack_id": "T1557.002",
+            "mitre_attack_technique": "Adversary-in-the-Middle: Protocol Downgrade",
+            "mitre_d3fend_id": "D3-EAC",
             "remediation": "Deploy MTA-STS (RFC 8461) and DANE/TLSA DNS records. Configure MTA to reject plaintext fallback on submission ports.",
         })
 
@@ -512,6 +641,9 @@ def _generate_vulns(
             "affected_sessions": [session_id],
             "cve_references": [],
             "nist_reference": None,
+            "mitre_attack_id": "T1552.001",
+            "mitre_attack_technique": "Unsecured Credentials: Credentials in Transport",
+            "mitre_d3fend_id": "D3-PA",
             "remediation": "Never transmit authentication over unencrypted channels. Enforce TLS before AUTH commands.",
         })
 
@@ -526,6 +658,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": ["CVE-2014-3566"] if version == "SSL 3.0" else ["CVE-2016-0800"],
                 "nist_reference": "NIST SP 800-52r2 Section 3.2.1",
+                "mitre_attack_id": "T1600.001",
+                "mitre_attack_technique": "Weaken Encryption: Deprecated Protocol Fallback",
+                "mitre_d3fend_id": "D3-CSM",
                 "remediation": f"Disable {version} on the mail server immediately. Upgrade to TLS 1.2 or TLS 1.3.",
             })
         elif version in ("TLS 1.0", "TLS 1.1"):
@@ -537,6 +672,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": ["CVE-2011-3389"] if version == "TLS 1.0" else [],
                 "nist_reference": "NIST SP 800-52r2 Section 3.2.1",
+                "mitre_attack_id": "T1600.001",
+                "mitre_attack_technique": "Weaken Encryption: Deprecated Protocol Fallback",
+                "mitre_d3fend_id": "D3-CSM",
                 "remediation": f"Disable {version} and upgrade to TLS 1.2+ with AEAD cipher suites.",
             })
 
@@ -551,6 +689,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": ["CVE-2016-2183"] if cat == "3DES" else [],
                 "nist_reference": "NIST SP 800-52r2 Section 3.3.2",
+                "mitre_attack_id": "T1600.002",
+                "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms",
+                "mitre_d3fend_id": "D3-CSM",
                 "remediation": "Remove this cipher suite from server configuration. Use AES-GCM or ChaCha20-Poly1305 AEAD ciphers.",
             })
         elif cat == "CBC":
@@ -562,6 +703,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": ["CVE-2013-0169"],
                 "nist_reference": "NIST SP 800-52r2 Section 3.3.2",
+                "mitre_attack_id": "T1600.002",
+                "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms",
+                "mitre_d3fend_id": "D3-CSM",
                 "remediation": "Configure the mail server to disable CBC-mode cipher suites and mandate AEAD ciphers (e.g. ECDHE-ECDSA-AES256-GCM-SHA384 or ECDHE-RSA-AES256-GCM-SHA384).",
             })
 
@@ -574,6 +718,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": ["CVE-2017-13099"],
                 "nist_reference": "NIST SP 800-52r2 Section 3.3.1",
+                "mitre_attack_id": "T1557.002",
+                "mitre_attack_technique": "Cryptanalysis: Passive Interception & Retrospective Decryption",
+                "mitre_d3fend_id": "D3-CSM",
                 "remediation": "Configure server to prefer ECDHE key exchange. Disable static RSA cipher suites.",
             })
 
@@ -587,6 +734,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": [],
                 "nist_reference": "NIST SP 800-52r2 Section 3.4",
+                "mitre_attack_id": "T1588.004",
+                "mitre_attack_technique": "Obtain Capabilities: Digital Certificates",
+                "mitre_d3fend_id": "D3-CV",
                 "remediation": "Renew the server certificate. Use automated renewal (e.g., Let's Encrypt with certbot).",
             })
         if cert.is_self_signed:
@@ -598,6 +748,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": [],
                 "nist_reference": "NIST SP 800-52r2 Section 3.4",
+                "mitre_attack_id": "T1588.004",
+                "mitre_attack_technique": "Obtain Capabilities: Digital Certificates",
+                "mitre_d3fend_id": "D3-CV",
                 "remediation": "Replace with a certificate issued by a trusted Certificate Authority (e.g., Let's Encrypt, DigiCert).",
             })
         if cert.is_weak_signature:
@@ -609,6 +762,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": [],
                 "nist_reference": "NIST SP 800-52r2 Section 3.6",
+                "mitre_attack_id": "T1600.002",
+                "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Hash",
+                "mitre_d3fend_id": "D3-CV",
                 "remediation": "Re-issue the certificate with SHA-256 or SHA-384 signature algorithm.",
             })
         if cert.is_weak_key:
@@ -620,6 +776,9 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": [],
                 "nist_reference": "NIST SP 800-52r2 Section 3.5",
+                "mitre_attack_id": "T1600.002",
+                "mitre_attack_technique": "Weaken Encryption: Inadequate Key Length",
+                "mitre_d3fend_id": "D3-CV",
                 "remediation": f"Re-issue with minimum {2048 if cert.public_key_type == 'RSA' else 256}-bit {cert.public_key_type} key.",
             })
 
@@ -632,6 +791,9 @@ def _generate_vulns(
             "affected_sessions": [session_id],
             "cve_references": [],
             "nist_reference": "NIST SP 800-52r2 Section 3.1",
+            "mitre_attack_id": "T1071.003",
+            "mitre_attack_technique": "Application Layer Protocol: Mail Protocols",
+            "mitre_d3fend_id": "D3-CF",
             "remediation": "Inspect endpoint process telemetry for anomalous mail clients connecting to the mail transfer agent.",
         })
 
@@ -798,7 +960,7 @@ def _aggregate_cert_summary(sessions: list[dict]) -> list[dict]:
 
 @router.post("/upload")
 async def upload_pcap(file: UploadFile = File(...)):
-    """Upload and analyze a PCAP file."""
+    """Upload and analyze a PCAP file with strict streaming size bounds and filename sanitization."""
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
 
@@ -806,31 +968,50 @@ async def upload_pcap(file: UploadFile = File(...)):
     if ext not in (".pcap", ".pcapng", ".cap"):
         raise HTTPException(status_code=400, detail=f"Invalid file type: {ext}. Accepted: .pcap, .pcapng, .cap")
 
-    # Save to temp file
+    # Sanitize filename and prevent path traversal
+    raw_name = os.path.basename(file.filename or "capture.pcap")
+    safe_filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', raw_name)
+    if not safe_filename:
+        safe_filename = "capture.pcap"
+
+    # Save to temp file using bounded streaming chunks (max 200MB)
     tmp_dir = tempfile.mkdtemp(prefix="securemailscope_")
-    tmp_path = os.path.join(tmp_dir, file.filename)
-    content = await file.read()
-
-    if len(content) > 200 * 1024 * 1024:  # 200MB
-        raise HTTPException(status_code=413, detail="File too large. Maximum: 200MB")
-
-    with open(tmp_path, "wb") as f:
-        f.write(content)
+    tmp_path = os.path.join(tmp_dir, safe_filename)
+    max_bytes = 200 * 1024 * 1024
+    total_bytes = 0
 
     try:
+        with open(tmp_path, "wb") as f:
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1MB chunk
+                if not chunk:
+                    break
+                total_bytes += len(chunk)
+                if total_bytes > max_bytes:
+                    raise HTTPException(status_code=413, detail="File too large. Maximum size is 200MB")
+                f.write(chunk)
+
         analysis_id = str(uuid.uuid4())
-        result = await asyncio.to_thread(_run_analysis, tmp_path, file.filename)
+        result = await asyncio.to_thread(_run_analysis, tmp_path, safe_filename)
         result["analysis_id"] = analysis_id
         _results[analysis_id] = result
 
         return {"analysis_id": analysis_id}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
     finally:
         # Clean up temp file safely
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
+
+
+def _safe_export_token(aid: str) -> str:
+    """Sanitize analysis ID to ensure safe RFC 6266 attachment filenames."""
+    cleaned = re.sub(r'[^a-zA-Z0-9_-]', '', aid)
+    return cleaned[:16] if cleaned else "evidence"
 
 
 @router.get("/analysis/{analysis_id}")
@@ -847,11 +1028,12 @@ async def get_json_report(analysis_id: str):
     if analysis_id not in _results:
         raise HTTPException(status_code=404, detail="Analysis not found")
 
+    safe_id = _safe_export_token(analysis_id)
     json_bytes = format_json_report(_results[analysis_id])
     return StreamingResponse(
         iter([json_bytes]),
         media_type="application/json",
-        headers={"Content-Disposition": f"attachment; filename=securemailscope_report_{analysis_id[:8]}.json"},
+        headers={"Content-Disposition": f'attachment; filename="securemailscope_report_{safe_id}.json"'},
     )
 
 
@@ -861,11 +1043,12 @@ async def get_pdf_report(analysis_id: str):
     if analysis_id not in _results:
         raise HTTPException(status_code=404, detail="Analysis not found")
 
+    safe_id = _safe_export_token(analysis_id)
     pdf_bytes = generate_pdf_report(_results[analysis_id])
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=securemailscope_report_{analysis_id[:8]}.pdf"},
+        headers={"Content-Disposition": f'attachment; filename="securemailscope_report_{safe_id}.pdf"'},
     )
 
 
@@ -875,10 +1058,88 @@ async def get_html_report(analysis_id: str):
     if analysis_id not in _results:
         raise HTTPException(status_code=404, detail="Analysis not found")
 
+    safe_id = _safe_export_token(analysis_id)
     html_content = generate_html_report(_results[analysis_id])
     return Response(
         content=html_content,
         media_type="text/html; charset=utf-8",
-        headers={"Content-Disposition": f"attachment; filename=securemailscope_report_{analysis_id[:8]}.html"},
+        headers={"Content-Disposition": f'attachment; filename="securemailscope_report_{safe_id}.html"'},
+    )
+
+
+@router.get("/certificate/{analysis_id}/{session_id}/pem")
+async def export_certificate_pem(analysis_id: str, session_id: int):
+    """Export raw X.509 certificate in PEM format for forensic tooling."""
+    if analysis_id not in _results:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    analysis = _results[analysis_id]
+    target_session = None
+    for s in analysis.get("sessions", []):
+        if s.get("session_id") == session_id:
+            target_session = s
+            break
+
+    if not target_session or not target_session.get("certificate"):
+        raise HTTPException(status_code=404, detail="Certificate not found for this session")
+
+    pem_data = target_session["certificate"].get("pem_data")
+    if not pem_data:
+        raise HTTPException(status_code=404, detail="PEM serialization unavailable")
+
+    safe_id = _safe_export_token(analysis_id)
+    filename = f"cert_analysis_{safe_id}_session_{abs(int(session_id))}.pem"
+    return Response(
+        content=pem_data,
+        media_type="application/x-pem-file",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/certificate/{analysis_id}/{session_id}/der")
+async def export_certificate_der(analysis_id: str, session_id: int):
+    """Export raw X.509 certificate in binary DER format for forensic tooling."""
+    if analysis_id not in _results:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    analysis = _results[analysis_id]
+    target_session = None
+    for s in analysis.get("sessions", []):
+        if s.get("session_id") == session_id:
+            target_session = s
+            break
+
+    if not target_session or not target_session.get("certificate"):
+        raise HTTPException(status_code=404, detail="Certificate not found for this session")
+
+    cert = target_session["certificate"]
+    der_hex = cert.get("raw_der_hex")
+    der_bytes = b""
+    if der_hex:
+        try:
+            der_bytes = bytes.fromhex(der_hex)
+        except Exception:
+            der_bytes = b""
+
+    if not der_bytes:
+        pem_str = cert.get("pem_data", "")
+        if pem_str and "-----BEGIN CERTIFICATE-----" in pem_str:
+            from cryptography import x509
+            from cryptography.hazmat.primitives import serialization
+            try:
+                loaded = x509.load_pem_x509_certificate(pem_str.encode("utf-8"))
+                der_bytes = loaded.public_bytes(serialization.Encoding.DER)
+            except Exception:
+                pass
+
+    if not der_bytes:
+        raise HTTPException(status_code=404, detail="DER binary representation unavailable")
+
+    safe_id = _safe_export_token(analysis_id)
+    filename = f"cert_analysis_{safe_id}_session_{abs(int(session_id))}.der"
+    return Response(
+        content=der_bytes,
+        media_type="application/pkix-cert",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

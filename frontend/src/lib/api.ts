@@ -33,3 +33,8 @@ export function getReportUrl(id: string, format: "pdf" | "json" | "html"): strin
   return `${API_BASE}/api/report/${id}/${format}`;
 }
 
+export function getCertificateUrl(id: string, sessionId: number, format: "pem" | "der"): string {
+  return `${API_BASE}/api/certificate/${id}/${sessionId}/${format}`;
+}
+
+

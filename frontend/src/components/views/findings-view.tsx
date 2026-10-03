@@ -229,6 +229,18 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
                   </span>
                 )}
 
+                {vuln.mitre_attack_id && (
+                  <span className="px-3 py-0.5 rounded-full bg-[#a855f7]/15 text-[#c084fc] border border-[#a855f7]/40 font-medium inline-flex items-center gap-1.5" title={vuln.mitre_attack_technique}>
+                    <span>MITRE ATT&amp;CK: {vuln.mitre_attack_id}</span>
+                  </span>
+                )}
+
+                {vuln.mitre_d3fend_id && (
+                  <span className="px-3 py-0.5 rounded-full bg-[#0284c7]/15 text-[#38bdf8] border border-[#0284c7]/40 font-medium inline-flex items-center gap-1.5">
+                    <span>D3FEND: {vuln.mitre_d3fend_id}</span>
+                  </span>
+                )}
+
                 {vuln.cve_references && vuln.cve_references.map((cve) => (
                   <span
                     key={cve}

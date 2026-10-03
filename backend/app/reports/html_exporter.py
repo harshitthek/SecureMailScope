@@ -84,10 +84,20 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
         v_proto = html.escape(str(v.get("protocol", "TLS")))
         v_flow = html.escape(str(v.get("affected_session_id", "GLOBAL")))
         
+        mitre_html = ""
+        if v.get("mitre_attack_id"):
+            m_id = html.escape(str(v.get("mitre_attack_id")))
+            m_tech = html.escape(str(v.get("mitre_attack_technique", "")))
+            d_id = html.escape(str(v.get("mitre_d3fend_id", "")))
+            mitre_pills = f'<span class="badge badge-mitre">ATT&CK {m_id}</span>'
+            if d_id:
+                mitre_pills += f' <span class="badge badge-d3fend">D3FEND {d_id}</span>'
+            mitre_html = f'<div style="margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">{mitre_pills}<span class="desc-text" style="margin-top:0;">{m_tech}</span></div>'
+        
         vuln_rows.append(f"""
         <tr>
           <td>{sev_badge(v_sev)}</td>
-          <td><strong>{v_title}</strong><br><span class="desc-text">{v_desc}</span></td>
+          <td><strong>{v_title}</strong><br><span class="desc-text">{v_desc}</span>{mitre_html}</td>
           <td><code>{v_proto}</code></td>
           <td><code>{v_flow}</code></td>
           <td class="remed-cell"><code>{v_remed}</code></td>
@@ -120,6 +130,17 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
         s_score = s.get("session_score", 0)
         s_grade = html.escape(str(s.get("session_grade", "F")))
         
+        pqc_st = s.get("pqc_status", "CLASSICAL_TRANSITIONAL")
+        if pqc_st == "PQC_RESISTANT":
+            pqc_badge = '<span class="badge badge-pqc-res">PQC RESISTANT</span>'
+        elif pqc_st == "CRQC_HARVEST_CRITICAL":
+            pqc_badge = '<span class="badge badge-critical">HNDL HARVEST RISK</span>'
+        elif pqc_st == "UNENCRYPTED_EXPOSED":
+            pqc_badge = '<span class="badge badge-fail">CLEARTEXT EXPOSED</span>'
+        else:
+            pqc_badge = '<span class="badge badge-pqc-trans">CLASSICAL TRANSITIONAL</span>'
+        pqc_grp = html.escape(str(s.get("pqc_group_name", "ECDHE")))
+        
         flow_rows.append(f"""
         <tr>
           <td><code>{s_id}</code></td>
@@ -129,11 +150,12 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
           <td><code>{tls_ver}</code></td>
           <td><code>{cipher}</code></td>
           <td>{pfs}</td>
+          <td>{pqc_badge}<br><span class="desc-text">{pqc_grp}</span></td>
           <td><code>{ja3_client}</code></td>
           <td><strong>{s_score}/100</strong> ({s_grade})</td>
         </tr>
         """)
-    flow_rows_html = "".join(flow_rows) if flow_rows else "<tr><td colspan='9' class='text-center'>No email session streams parsed.</td></tr>"
+    flow_rows_html = "".join(flow_rows) if flow_rows else "<tr><td colspan='10' class='text-center'>No email session streams parsed.</td></tr>"
 
     # Build Compliance Rows
     comp_rows = []
@@ -515,6 +537,10 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
     .badge-proto {{ background: rgba(148, 163, 184, 0.15); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); }}
     .badge-pass {{ background: var(--pass-bg); color: var(--pass); border: 1px solid rgba(16, 185, 129, 0.3); }}
     .badge-fail {{ background: var(--critical-bg); color: var(--critical); border: 1px solid rgba(239, 68, 68, 0.3); }}
+    .badge-mitre {{ background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }}
+    .badge-d3fend {{ background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }}
+    .badge-pqc-res {{ background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.5); }}
+    .badge-pqc-trans {{ background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); }}
 
     .text-hazard {{ color: var(--critical); font-weight: 700; }}
     .text-center {{ text-align: center; color: var(--text-dim); padding: 24px; }}
@@ -679,6 +705,7 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
             <th>TLS Version</th>
             <th>Negotiated Cipher</th>
             <th>PFS</th>
+            <th>Post-Quantum Posture</th>
             <th>JA3 Client Fingerprint</th>
             <th>Score</th>
           </tr>

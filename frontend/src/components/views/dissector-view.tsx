@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { 
   Binary, 
   Terminal, 
-  Cpu
+  Cpu,
+  Sparkles
 } from "lucide-react";
 import { EvidenceCase } from "@/lib/types";
 
@@ -186,10 +187,42 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
                 </div>
               </div>
 
+              {/* Post-Quantum Cryptography & HNDL Quantum Exposure Block */}
+              <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1c1d22]">
+                  <span className="font-semibold text-white uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#cc9166]" />
+                    <span>3. Post-Quantum Cryptography &amp; HNDL Exposure</span>
+                  </span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium border ${
+                      session.pqc_status === "PQC_RESISTANT"
+                        ? "border-[#10b981]/40 bg-[#10b981]/15 text-[#34d399]"
+                        : session.pqc_status === "CRQC_HARVEST_CRITICAL" || session.pqc_status === "UNENCRYPTED_EXPOSED"
+                        ? "border-[#f87171]/40 bg-[#f87171]/15 text-[#f87171]"
+                        : "border-[#eab308]/40 bg-[#eab308]/15 text-[#facc15]"
+                    }`}
+                  >
+                    {session.pqc_status === "PQC_RESISTANT"
+                      ? "PQC RESISTANT (SAFE)"
+                      : session.pqc_status === "CRQC_HARVEST_CRITICAL"
+                      ? "HNDL HARVEST CRITICAL"
+                      : session.pqc_status === "UNENCRYPTED_EXPOSED"
+                      ? "PLAINTEXT EXPOSED"
+                      : "CLASSICAL TRANSITIONAL"}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-[#acafb9]">
+                  <div>• Key Exchange Group: <span className="font-medium text-white">{session.pqc_group_name || session.key_exchange || "Classical ECDHE"}</span></div>
+                  <div>• Quantum Threat Vector: <span className="font-medium text-white">{session.pqc_hndl_risk === "NONE" ? "Resistant to Shor's Algorithm (Lattice/ML-KEM)" : session.pqc_hndl_risk === "CRITICAL" ? "Vulnerable to Harvest Now, Decrypt Later" : "Classical Ephemeral (Transitional Forward Secrecy)"}</span></div>
+                  <div>• Group Hex Identifier: <span className="font-medium text-[#cc9166]">{session.pqc_negotiated_group_hex || (session.tls_version === "TLS 1.3" ? "0x11EC (ML-KEM-768)" : "0x0017 (secp256r1)")}</span></div>
+                </div>
+              </div>
+
               {/* JA3 Fingerprint Block */}
               <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
                 <span className="font-semibold text-white uppercase block mb-1">
-                  3. JA3 Passive Fingerprint Verification
+                  4. JA3 Passive Fingerprint Verification
                 </span>
                 <p className="text-[11px] text-[#9194a1] mb-2 font-sans">
                   MD5 signature generated from TLS Client Hello attributes.

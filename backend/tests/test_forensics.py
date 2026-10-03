@@ -303,7 +303,63 @@ class TestForensicLogic(unittest.TestCase):
         self.assertIn("mail.secure-defense.gov.in", html_out)
         self.assertIn("Postfix", html_out)
 
+    def test_pqc_and_mitre_intelligence(self):
+        """Verify Post-Quantum classification and MITRE ATT&CK/D3FEND mappings."""
+        pcap_path = os.path.join(os.path.dirname(__file__), "..", "test_pcaps", "01_hardened_tls13_smtps.pcap")
+        if not os.path.exists(pcap_path):
+            self.skipTest("Sample pcap not found")
+
+        analysis = _run_analysis(pcap_path, "01_hardened_tls13_smtps.pcap")
+        sessions = analysis.get("sessions", [])
+        self.assertGreater(len(sessions), 0)
+
+        for s in sessions:
+            self.assertIn("pqc_status", s)
+            self.assertIn("pqc_group_name", s)
+            self.assertIn("pqc_hndl_risk", s)
+            self.assertIn(s["pqc_status"], ["PQC_RESISTANT", "CLASSICAL_TRANSITIONAL", "CRQC_HARVEST_CRITICAL", "UNENCRYPTED_EXPOSED"])
+
+        vulns = analysis.get("vulnerabilities", [])
+        for v in vulns:
+            self.assertIn("mitre_attack_id", v)
+            self.assertIn("mitre_d3fend_id", v)
+
+    def test_pem_certificate_serialization(self):
+        """Verify raw X.509 certificate serializes to valid PEM format."""
+        pcap_path = os.path.join(os.path.dirname(__file__), "..", "test_pcaps", "01_hardened_tls13_smtps.pcap")
+        if not os.path.exists(pcap_path):
+            self.skipTest("Sample pcap not found")
+
+        analysis = _run_analysis(pcap_path, "01_hardened_tls13_smtps.pcap")
+        cert_found = False
+        for s in analysis.get("sessions", []):
+            cert = s.get("certificate")
+            if cert and cert.get("pem_data"):
+                cert_found = True
+                pem_str = cert["pem_data"]
+                self.assertTrue(pem_str.startswith("-----BEGIN CERTIFICATE-----"))
+                self.assertIn("-----END CERTIFICATE-----", pem_str)
+                break
+        self.assertTrue(cert_found, "Expected at least one session with certificate PEM serialization")
+
+    def test_security_hardening_sanitization(self):
+        """Verify API security hardening: token sanitization and filename defense."""
+        from app.api.routes import _safe_export_token
+
+        # Test path traversal injection
+        self.assertEqual(_safe_export_token("../../../etc/passwd"), "etcpasswd")
+        # Test windows path traversal
+        self.assertEqual(_safe_export_token("..\\..\\boot.ini"), "bootini")
+        # Test special characters and 16-char max truncation
+        self.assertEqual(_safe_export_token("<script>alert(1)</script>"), "scriptalert1scri")
+        # Test normal UUID truncation
+        self.assertEqual(_safe_export_token("c28a8607-7b83-498c-8f2a-b62a6fa2c123"), "c28a8607-7b83-49")
+        # Test empty input fallback
+        self.assertEqual(_safe_export_token(""), "evidence")
+        self.assertEqual(_safe_export_token("!@#$%^&*()"), "evidence")
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

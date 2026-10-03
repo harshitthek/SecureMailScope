@@ -7,6 +7,7 @@ import { EditorialQuoteBand } from "./editorial-quote-band";
 import { ProtocolDivergenceStrip } from "./protocol-divergence-strip";
 import { FlowLedgerPreview } from "./flow-ledger-preview";
 import { SecurityTopology } from "./security-topology";
+import { WhatIfSimulator } from "./what-if-simulator";
 
 interface OverviewViewProps {
   activeCase: EvidenceCase;
@@ -33,17 +34,20 @@ export function OverviewView({ activeCase, onNavigateToFlow }: OverviewViewProps
       {/* 2. Full-Bleed 4-Column Proof Stat Band & Didone Pull Quote (Video Frame 00:12) */}
       <EditorialQuoteBand activeCase={activeCase} />
 
-      {/* 3. Expected vs Observed Protocol Divergence Strip */}
+      {/* 3. Interactive Hardening Sandbox & Real-Time Posture Elevation */}
+      <WhatIfSimulator activeCase={activeCase} />
+
+      {/* 4. Expected vs Observed Protocol Divergence Strip */}
       <ProtocolDivergenceStrip activeCase={activeCase} />
 
-      {/* 4. Reconstructed Flow Ledger Table (Slash Data Table Archetype) */}
+      {/* 5. Reconstructed Flow Ledger Table (Slash Data Table Archetype) */}
       <FlowLedgerPreview
         activeCase={activeCase}
         selectedFlowId={selectedFlowId}
         onSelectFlow={handleInspect}
       />
 
-      {/* 5. Node Graph Security Topology & Defense Pillars (Video Frame 00:16) */}
+      {/* 6. Node Graph Security Topology & Defense Pillars (Video Frame 00:16) */}
       <SecurityTopology />
     </main>
   );

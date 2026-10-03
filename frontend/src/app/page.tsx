@@ -53,7 +53,7 @@ function ForensicWorkstationInner() {
   );
   const [selectedFlowIdForFlows, setSelectedFlowIdForFlows] = useState<number | null>(null);
 
-  // Synchronize state and guarantee URL consistency
+  // Synchronize state, fetch live backend analysis data, and guarantee URL consistency
   useEffect(() => {
     setActiveCase(resolvedCase);
     setSelectedStreamId(resolvedCase.data.sessions[0]?.session_id || 1);
@@ -63,6 +63,29 @@ function ForensicWorkstationInner() {
       newUrl.searchParams.set("case", resolvedCase.case_code);
       window.history.replaceState(null, "", newUrl.toString());
     }
+
+    // Sync live forensic data from backend if available
+    const controller = new AbortController();
+    fetch(`http://127.0.0.1:8000/api/analysis/${resolvedCase.case_code}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((liveData: AnalysisResult | null) => {
+        if (liveData) {
+          setActiveCase((prev) => ({
+            ...prev,
+            data: {
+              ...prev.data,
+              ...liveData,
+              sessions: liveData.sessions && liveData.sessions.length > 0 ? liveData.sessions : prev.data.sessions,
+              vulnerabilities: liveData.vulnerabilities && liveData.vulnerabilities.length > 0 ? liveData.vulnerabilities : prev.data.vulnerabilities,
+            },
+          }));
+        }
+      })
+      .catch(() => {
+        // Fallback safely to pre-bundled local data
+      });
+
+    return () => controller.abort();
   }, [resolvedCase]);
 
   // When user switches case via the header dropdown

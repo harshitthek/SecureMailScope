@@ -1,19 +1,69 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { 
   Award, 
   ShieldCheck, 
   ShieldAlert, 
-  Globe
+  Globe,
+  Download,
+  Copy,
+  Check
 } from "lucide-react";
 import { EvidenceCase } from "@/lib/types";
+import { getCertificateUrl } from "@/lib/api";
 
 interface CertificatesViewProps {
   activeCase: EvidenceCase;
 }
 
 export function CertificatesView({ activeCase }: CertificatesViewProps) {
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  const handleCopyPem = (sessionId: number, pemText?: string) => {
+    if (!pemText) return;
+    navigator.clipboard.writeText(pemText);
+    setCopiedId(sessionId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleDownloadPem = (sessionId: number, pemText?: string) => {
+    if (pemText) {
+      const blob = new Blob([pemText], { type: "application/x-pem-file" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cert_${activeCase.id}_flow_${sessionId}.pem`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      window.open(getCertificateUrl(activeCase.id, sessionId, "pem"), "_blank");
+    }
+  };
+
+  const handleDownloadDer = (sessionId: number, derHex?: string) => {
+    if (derHex) {
+      try {
+        const bytes = new Uint8Array(derHex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || []);
+        const blob = new Blob([bytes], { type: "application/pkix-cert" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `cert_${activeCase.id}_flow_${sessionId}.der`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      } catch {
+        // Fallback to backend route
+      }
+    }
+    window.open(getCertificateUrl(activeCase.id, sessionId, "der"), "_blank");
+  };
+
   const sessionsWithCerts = activeCase.data.sessions.filter((s) => s.certificate !== null);
   const certSummary = activeCase.data.certificate_summary;
 
@@ -141,18 +191,64 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                     </div>
                   </div>
 
-                  {/* Status Badge */}
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wider self-start sm:self-auto ${
-                      isExpired
-                        ? "bg-[#7f1d1d]/20 text-[#f87171] border border-[#f87171]/40"
-                        : isWeakKey
-                        ? "bg-[#78350f]/20 text-[#fbbf24] border border-[#fbbf24]/40"
-                        : "bg-[#064e3b]/20 text-[#10b981] border border-[#10b981]/40"
-                    }`}
-                  >
-                    {isExpired ? "EXPIRED CERTIFICATE" : isWeakKey ? "WEAK PUBLIC KEY" : "VALID TRUST CHAIN"}
-                  </span>
+                  {/* Status Badge & Forensic Export Actions */}
+                  <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wider ${
+                        isExpired
+                          ? "bg-[#7f1d1d]/20 text-[#f87171] border border-[#f87171]/40"
+                          : isWeakKey
+                          ? "bg-[#78350f]/20 text-[#fbbf24] border border-[#fbbf24]/40"
+                          : "bg-[#064e3b]/20 text-[#10b981] border border-[#10b981]/40"
+                      }`}
+                    >
+                      {isExpired ? "EXPIRED CERTIFICATE" : isWeakKey ? "WEAK PUBLIC KEY" : "VALID TRUST CHAIN"}
+                    </span>
+
+                    <a
+                      href={getCertificateUrl(activeCase.id, s.session_id, "pem")}
+                      download={`cert_${activeCase.id}_flow_${s.session_id}.pem`}
+                      onClick={(e) => {
+                        if (cert.pem_data) {
+                          e.preventDefault();
+                          handleDownloadPem(s.session_id, cert.pem_data);
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-mono bg-[#121317] hover:bg-[#1c1d22] border border-[#2e3038] hover:border-[#cc9166] text-[#cc9166] flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Download raw RFC 7468 PEM file"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>.PEM</span>
+                    </a>
+
+                    <a
+                      href={getCertificateUrl(activeCase.id, s.session_id, "der")}
+                      download={`cert_${activeCase.id}_flow_${s.session_id}.der`}
+                      onClick={(e) => {
+                        if (cert.raw_der_hex) {
+                          e.preventDefault();
+                          handleDownloadDer(s.session_id, cert.raw_der_hex);
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-mono bg-[#121317] hover:bg-[#1c1d22] border border-[#2e3038] hover:border-[#cc9166] text-[#9194a1] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Download raw ASN.1 binary DER file"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>.DER</span>
+                    </a>
+
+                    {cert.pem_data && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyPem(s.session_id, cert.pem_data)}
+                        className="px-2.5 py-1 rounded-full text-[11px] font-mono bg-[#121317] hover:bg-[#1c1d22] border border-[#2e3038] hover:border-[#cc9166] text-[#9194a1] hover:text-white flex items-center gap-1.5 transition-colors"
+                        title="Copy PEM string to clipboard"
+                      >
+                        {copiedId === s.session_id ? <Check className="w-3 h-3 text-[#34d399]" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedId === s.session_id ? "Copied" : "Copy"}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Body Specs Grid */}

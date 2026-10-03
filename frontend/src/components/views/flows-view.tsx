@@ -179,6 +179,7 @@ export function FlowsView({ activeCase, initialFlowId, onInspectFlowInDissector 
                 <th className="py-3 px-4">TLS Version</th>
                 <th className="py-3 px-4">Cipher Suite</th>
                 <th className="py-3 px-4">PFS</th>
+                <th className="py-3 px-4">PQC Risk</th>
                 <th className="py-3 px-4">JA3 Match</th>
                 <th className="py-3 px-4 text-right">Score</th>
                 <th className="py-3 px-4 text-center">Action</th>
@@ -187,7 +188,7 @@ export function FlowsView({ activeCase, initialFlowId, onInspectFlowInDissector 
             <tbody className="divide-y divide-[#1c1d22]">
               {filteredSessions.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-12 px-4 text-center">
+                  <td colSpan={11} className="py-12 px-4 text-center">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-10 h-10 rounded-full bg-[#121317] border border-[#2e3038] flex items-center justify-center text-[#cc9166]">
                         <Search className="w-4 h-4" />
@@ -285,6 +286,26 @@ export function FlowsView({ activeCase, initialFlowId, onInspectFlowInDissector 
                         </span>
                       ) : (
                         <span className="text-[#5e616e]">NO</span>
+                      )}
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      {s.pqc_status === "PQC_RESISTANT" ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#10b981]/15 text-[#34d399] border border-[#10b981]/30 font-medium">
+                          PQC SAFE
+                        </span>
+                      ) : s.pqc_status === "CRQC_HARVEST_CRITICAL" ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#f87171]/15 text-[#f87171] border border-[#f87171]/30 font-medium">
+                          HNDL CRIT
+                        </span>
+                      ) : s.pqc_status === "UNENCRYPTED_EXPOSED" ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#f87171]/15 text-[#f87171] border border-[#f87171]/30 font-medium">
+                          CLEARTEXT
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#eab308]/15 text-[#facc15] border border-[#eab308]/30 font-medium">
+                          TRANSITIONAL
+                        </span>
                       )}
                     </td>
 

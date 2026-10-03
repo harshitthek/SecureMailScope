@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Dict, Tuple
-from scapy.all import rdpcap, TCP, IP, IPv6
+from scapy.all import PcapReader, rdpcap, TCP, IP, IPv6
 from datetime import datetime, timezone
 
 
@@ -72,12 +72,6 @@ def reassemble_tcp_payload(packets: list) -> bytes:
 
 def parse_pcap(file_path: str) -> list[StreamData]:
     """Reads a PCAP file, filters email protocols, and reassembles TCP streams."""
-    try:
-        packets = rdpcap(file_path)
-    except Exception as e:
-        print(f"Error reading pcap: {e}")
-        return []
-
     email_ports = {25, 110, 143, 465, 587, 993, 995}
     port_to_proto = {
         25: 'SMTP',
@@ -90,20 +84,19 @@ def parse_pcap(file_path: str) -> list[StreamData]:
     }
     implicit_tls_ports = {465, 993, 995}
 
-    # Group packets into conversation streams
+    # Group packets into conversation streams lazily using streaming PcapReader
     streams_raw: Dict[Tuple[str, int, str, int], List] = {}
 
-    for pkt in packets:
+    def _process_packet(pkt):
         if (IP in pkt or IPv6 in pkt) and TCP in pkt:
             ips = _get_ips(pkt)
             if not ips:
-                continue
+                return
             src_ip, dst_ip = ips
             src_port = int(pkt[TCP].sport)
             dst_port = int(pkt[TCP].dport)
 
             if src_port in email_ports or dst_port in email_ports:
-                # Direction-invariant stream key (canonical pair)
                 pair1 = (src_ip, src_port, dst_ip, dst_port)
                 pair2 = (dst_ip, dst_port, src_ip, src_port)
                 
@@ -112,11 +105,8 @@ def parse_pcap(file_path: str) -> list[StreamData]:
                 elif pair2 in streams_raw:
                     streams_raw[pair2].append(pkt)
                 else:
-                    # Determine client vs server orientation for initial key
-                    # Check for TCP SYN (without ACK)
                     tcp_flags = pkt[TCP].flags
                     is_syn_init = bool(tcp_flags & 0x02) and not bool(tcp_flags & 0x10)
-                    
                     if is_syn_init:
                         canonical_key = pair1
                     elif dst_port in email_ports and src_port not in email_ports:
@@ -125,8 +115,21 @@ def parse_pcap(file_path: str) -> list[StreamData]:
                         canonical_key = pair2
                     else:
                         canonical_key = pair1
-                    
                     streams_raw[canonical_key] = [pkt]
+
+    try:
+        with PcapReader(file_path) as pcap_reader:
+            for pkt in pcap_reader:
+                _process_packet(pkt)
+    except Exception:
+        # Fallback to rdpcap if PcapReader encounters non-standard capture headers
+        try:
+            packets = rdpcap(file_path)
+            for pkt in packets:
+                _process_packet(pkt)
+        except Exception as e_fallback:
+            print(f"Error reading pcap: {e_fallback}")
+            return []
 
     streams_result = []
     stream_id = 1  # 1-indexed for forensic clarity
@@ -172,8 +175,17 @@ def parse_pcap(file_path: str) -> list[StreamData]:
             
         is_implicit = server_port in implicit_tls_ports or client_port in implicit_tls_ports
 
-        client_pkts = [p for p in pkt_list if _get_ips(p) and _get_ips(p)[0] == client_ip]
-        server_pkts = [p for p in pkt_list if _get_ips(p) and _get_ips(p)[0] == server_ip]
+        client_pkts = [
+            p for p in pkt_list
+            if TCP in p and _get_ips(p) and _get_ips(p)[0] == client_ip and int(p[TCP].sport) == client_port
+        ]
+        server_pkts = [
+            p for p in pkt_list
+            if TCP in p and _get_ips(p) and _get_ips(p)[0] == server_ip and int(p[TCP].sport) == server_port
+        ]
+        if not client_pkts and not server_pkts:
+            client_pkts = [p for p in pkt_list if _get_ips(p) and _get_ips(p)[0] == client_ip]
+            server_pkts = [p for p in pkt_list if _get_ips(p) and _get_ips(p)[0] == server_ip]
 
         # Robust TCP payload reassembly with deduplication
         client_payload = reassemble_tcp_payload(client_pkts)
