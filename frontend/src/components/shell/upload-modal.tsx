@@ -224,6 +224,34 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalPro
             </div>
           )}
 
+          {/* Quick-Load Sample Attack Capture for Evaluators */}
+          {!isUploading && (
+            <div className="mt-4 p-3.5 rounded-[10px] bg-[#08080a] border border-[#1c1d22] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div>
+                <span className="font-semibold text-white block">Evaluating without a local PCAP?</span>
+                <span className="text-[11px] text-[#9194a1]">Instantly dispatch a real synthetic attack capture through the live backend engine.</span>
+              </div>
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    const resp = await fetch("/samples/02_striptls_mitm_attack.pcap");
+                    if (!resp.ok) throw new Error("Sample file not found on server");
+                    const blob = await resp.blob();
+                    const file = new File([blob], "02_striptls_mitm_attack.pcap", { type: "application/vnd.tcpdump.pcap" });
+                    handleFileProcess(file);
+                  } catch (err) {
+                    setError("Failed to load sample capture file: " + (err instanceof Error ? err.message : String(err)));
+                  }
+                }}
+                className="px-3.5 py-1.5 rounded-full bg-[#121317] border border-[#2e3038] hover:border-[#cc9166] text-[#cc9166] font-mono text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 justify-center"
+              >
+                <span>Run STRIPTLS Sample PCAP</span>
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="mt-4 p-3.5 rounded-[10px] border border-[#f87171]/40 bg-[#7f1d1d]/20 flex items-start gap-3 text-xs text-[#f87171] font-mono">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} />

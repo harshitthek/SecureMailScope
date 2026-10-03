@@ -151,7 +151,8 @@ export function FlowLedgerPreview({
                   <td className="py-3 px-3 text-right">
                     <button
                       type="button"
-                      className="px-2.5 py-1 rounded-full text-xs font-sans text-white hover:text-[#cc9166] transition-colors inline-flex items-center gap-1"
+                      onClick={() => onSelectFlow(s.session_id)}
+                      className="px-2.5 py-1 rounded-full text-xs font-sans text-white hover:text-[#cc9166] transition-colors inline-flex items-center gap-1 cursor-pointer"
                     >
                       <span>Dissect</span>
                       <ArrowRight className="w-3 h-3" />

@@ -73,5 +73,25 @@
     "client": "Mozilla Thunderbird",
     "version": "115+",
     "platform": "Linux/Windows"
+  },
+  "5170366b44ca3470ff4c1b2c45155f52": {
+    "client": "Exim Mail Transfer Agent",
+    "version": "4.96+",
+    "platform": "Linux/Unix MTA"
+  },
+  "839f30905203361600f72ec69380a69a": {
+    "client": "Sendmail MTA",
+    "version": "8.17+",
+    "platform": "Unix/FreeBSD"
+  },
+  "922e3eb8be830bc5b47a9ef032174360": {
+    "client": "Python smtplib / aiosmtpd",
+    "version": "3.10+",
+    "platform": "Automation / Pentest"
+  },
+  "453a23a9d9499e3fa6233d45e5a95f7c": {
+    "client": "curl / libcurl",
+    "version": "8.0+",
+    "platform": "Multi-platform CLI"
   }
 }

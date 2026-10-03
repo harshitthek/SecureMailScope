@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   Search, 
   Layers, 
@@ -17,6 +17,7 @@ import { EvidenceCase, Session } from "@/lib/types";
 
 interface FlowsViewProps {
   activeCase: EvidenceCase;
+  initialFlowId?: number | null;
   onInspectFlowInDissector?: (flowId: number) => void;
 }
 
@@ -28,10 +29,19 @@ const formatPenalty = (val: number | undefined) => {
   return { text: `-${absVal} pts`, color: "text-[#f87171]" };
 };
 
-export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewProps) {
+export function FlowsView({ activeCase, initialFlowId, onInspectFlowInDissector }: FlowsViewProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "SECURE" | "CRITICAL" | "WARNING">("ALL");
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    if (initialFlowId) {
+      const match = activeCase.data.sessions.find((s) => s.session_id === initialFlowId);
+      if (match) {
+        setSelectedSession(match);
+      }
+    }
+  }, [initialFlowId, activeCase]);
 
   const filteredSessions = useMemo(() => {
     return activeCase.data.sessions.filter((s) => {
@@ -133,10 +143,11 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#777a88]" />
             <input
+              id="flows-search-input"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by IP, port, protocol, server name, cipher suite, or JA3..."
+              placeholder="Search by IP, port, protocol, server name, cipher suite, or JA3... (Press '/' to focus)"
               className="w-full h-9 pl-9 pr-4 rounded-full bg-[#121317] border border-[#2e3038] text-xs text-[#e2e3e9] placeholder:text-[#5e616e] focus:outline-none focus:border-[#cc9166] font-mono"
             />
             {searchTerm && (
@@ -174,15 +185,42 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1c1d22]">
-              {filteredSessions.map((s, idx) => {
-                const isSecure = s.session_score >= 80;
-                const isCritical = s.session_score < 50 || s.starttls_stripped;
-                const flowTag = `F${String(idx + 1).padStart(2, "0")}`;
+              {filteredSessions.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="py-12 px-4 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-[#121317] border border-[#2e3038] flex items-center justify-center text-[#cc9166]">
+                        <Search className="w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-sans font-medium text-white">No Matching Email Streams Found</span>
+                      <p className="text-xs text-[#9194a1] max-w-sm">
+                        No reconstructed TCP flows match your current search query or status filter.
+                      </p>
+                      {(searchTerm || statusFilter !== "ALL") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchTerm("");
+                            setStatusFilter("ALL");
+                          }}
+                          className="mt-2 px-3 py-1 rounded-full bg-[#121317] border border-[#2e3038] hover:border-[#cc9166] text-[#cc9166] text-xs font-mono transition-colors"
+                        >
+                          Clear Active Filters
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredSessions.map((s, idx) => {
+                  const isSecure = s.session_score >= 80;
+                  const isCritical = s.session_score < 50 || s.starttls_stripped;
+                  const flowTag = `F${String(idx + 1).padStart(2, "0")}`;
 
-                return (
-                  <tr
-                    key={s.session_id}
-                    onClick={() => setSelectedSession(s)}
+                  return (
+                    <tr
+                      key={s.session_id}
+                      onClick={() => setSelectedSession(s)}
                     className="hover:bg-[#121317] cursor-pointer transition-colors duration-150 group"
                   >
                     <td className="py-3.5 px-4 font-semibold text-white">
@@ -290,7 +328,7 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

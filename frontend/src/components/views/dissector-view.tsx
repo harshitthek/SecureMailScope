@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Binary, 
   Terminal, 
@@ -26,6 +26,14 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
     initialStreamId || activeCase.data.sessions[0]?.session_id || 1
   );
   const [mode, setMode] = useState<"AUDIT" | "RAW">("AUDIT");
+
+  useEffect(() => {
+    if (initialStreamId) {
+      setSelectedStreamId(initialStreamId);
+    } else if (activeCase.data.sessions[0]) {
+      setSelectedStreamId(activeCase.data.sessions[0].session_id);
+    }
+  }, [initialStreamId, activeCase]);
 
   const session = activeCase.data.sessions.find((s) => s.session_id === selectedStreamId) || activeCase.data.sessions[0];
 

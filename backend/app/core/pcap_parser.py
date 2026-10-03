@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Dict, Tuple
-from scapy.all import rdpcap, TCP, IP
+from scapy.all import rdpcap, TCP, IP, IPv6
 from datetime import datetime
 
 @dataclass
@@ -16,6 +16,14 @@ class StreamData:
     server_payload: bytes
     timestamp: str
     packet_count: int
+
+def _get_ips(pkt) -> tuple[str, str] | None:
+    """Extract src and dst IP handling dual-stack IPv4 and IPv6."""
+    if IP in pkt:
+        return pkt[IP].src, pkt[IP].dst
+    if IPv6 in pkt:
+        return pkt[IPv6].src, pkt[IPv6].dst
+    return None
 
 def reassemble_tcp_payload(packets: list) -> bytes:
     """
@@ -85,9 +93,11 @@ def parse_pcap(file_path: str) -> list[StreamData]:
     streams_raw: Dict[Tuple[str, int, str, int], List] = {}
 
     for pkt in packets:
-        if IP in pkt and TCP in pkt:
-            src_ip = pkt[IP].src
-            dst_ip = pkt[IP].dst
+        if (IP in pkt or IPv6 in pkt) and TCP in pkt:
+            ips = _get_ips(pkt)
+            if not ips:
+                continue
+            src_ip, dst_ip = ips
             src_port = int(pkt[TCP].sport)
             dst_port = int(pkt[TCP].dport)
 
@@ -133,15 +143,16 @@ def parse_pcap(file_path: str) -> list[StreamData]:
         # Role refinement: check for SYN flag initiation in packet history
         client_identified = False
         for p in pkt_list:
-            if TCP in p and IP in p:
+            if TCP in p and (IP in p or IPv6 in p):
                 flags = p[TCP].flags
                 if bool(flags & 0x02) and not bool(flags & 0x10):
-                    client_ip = p[IP].src
-                    client_port = int(p[TCP].sport)
-                    server_ip = p[IP].dst
-                    server_port = int(p[TCP].dport)
-                    client_identified = True
-                    break
+                    ips = _get_ips(p)
+                    if ips:
+                        client_ip, server_ip = ips
+                        client_port = int(p[TCP].sport)
+                        server_port = int(p[TCP].dport)
+                        client_identified = True
+                        break
         
         if not client_identified:
             # Fall back to well-known service port convention
@@ -160,8 +171,8 @@ def parse_pcap(file_path: str) -> list[StreamData]:
             
         is_implicit = server_port in implicit_tls_ports or client_port in implicit_tls_ports
 
-        client_pkts = [p for p in pkt_list if p[IP].src == client_ip]
-        server_pkts = [p for p in pkt_list if p[IP].src == server_ip]
+        client_pkts = [p for p in pkt_list if _get_ips(p) and _get_ips(p)[0] == client_ip]
+        server_pkts = [p for p in pkt_list if _get_ips(p) and _get_ips(p)[0] == server_ip]
 
         # Robust TCP payload reassembly with deduplication
         client_payload = reassemble_tcp_payload(client_pkts)

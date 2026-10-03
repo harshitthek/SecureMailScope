@@ -81,7 +81,7 @@ export function PostureHero({ activeCase, onInspectFlow }: PostureHeroProps) {
       {/* ----------------------------------------------------
           LEFT COLUMN: DIDONE HEADLINE & FORENSIC EVIDENCE (7 COLS)
           ---------------------------------------------------- */}
-      <div className="lg:col-span-7 flex flex-col gap-4">
+      <div className="lg:col-span-7 flex flex-col gap-4 pt-3">
         <div>
           {/* Category Eyebrow in Copper */}
           <div className="flex items-center gap-2 mb-2">

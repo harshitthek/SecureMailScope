@@ -44,6 +44,12 @@ with open(os.path.join(_data_dir, "cipher_db.json"), "r") as f:
 with open(os.path.join(_data_dir, "nist_rules.json"), "r") as f:
     NIST_RULES: list[dict] = json.load(f)
 
+# Pre-seed built-in defense cases (CASE-01 through CASE-04) for instantaneous dossier generation
+_demo_cases_path = os.path.join(_data_dir, "demo_cases.json")
+if os.path.exists(_demo_cases_path):
+    with open(_demo_cases_path, "r", encoding="utf-8") as f:
+        _results.update(json.load(f))
+
 
 def _map_severity_color(severity: str) -> str:
     """Map severity to hex color for frontend charts."""
