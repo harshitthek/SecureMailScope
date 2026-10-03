@@ -29,6 +29,7 @@ export async function getAnalysis(id: string): Promise<AnalysisResult> {
   return res.json();
 }
 
-export function getReportUrl(id: string, format: "pdf" | "json"): string {
+export function getReportUrl(id: string, format: "pdf" | "json" | "html"): string {
   return `${API_BASE}/api/report/${id}/${format}`;
 }
+

@@ -83,7 +83,7 @@ function ForensicWorkstationInner() {
     window.history.pushState(null, "", newUrl.toString());
   }, []);
 
-  const handleExport = useCallback((format: "pdf" | "json") => {
+  const handleExport = useCallback((format: "pdf" | "json" | "html") => {
     const url = getReportUrl(activeCase.data.analysis_id, format);
     showToast(`Generating ${format.toUpperCase()} Forensic Dossier...`, "success");
     window.open(url, "_blank");
@@ -149,6 +149,13 @@ function ForensicWorkstationInner() {
       if (e.key === "d" || e.key === "D") {
         e.preventDefault();
         handleExport("pdf");
+        return;
+      }
+
+      // Hotkey: H -> download HTML dossier
+      if (e.key === "h" || e.key === "H") {
+        e.preventDefault();
+        handleExport("html");
         return;
       }
 
@@ -285,6 +292,7 @@ function ForensicWorkstationInner() {
         onSelectTab={handleSelectTab}
         onOpenUpload={() => setIsUploadOpen(true)}
         onExportPdf={() => handleExport("pdf")}
+        onExportHtml={() => handleExport("html")}
         onExportJson={() => handleExport("json")}
       />
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Download, ChevronDown, FileJson, FileText } from "lucide-react";
+import { Download, ChevronDown, FileJson, FileText, FileCode } from "lucide-react";
 import { getReportUrl } from "@/lib/api";
 
 interface ExportMenuProps {
@@ -22,7 +22,7 @@ export function ExportMenu({ analysisId }: ExportMenuProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleDownload = (format: "json" | "pdf") => {
+  const handleDownload = (format: "json" | "pdf" | "html") => {
     const url = getReportUrl(analysisId, format);
     window.open(url, "_blank");
     setOpen(false);
@@ -57,6 +57,19 @@ export function ExportMenu({ analysisId }: ExportMenuProps) {
             <div className="flex flex-col">
               <span className="font-semibold text-white group-hover:text-[#f87171] transition-colors">Executive Audit (PDF)</span>
               <span className="text-[10px] text-[#9194a1]">Official Forensics &amp; Scores</span>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDownload("html")}
+            className="w-full text-left px-3 py-2.5 rounded-[8px] flex items-center gap-3 hover:bg-[#121317] text-[#e2e3e9] transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-full bg-[#121317] border border-[#1c1d22] flex items-center justify-center text-[#38bdf8]">
+              <FileCode className="w-4 h-4" strokeWidth={2} />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-white group-hover:text-[#38bdf8] transition-colors">Standalone HTML Dossier</span>
+              <span className="text-[10px] text-[#9194a1]">Air-Gapped Interactive Report</span>
             </div>
           </button>
           <button

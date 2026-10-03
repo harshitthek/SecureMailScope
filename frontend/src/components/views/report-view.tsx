@@ -5,6 +5,7 @@ import {
   FileSpreadsheet, 
   FileText, 
   FileJson, 
+  FileCode,
   Printer
 } from "lucide-react";
 import { EvidenceCase } from "@/lib/types";
@@ -17,7 +18,7 @@ interface ReportViewProps {
 export function ReportView({ activeCase }: ReportViewProps) {
   const isFail = activeCase.posture_grade === "F" || activeCase.posture_score < 50;
 
-  const handleDownload = (format: "pdf" | "json") => {
+  const handleDownload = (format: "pdf" | "json" | "html") => {
     const url = getReportUrl(activeCase.data.analysis_id, format);
     window.open(url, "_blank");
   };
@@ -53,6 +54,15 @@ export function ReportView({ activeCase }: ReportViewProps) {
             >
               <FileText className="w-3.5 h-3.5" />
               <span>Export PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleDownload("html")}
+              className="h-9 px-4 rounded-full border border-[#38bdf8]/40 bg-[#0284c7]/20 hover:bg-[#0284c7]/30 text-[#38bdf8] font-medium text-xs font-mono flex items-center gap-2 transition-colors"
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              <span>Export HTML</span>
             </button>
 
             <button

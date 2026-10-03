@@ -13,11 +13,13 @@ import os
 import uuid
 import json
 import tempfile
+import shutil
+import asyncio
 from datetime import datetime, timezone
 from typing import Any
 import time
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Response
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from app.core.pcap_parser import parse_pcap, StreamData
@@ -29,6 +31,7 @@ from app.core.scorer import score_session, score_enterprise, ScoringResult, calc
 from app.core.anomaly import build_feature_vector, detect_anomalies
 from app.reports.pdf_exporter import generate_pdf_report
 from app.reports.json_exporter import format_json_report
+from app.reports.html_exporter import generate_html_report
 
 router = APIRouter()
 
@@ -816,7 +819,7 @@ async def upload_pcap(file: UploadFile = File(...)):
 
     try:
         analysis_id = str(uuid.uuid4())
-        result = _run_analysis(tmp_path, file.filename)
+        result = await asyncio.to_thread(_run_analysis, tmp_path, file.filename)
         result["analysis_id"] = analysis_id
         _results[analysis_id] = result
 
@@ -825,12 +828,9 @@ async def upload_pcap(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
     finally:
-        # Clean up temp file
-        try:
-            os.remove(tmp_path)
-            os.rmdir(tmp_dir)
-        except OSError:
-            pass
+        # Clean up temp file safely
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
 
 
 @router.get("/analysis/{analysis_id}")
@@ -867,3 +867,18 @@ async def get_pdf_report(analysis_id: str):
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=securemailscope_report_{analysis_id[:8]}.pdf"},
     )
+
+
+@router.get("/report/{analysis_id}/html")
+async def get_html_report(analysis_id: str):
+    """Download standalone self-contained HTML forensic dossier."""
+    if analysis_id not in _results:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    html_content = generate_html_report(_results[analysis_id])
+    return Response(
+        content=html_content,
+        media_type="text/html; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename=securemailscope_report_{analysis_id[:8]}.html"},
+    )
+

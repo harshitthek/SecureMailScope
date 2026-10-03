@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Dict, Tuple
 from scapy.all import rdpcap, TCP, IP, IPv6
-from datetime import datetime
+from datetime import datetime, timezone
+
 
 @dataclass
 class StreamData:
@@ -179,9 +180,10 @@ def parse_pcap(file_path: str) -> list[StreamData]:
         server_payload = reassemble_tcp_payload(server_pkts)
 
         try:
-            ts = datetime.fromtimestamp(float(pkt_list[0].time)).isoformat()
+            ts = datetime.fromtimestamp(float(pkt_list[0].time), tz=timezone.utc).isoformat()
         except Exception:
             ts = ""
+
 
         sd = StreamData(
             stream_id=stream_id,

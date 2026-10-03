@@ -234,6 +234,76 @@ class TestForensicLogic(unittest.TestCase):
                 self.assertIn("vulnerabilities", res)
                 self.assertGreater(len(res["sessions"]), 0)
 
+    def test_html_report_generation(self):
+        """Verify HTML forensic report generates valid, complete, and air-gapped HTML5 markup."""
+        from app.reports.html_exporter import generate_html_report
+        mock_analysis = {
+            "analysis_id": "TEST-HTML-001",
+            "filename": "test_evidence.pcap",
+            "analyzed_at": "2026-10-04T00:00:00Z",
+            "file_size_bytes": 10240,
+            "processing_time_ms": 25,
+            "enterprise_score": 95,
+            "enterprise_grade": "A+",
+            "protocols_detected": ["SMTPS", "IMAPS"],
+            "sessions": [
+                {
+                    "session_id": "FLOW-01",
+                    "protocol": "SMTPS",
+                    "src_ip": "10.0.0.1",
+                    "src_port": 45000,
+                    "dst_ip": "10.0.0.25",
+                    "dst_port": 465,
+                    "is_implicit_tls": True,
+                    "tls_version": "TLS 1.3",
+                    "cipher_name": "TLS_AES_256_GCM_SHA384",
+                    "has_forward_secrecy": True,
+                    "session_score": 100,
+                    "session_grade": "A+",
+                }
+            ],
+            "vulnerabilities": [
+                {
+                    "title": "Legacy Protocol Warning",
+                    "description": "TLS 1.0 identified on legacy interface",
+                    "severity": "low",
+                    "protocol": "SMTP",
+                    "affected_session_id": "FLOW-01",
+                    "remediation": "smtpd_tls_mandatory_protocols = !TLSv1",
+                }
+            ],
+            "compliance": [
+                {
+                    "standard": "NIST SP 800-52r2",
+                    "section": "Section 3.1",
+                    "requirement": "TLS 1.2 or TLS 1.3 mandated",
+                    "status": "pass",
+                    "details": "Negotiated TLS 1.3",
+                }
+            ],
+            "certificate_summary": [
+                {
+                    "subject_cn": "mail.secure-defense.gov.in",
+                    "issuer_cn": "National Defense CA",
+                    "is_expired": False,
+                    "is_self_signed": False,
+                    "days_remaining": 320,
+                    "public_key_type": "RSA",
+                    "public_key_bits": 4096,
+                    "signature_hash": "SHA-256",
+                }
+            ],
+        }
+        html_out = generate_html_report(mock_analysis)
+        self.assertIn("<!DOCTYPE html>", html_out)
+        self.assertIn("TEST-HTML-001", html_out)
+        self.assertIn("SecureMailScope Forensic Audit Dossier", html_out)
+        self.assertIn("GRADE A+", html_out)
+        self.assertIn("NIST SP 800-52r2", html_out)
+        self.assertIn("mail.secure-defense.gov.in", html_out)
+        self.assertIn("Postfix", html_out)
+
 
 if __name__ == "__main__":
     unittest.main()
+

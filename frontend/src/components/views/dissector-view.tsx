@@ -37,13 +37,27 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
 
   const session = activeCase.data.sessions.find((s) => s.session_id === selectedStreamId) || activeCase.data.sessions[0];
 
+  if (!session) {
+    return (
+      <main className="flex-1 w-full max-w-[1216px] mx-auto px-6 py-4 flex flex-col gap-6 pb-20 select-none font-sans">
+        <div className="bg-[#040406] border border-[#1c1d22] rounded-[10px] p-12 text-center">
+          <Binary className="w-10 h-10 text-[#9194a1] mx-auto mb-3" />
+          <h3 className="font-serif font-normal text-white text-lg">No Active Streams Available</h3>
+          <p className="text-xs text-[#9194a1] mt-1 max-w-sm mx-auto">
+            The selected capture dossier contains zero reconstructed email transport sessions.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   const isSecure = session.session_score >= 80;
 
-  const protoP = formatPenalty(session.scoring_breakdown.protocol_penalty);
-  const cipherP = formatPenalty(session.scoring_breakdown.cipher_penalty);
-  const pfsP = formatPenalty(session.scoring_breakdown.pfs_penalty);
-  const certP = formatPenalty(session.scoring_breakdown.cert_penalty);
-  const anomalyP = formatPenalty(session.scoring_breakdown.anomaly_penalty);
+  const protoP = formatPenalty(session.scoring_breakdown?.protocol_penalty);
+  const cipherP = formatPenalty(session.scoring_breakdown?.cipher_penalty);
+  const pfsP = formatPenalty(session.scoring_breakdown?.pfs_penalty);
+  const certP = formatPenalty(session.scoring_breakdown?.cert_penalty);
+  const anomalyP = formatPenalty(session.scoring_breakdown?.anomaly_penalty);
 
 
   return (

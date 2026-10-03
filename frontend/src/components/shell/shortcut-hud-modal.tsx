@@ -10,6 +10,7 @@ interface ShortcutHudModalProps {
   onSelectTab: (tab: ShellNavTab) => void;
   onOpenUpload: () => void;
   onExportPdf: () => void;
+  onExportHtml?: () => void;
   onExportJson: () => void;
 }
 
@@ -19,6 +20,7 @@ export function ShortcutHudModal({
   onSelectTab,
   onOpenUpload,
   onExportPdf,
+  onExportHtml,
   onExportJson,
 }: ShortcutHudModalProps) {
   useEffect(() => {
@@ -138,6 +140,19 @@ export function ShortcutHudModal({
                   <span className="text-[#e2e3e9] group-hover:text-white font-sans">Export PDF Dossier</span>
                   <kbd className="px-2 py-0.5 rounded bg-[#121317] border border-[#2e3038] text-[#cc9166] text-[11px] font-semibold">
                     D
+                  </kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onExportHtml) onExportHtml();
+                  }}
+                  className="w-full flex items-center justify-between p-2 rounded-[6px] bg-[#08080a] border border-[#1c1d22] hover:border-[#cc9166]/40 hover:bg-[#121317] text-left transition-colors group"
+                >
+                  <span className="text-[#e2e3e9] group-hover:text-white font-sans">Export HTML Dossier</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[#121317] border border-[#2e3038] text-[#cc9166] text-[11px] font-semibold">
+                    H
                   </kbd>
                 </button>
                 <button
