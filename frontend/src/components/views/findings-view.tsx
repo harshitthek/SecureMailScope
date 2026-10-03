@@ -6,7 +6,8 @@ import {
   AlertTriangle, 
   Layers, 
   Sparkles,
-  BookOpen
+  BookOpen,
+  ShieldCheck
 } from "lucide-react";
 import { EvidenceCase, Severity } from "@/lib/types";
 
@@ -151,8 +152,23 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
 
       {/* Vulnerability Items List */}
       <div className="space-y-3.5">
-        {filtered.map((vuln) => {
-          const isCrit = vuln.severity === "critical";
+        {filtered.length === 0 ? (
+          <div className="bg-[#040406] border border-[#1c1d22] rounded-[10px] p-12 text-center flex flex-col items-center">
+            <div className="w-12 h-12 rounded-full bg-[#064e3b]/20 border border-[#10b981]/40 text-[#10b981] flex items-center justify-center mb-3">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <h3 className="font-serif font-normal text-white text-lg">
+              {vulnerabilities.length === 0 ? "No Cryptographic Vulnerabilities Detected" : "No Findings Matching Active Filter"}
+            </h3>
+            <p className="text-xs text-[#9194a1] mt-1 max-w-md mx-auto leading-relaxed">
+              {vulnerabilities.length === 0
+                ? "All inspected email transport streams satisfy strict NIST SP 800-52r2 and RFC 8314 cryptographic requirements. Transport security posture verified."
+                : "Select another severity filter or view all findings to inspect logged security events."}
+            </p>
+          </div>
+        ) : (
+          filtered.map((vuln) => {
+            const isCrit = vuln.severity === "critical";
           const isHigh = vuln.severity === "high";
 
           return (
@@ -239,7 +255,8 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
               )}
             </div>
           );
-        })}
+        })
+      )}
       </div>
     </main>
   );

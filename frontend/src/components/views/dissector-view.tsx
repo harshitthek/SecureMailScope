@@ -13,6 +13,14 @@ interface DissectorViewProps {
   initialStreamId?: number;
 }
 
+const formatPenalty = (val: number | undefined) => {
+  const absVal = Math.abs(val || 0);
+  if (absVal === 0) {
+    return { text: "0 pts", color: "text-[#9194a1]" };
+  }
+  return { text: `-${absVal} pts`, color: "text-[#f87171]" };
+};
+
 export function DissectorView({ activeCase, initialStreamId }: DissectorViewProps) {
   const [selectedStreamId, setSelectedStreamId] = useState<number>(
     initialStreamId || activeCase.data.sessions[0]?.session_id || 1
@@ -22,6 +30,13 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
   const session = activeCase.data.sessions.find((s) => s.session_id === selectedStreamId) || activeCase.data.sessions[0];
 
   const isSecure = session.session_score >= 80;
+
+  const protoP = formatPenalty(session.scoring_breakdown.protocol_penalty);
+  const cipherP = formatPenalty(session.scoring_breakdown.cipher_penalty);
+  const pfsP = formatPenalty(session.scoring_breakdown.pfs_penalty);
+  const certP = formatPenalty(session.scoring_breakdown.cert_penalty);
+  const anomalyP = formatPenalty(session.scoring_breakdown.anomaly_penalty);
+
 
   return (
     <main className="flex-1 w-full max-w-[1216px] mx-auto px-6 py-4 flex flex-col gap-6 pb-20 select-none font-sans">
@@ -190,19 +205,23 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
                   <span className="text-[#9194a1]">Protocol Version Penalty</span>
-                  <span className="font-serif text-[#f87171]">-{session.scoring_breakdown.protocol_penalty} pts</span>
+                  <span className={`font-serif ${protoP.color}`}>{protoP.text}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
                   <span className="text-[#9194a1]">Cipher Suite Penalty</span>
-                  <span className="font-serif text-[#f87171]">-{session.scoring_breakdown.cipher_penalty} pts</span>
+                  <span className={`font-serif ${cipherP.color}`}>{cipherP.text}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
                   <span className="text-[#9194a1]">Forward Secrecy (PFS)</span>
-                  <span className="font-serif text-[#f87171]">-{session.scoring_breakdown.pfs_penalty} pts</span>
+                  <span className={`font-serif ${pfsP.color}`}>{pfsP.text}</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
+                  <span className="text-[#9194a1]">Certificate Trust Penalty</span>
+                  <span className={`font-serif ${certP.color}`}>{certP.text}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
                   <span className="text-[#9194a1]">Anomaly / Downgrade</span>
-                  <span className="font-serif text-[#f87171]">-{session.scoring_breakdown.anomaly_penalty} pts</span>
+                  <span className={`font-serif ${anomalyP.color}`}>{anomalyP.text}</span>
                 </div>
               </div>
             </div>
@@ -232,27 +251,59 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
               === REASSEMBLED TCP STREAM: {session.src_ip}:{session.src_port} &lt;--&gt; {session.dst_ip}:{session.dst_port} ===
             </div>
 
-            <div>00000000  32 32 30 20 6d 61 69 6c  2e 63 6f 72 70 2e 6e 65  |220 mail.corp.ne| S-&gt;C</div>
-            <div>00000010  74 20 45 53 4d 54 50 20  53 65 72 76 69 63 65 0d  |t ESMTP Service.| S-&gt;C</div>
-            <div>00000020  0a 45 48 4c 4f 20 63 6c  69 65 6e 74 2e 6c 6f 63  |.EHLO client.loc| C-&gt;S</div>
-            <div>00000030  61 6c 0d 0a 32 35 30 2d  6d 61 69 6c 2e 63 6f 72  |al..250-mail.cor| S-&gt;C</div>
-
-            {session.starttls_stripped ? (
-              <div className="bg-[#f87171]/10 text-[#f87171] p-2.5 rounded-[10px] border border-[#f87171]/30 my-2">
-                <span className="font-semibold block">[!] FORENSIC ANOMALY AT OFFSET 0x00000040:</span>
-                <div>00000040  32 35 30 20 50 49 50 45  4c 49 4e 49 4e 47 0d 0a  |250 PIPELINING..| S-&gt;C</div>
-                <div className="font-semibold mt-1">--&gt; &apos;250-STARTTLS&apos; CAPABILITY STRIPPED BY MITM INTERCEPTOR &lt;--</div>
-              </div>
+            {session.forensic_inspection?.raw_chunks && session.forensic_inspection.raw_chunks.length > 0 ? (
+              session.forensic_inspection.raw_chunks.map((chunk, cIdx) => (
+                <React.Fragment key={cIdx}>
+                  <div className="flex items-center gap-4 font-mono text-[11px]">
+                    <span className="text-[#777a88] shrink-0">0x{chunk.offset.padStart(4, "0")}</span>
+                    <span className="text-[#e2e3e9] tracking-wider shrink-0">{chunk.hex.padEnd(48, " ")}</span>
+                    <span className="text-[#9194a1] shrink-0">|{chunk.ascii}|</span>
+                    <span className="text-[#cc9166] text-[10px] shrink-0">[{chunk.direction}]</span>
+                    <span className="text-[#777a88] text-[10px] truncate">{chunk.protocol_phase}</span>
+                  </div>
+                  {chunk.highlight_label && (
+                    <div
+                      className={`p-2.5 rounded-[8px] my-2 border text-xs font-sans ${
+                        chunk.highlight_type === "danger"
+                          ? "bg-[#f87171]/10 text-[#f87171] border-[#f87171]/30"
+                          : chunk.highlight_type === "warning"
+                          ? "bg-[#fbbf24]/10 text-[#fbbf24] border-[#fbbf24]/30"
+                          : chunk.highlight_type === "secure"
+                          ? "bg-[#34d399]/10 text-[#34d399] border-[#34d399]/30"
+                          : "bg-[#121317] text-[#cc9166] border-[#2e3038]"
+                      }`}
+                    >
+                      <span className="font-semibold block font-mono text-[10px] uppercase">
+                        [!] Forensic Wire Transition at Offset 0x{chunk.offset.padStart(4, "0")}:
+                      </span>
+                      <span className="font-mono text-xs">{chunk.highlight_label}</span>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))
             ) : (
-              <div className="bg-[#34d399]/10 text-[#34d399] p-2.5 rounded-[10px] border border-[#34d399]/30 my-2">
-                <div>00000040  32 35 30 2d 53 54 41 52  54 54 4c 53 0d 0a        |250-STARTTLS..| S-&gt;C</div>
-                <div className="font-semibold mt-1">--&gt; STARTTLS ADVERTISED &amp; ACCEPTED &lt;--</div>
-              </div>
+              <>
+                <div>00000000  32 32 30 20 6d 61 69 6c  2e 63 6f 72 70 2e 6e 65  |220 mail.corp.ne| S-&gt;C</div>
+                <div>00000010  74 20 45 53 4d 54 50 20  53 65 72 76 69 63 65 0d  |t ESMTP Service.| S-&gt;C</div>
+                <div>00000020  0a 45 48 4c 4f 20 63 6c  69 65 6e 74 2e 6c 6f 63  |.EHLO client.loc| C-&gt;S</div>
+                <div>00000030  61 6c 0d 0a 32 35 30 2d  6d 61 69 6c 2e 63 6f 72  |al..250-mail.cor| S-&gt;C</div>
+                {session.starttls_stripped ? (
+                  <div className="bg-[#f87171]/10 text-[#f87171] p-2.5 rounded-[10px] border border-[#f87171]/30 my-2">
+                    <span className="font-semibold block">[!] FORENSIC ANOMALY AT OFFSET 0x00000040:</span>
+                    <div>00000040  32 35 30 20 50 49 50 45  4c 49 4e 49 4e 47 0d 0a  |250 PIPELINING..| S-&gt;C</div>
+                    <div className="font-semibold mt-1">--&gt; &apos;250-STARTTLS&apos; CAPABILITY STRIPPED BY MITM INTERCEPTOR &lt;--</div>
+                  </div>
+                ) : (
+                  <div className="bg-[#34d399]/10 text-[#34d399] p-2.5 rounded-[10px] border border-[#34d399]/30 my-2">
+                    <div>00000040  32 35 30 2d 53 54 41 52  54 54 4c 53 0d 0a        |250-STARTTLS..| S-&gt;C</div>
+                    <div className="font-semibold mt-1">--&gt; STARTTLS ADVERTISED &amp; ACCEPTED &lt;--</div>
+                  </div>
+                )}
+                <div>00000050  53 54 41 52 54 54 4c 53  0d 0a 32 32 30 20 32 2e  |STARTTLS..220 2.| C-&gt;S</div>
+                <div>00000060  30 2e 30 20 52 65 61 64  79 20 74 6f 20 73 74 61  |0.0 Ready to sta| S-&gt;C</div>
+                <div>00000070  72 74 20 54 4c 53 0d 0a  16 03 03 00 c8          |rt TLS...| TLS RECORD</div>
+              </>
             )}
-
-            <div>00000050  53 54 41 52 54 54 4c 53  0d 0a 32 32 30 20 32 2e  |STARTTLS..220 2.| C-&gt;S</div>
-            <div>00000060  30 2e 30 20 52 65 61 64  79 20 74 6f 20 73 74 61  |0.0 Ready to sta| S-&gt;C</div>
-            <div>00000070  72 74 20 54 4c 53 0d 0a  16 03 03 00 c8          |rt TLS...| TLS RECORD</div>
           </div>
         </div>
       )}

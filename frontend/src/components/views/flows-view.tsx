@@ -20,6 +20,14 @@ interface FlowsViewProps {
   onInspectFlowInDissector?: (flowId: number) => void;
 }
 
+const formatPenalty = (val: number | undefined) => {
+  const absVal = Math.abs(val || 0);
+  if (absVal === 0) {
+    return { text: "0 pts", color: "text-[#9194a1]" };
+  }
+  return { text: `-${absVal} pts`, color: "text-[#f87171]" };
+};
+
 export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "SECURE" | "CRITICAL" | "WARNING">("ALL");
@@ -337,27 +345,41 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
               </div>
 
               {/* Scoring Penalty Breakdown */}
-              <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
-                <span className="font-medium uppercase text-[11px] text-[#9194a1] block mb-2 font-mono">Scoring Deductions</span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                  <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
-                    <span className="text-[10px] text-[#777a88] block">Protocol Penalty</span>
-                    <span className="font-serif text-[#f87171]">-{selectedSession.scoring_breakdown.protocol_penalty} pts</span>
+              {(() => {
+                const protoP = formatPenalty(selectedSession.scoring_breakdown.protocol_penalty);
+                const cipherP = formatPenalty(selectedSession.scoring_breakdown.cipher_penalty);
+                const pfsP = formatPenalty(selectedSession.scoring_breakdown.pfs_penalty);
+                const certP = formatPenalty(selectedSession.scoring_breakdown.cert_penalty);
+                const anomalyP = formatPenalty(selectedSession.scoring_breakdown.anomaly_penalty);
+
+                return (
+                  <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
+                    <span className="font-medium uppercase text-[11px] text-[#9194a1] block mb-2 font-mono">Scoring Deductions</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+                      <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
+                        <span className="text-[10px] text-[#777a88] block">Protocol</span>
+                        <span className={`font-serif text-xs ${protoP.color}`}>{protoP.text}</span>
+                      </div>
+                      <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
+                        <span className="text-[10px] text-[#777a88] block">Cipher</span>
+                        <span className={`font-serif text-xs ${cipherP.color}`}>{cipherP.text}</span>
+                      </div>
+                      <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
+                        <span className="text-[10px] text-[#777a88] block">PFS</span>
+                        <span className={`font-serif text-xs ${pfsP.color}`}>{pfsP.text}</span>
+                      </div>
+                      <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
+                        <span className="text-[10px] text-[#777a88] block">Certificate</span>
+                        <span className={`font-serif text-xs ${certP.color}`}>{certP.text}</span>
+                      </div>
+                      <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
+                        <span className="text-[10px] text-[#777a88] block">Anomaly</span>
+                        <span className={`font-serif text-xs ${anomalyP.color}`}>{anomalyP.text}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
-                    <span className="text-[10px] text-[#777a88] block">Cipher Penalty</span>
-                    <span className="font-serif text-[#f87171]">-{selectedSession.scoring_breakdown.cipher_penalty} pts</span>
-                  </div>
-                  <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
-                    <span className="text-[10px] text-[#777a88] block">PFS Penalty</span>
-                    <span className="font-serif text-[#f87171]">-{selectedSession.scoring_breakdown.pfs_penalty} pts</span>
-                  </div>
-                  <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
-                    <span className="text-[10px] text-[#777a88] block">Anomaly Penalty</span>
-                    <span className="font-serif text-[#f87171]">-{selectedSession.scoring_breakdown.anomaly_penalty} pts</span>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
             <div className="mt-5 pt-3 border-t border-[#1c1d22] flex items-center justify-end">

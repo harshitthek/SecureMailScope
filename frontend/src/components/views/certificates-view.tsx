@@ -189,7 +189,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                       Validity Window
                     </span>
                     <span className={`font-semibold block ${isExpired ? "text-[#f87171]" : "text-[#10b981]"}`}>
-                      {cert.days_remaining} Days Remaining
+                      {isExpired ? `Expired ${Math.abs(cert.days_remaining)} Days Ago` : `${cert.days_remaining} Days Remaining`}
                     </span>
                   </div>
                 </div>

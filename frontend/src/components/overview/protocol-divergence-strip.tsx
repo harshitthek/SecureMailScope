@@ -21,6 +21,7 @@ export function ProtocolDivergenceStrip({ activeCase }: ProtocolDivergenceStripP
   const totalFlows = activeCase.data.total_sessions;
 
   const isHardened = activeCase.case_code === "CASE-01";
+  const isCase03 = activeCase.case_code === "CASE-03";
   const observedFlowTag = activeCase.case_code === "CASE-04" ? "FLOW 03" : "FLOW 01";
 
   return (
@@ -87,6 +88,8 @@ export function ProtocolDivergenceStrip({ activeCase }: ProtocolDivergenceStripP
                   className={`w-4 h-4 rounded-full flex items-center justify-center ${
                     isHardened
                       ? "bg-[#34d399]/20 text-[#34d399]"
+                      : isCase03
+                      ? "bg-[#fbbf24]/20 text-[#fbbf24]"
                       : "bg-[#f87171]/20 text-[#f87171]"
                   }`}
                 >
@@ -98,7 +101,11 @@ export function ProtocolDivergenceStrip({ activeCase }: ProtocolDivergenceStripP
                 </div>
                 <span
                   className={`text-xs font-mono font-medium uppercase tracking-wider ${
-                    isHardened ? "text-[#34d399]" : "text-[#f87171]"
+                    isHardened
+                      ? "text-[#34d399]"
+                      : isCase03
+                      ? "text-[#fbbf24]"
+                      : "text-[#f87171]"
                   }`}
                 >
                   Observed Wire Trace ({observedFlowTag})
@@ -106,10 +113,18 @@ export function ProtocolDivergenceStrip({ activeCase }: ProtocolDivergenceStripP
               </div>
               <span
                 className={`text-[11px] font-mono hidden sm:inline ${
-                  isHardened ? "text-[#34d399]" : "text-[#f87171]"
+                  isHardened
+                    ? "text-[#34d399]"
+                    : isCase03
+                    ? "text-[#fbbf24]"
+                    : "text-[#f87171]"
                 }`}
               >
-                {isHardened ? "VERIFIED CONFORMANT" : "WIRE DIVERGENCE DETECTED"}
+                {isHardened
+                  ? "VERIFIED CONFORMANT"
+                  : isCase03
+                  ? "OBSOLETE CRYPTOGRAPHY"
+                  : "WIRE DIVERGENCE DETECTED"}
               </span>
             </div>
 
@@ -132,6 +147,20 @@ export function ProtocolDivergenceStrip({ activeCase }: ProtocolDivergenceStripP
                     AEAD CIPHER ACTIVE
                   </span>
                 </>
+              ) : isCase03 ? (
+                <>
+                  <span className="px-3 py-1 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#2e3038] font-medium">
+                    STARTTLS NEGOTIATED
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#cc9166] shrink-0" strokeWidth={1.75} />
+                  <span className="px-3 py-1 rounded-full bg-[#fbbf24]/10 text-[#fbbf24] border border-[#fbbf24]/30 font-medium">
+                    TLS 1.0 (DEPRECATED)
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#f87171] shrink-0" strokeWidth={1.75} />
+                  <span className="px-3 py-1 rounded-full bg-[#f87171]/15 text-[#f87171] border border-[#f87171]/40 font-medium">
+                    3DES-CBC (SWEET32)
+                  </span>
+                </>
               ) : (
                 <>
                   <span className="px-3 py-1 rounded-full bg-[#f87171]/10 text-[#f87171] border border-[#f87171]/30 font-medium">
@@ -151,38 +180,48 @@ export function ProtocolDivergenceStrip({ activeCase }: ProtocolDivergenceStripP
         <div className="lg:col-span-4 grid grid-cols-2 gap-3">
           {/* Critical */}
           <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-3.5 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#f87171]">
+            <div className={`flex items-center justify-between ${criticalFindings === 0 ? "text-[#9194a1]" : "text-[#f87171]"}`}>
               <span className="text-[11px] font-mono uppercase font-semibold">Critical</span>
               <ShieldAlert className="w-3.5 h-3.5" />
             </div>
-            <div className="text-3xl font-serif font-normal text-[#f87171] my-1">
+            <div className={`text-3xl font-serif font-normal my-1 ${criticalFindings === 0 ? "text-[#9194a1]" : "text-[#f87171]"}`}>
               {String(criticalFindings).padStart(2, "0")}
             </div>
-            <span className="text-[10px] text-[#9194a1] font-mono">MITM / Plaintext</span>
+            <span className="text-[10px] text-[#9194a1] font-mono">
+              {criticalFindings === 0
+                ? "Zero Criticals"
+                : isCase03
+                ? "Expired / Sweet32"
+                : "MITM / Plaintext"}
+            </span>
           </div>
 
           {/* High */}
           <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-3.5 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#cc9166]">
+            <div className={`flex items-center justify-between ${highFindings === 0 ? "text-[#9194a1]" : "text-[#cc9166]"}`}>
               <span className="text-[11px] font-mono uppercase font-semibold">High Risk</span>
               <AlertTriangle className="w-3.5 h-3.5" />
             </div>
-            <div className="text-3xl font-serif font-normal text-[#cc9166] my-1">
+            <div className={`text-3xl font-serif font-normal my-1 ${highFindings === 0 ? "text-white" : "text-[#cc9166]"}`}>
               {String(highFindings).padStart(2, "0")}
             </div>
-            <span className="text-[10px] text-[#9194a1] font-mono">Weak Ciphers</span>
+            <span className="text-[10px] text-[#9194a1] font-mono">
+              {highFindings === 0 ? "Zero High Risk" : "Weak Ciphers"}
+            </span>
           </div>
 
           {/* Expired Certs */}
           <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-3.5 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-[#9194a1]">
+            <div className={`flex items-center justify-between ${expiredCerts === 0 ? "text-[#9194a1]" : "text-[#f87171]"}`}>
               <span className="text-[11px] font-mono uppercase font-semibold">Expired Cert</span>
               <Award className="w-3.5 h-3.5" />
             </div>
-            <div className="text-3xl font-serif font-normal text-white my-1">
+            <div className={`text-3xl font-serif font-normal my-1 ${expiredCerts === 0 ? "text-white" : "text-[#f87171]"}`}>
               {String(expiredCerts).padStart(2, "0")}
             </div>
-            <span className="text-[10px] text-[#9194a1] font-mono">X.509 Trust Chain</span>
+            <span className="text-[10px] text-[#9194a1] font-mono">
+              {expiredCerts === 0 ? "All Certs Valid" : "X.509 Trust Chain"}
+            </span>
           </div>
 
           {/* Total Flows */}
@@ -201,3 +240,4 @@ export function ProtocolDivergenceStrip({ activeCase }: ProtocolDivergenceStripP
     </section>
   );
 }
+

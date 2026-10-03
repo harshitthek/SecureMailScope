@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { EvidenceCase } from "@/lib/types";
 import { PostureHero } from "./posture-hero";
+import { EditorialQuoteBand } from "./editorial-quote-band";
 import { ProtocolDivergenceStrip } from "./protocol-divergence-strip";
 import { FlowLedgerPreview } from "./flow-ledger-preview";
+import { SecurityTopology } from "./security-topology";
 
 interface OverviewViewProps {
   activeCase: EvidenceCase;
@@ -24,19 +26,25 @@ export function OverviewView({ activeCase, onNavigateToFlow }: OverviewViewProps
   };
 
   return (
-    <main className="flex-1 w-full max-w-[1216px] mx-auto px-6 py-4 flex flex-col gap-8 pb-20 select-none">
-      {/* 1. Slash Hero Split Composition */}
+    <main className="flex-1 w-full max-w-[1216px] mx-auto px-6 py-3 flex flex-col gap-6 pb-14 select-none">
+      {/* 1. Slash Hero Split Composition with Gilded Line Chart & Mini Ledger */}
       <PostureHero activeCase={activeCase} onInspectFlow={handleInspect} />
 
-      {/* 2. Expected vs Observed Protocol Divergence Strip */}
+      {/* 2. Full-Bleed 4-Column Proof Stat Band & Didone Pull Quote (Video Frame 00:12) */}
+      <EditorialQuoteBand activeCase={activeCase} />
+
+      {/* 3. Expected vs Observed Protocol Divergence Strip */}
       <ProtocolDivergenceStrip activeCase={activeCase} />
 
-      {/* 3. Reconstructed Flow Ledger Table */}
+      {/* 4. Reconstructed Flow Ledger Table (Slash Data Table Archetype) */}
       <FlowLedgerPreview
         activeCase={activeCase}
         selectedFlowId={selectedFlowId}
         onSelectFlow={handleInspect}
       />
+
+      {/* 5. Node Graph Security Topology & Defense Pillars (Video Frame 00:16) */}
+      <SecurityTopology />
     </main>
   );
 }
