@@ -12,8 +12,8 @@ export function DeductionLedger({ scoring, sessionScore }: DeductionLedgerProps)
   const isCritical = sessionScore < 50;
 
   return (
-    <div className="border border-tactical-border bg-black/40 p-3 space-y-2 font-mono">
-      <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/70 text-white font-bold text-xs">
+    <div className="border border-tactical-border bg-tactical-surface p-3 space-y-2 font-mono">
+      <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/70 text-tactical-text font-bold text-xs">
         <div className="flex items-center gap-1.5 text-phosphor-hazard">
           <AlertCircle className="w-3.5 h-3.5" />
           <span>DEDUCTION BREAKDOWN</span>
@@ -54,7 +54,7 @@ export function DeductionLedger({ scoring, sessionScore }: DeductionLedgerProps)
             {scoring.anomaly_penalty > 0 ? `-${scoring.anomaly_penalty} pts` : "0 pts"}
           </span>
         </div>
-        <div className="flex justify-between pt-2 border-t border-tactical-border font-bold text-xs text-white">
+        <div className="flex justify-between pt-2 border-t border-tactical-border font-bold text-xs text-tactical-text">
           <span>Evaluated Stream Score:</span>
           <span className={isCritical ? "text-phosphor-hazard tabular-nums" : "text-phosphor-green tabular-nums"}>
             {sessionScore} / 100

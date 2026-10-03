@@ -42,6 +42,7 @@ export interface ProtocolStateStep {
   phase: string;
   direction: "C->S" | "S->C";
   summary: string;
+  packet_offset?: string;
   is_transition_point?: boolean;
   status: "secure" | "compromised" | "downgrade" | "normal";
 }

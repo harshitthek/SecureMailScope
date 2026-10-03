@@ -21,7 +21,7 @@ export function CipherChart({ data }: CipherChartProps) {
     <div className="flex flex-col h-full p-4 border border-tactical-border bg-tactical-surface">
       <div className="flex items-center justify-between pb-3 border-b border-tactical-border">
         <div>
-          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-tactical-text flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-phosphor-cyan" />
             Cipher Suite Breakdown
           </h3>
@@ -29,7 +29,7 @@ export function CipherChart({ data }: CipherChartProps) {
             Cryptographic primitives vs NIST SP 800-52r2
           </p>
         </div>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-black/40 text-phosphor-cyan border border-tactical-border">
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-tactical-surfaceHover text-phosphor-cyan border border-tactical-border">
           {data.length} DISTINCT CIPHERS
         </span>
       </div>
@@ -47,19 +47,19 @@ export function CipherChart({ data }: CipherChartProps) {
                 type="category"
                 dataKey="name"
                 width={130}
-                tick={{ fill: "#8290a2", fontSize: 10, fontFamily: "var(--font-geist-mono)" }}
+                tick={{ fill: "rgb(var(--tactical-dim))", fontSize: 10, fontFamily: "var(--font-geist-mono)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
-                cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
+                cursor={{ fill: "rgba(184, 198, 211, 0.1)" }}
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const item = payload[0].payload as CipherDistributionItem;
                     const pct = totalCiphers > 0 ? ((item.count / totalCiphers) * 100).toFixed(0) : "0";
                     return (
-                      <div className="p-2 border border-tactical-border bg-black/95 text-xs font-mono shadow-xl">
-                        <div className="font-bold text-white">{item.name}</div>
+                      <div className="p-2 border border-tactical-border bg-tactical-surface text-xs font-mono shadow-xl">
+                        <div className="font-bold text-tactical-text">{item.name}</div>
                         <div className="mt-1 flex items-center gap-2 text-tactical-dim text-[11px]">
                           <span>{item.count} stream{item.count > 1 ? "s" : ""} ({pct}%)</span>
                           <span

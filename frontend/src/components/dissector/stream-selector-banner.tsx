@@ -21,7 +21,7 @@ export function StreamSelectorBanner({
     <div className="p-4 border border-tactical-border bg-tactical-surface space-y-3 font-mono">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-sans font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <h2 className="text-sm font-sans font-bold text-tactical-text uppercase tracking-wider flex items-center gap-2">
             <Binary className="w-4 h-4 text-phosphor-cyan" />
             DEEP PROTOCOL DISSECTOR &amp; WIRE INSPECTOR
           </h2>
@@ -45,8 +45,8 @@ export function StreamSelectorBanner({
               onClick={() => onSelectStream(s.session_id)}
               className={`px-3 py-1.5 border text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
                 isSelected
-                  ? "border-phosphor-cyan bg-tactical-elevated text-white shadow-[0_0_8px_rgba(0,216,246,0.2)]"
-                  : "border-tactical-border bg-black/40 text-tactical-dim hover:text-white hover:border-tactical-borderHighlight"
+                  ? "border-phosphor-cyan bg-tactical-elevated text-tactical-text shadow-[0_0_8px_rgba(0,216,246,0.2)]"
+                  : "border-tactical-border bg-tactical-surface text-tactical-dim hover:text-tactical-text hover:border-tactical-borderHighlight"
               }`}
             >
               <span>STREAM #{s.session_id}</span>
@@ -66,7 +66,7 @@ export function StreamSelectorBanner({
       </div>
 
       {/* Active Stream Summary Banner */}
-      <div className="p-3 border border-tactical-border bg-black/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="p-3 border border-tactical-border bg-tactical-surface flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3">
           <div
             className={`w-8 h-8 border flex items-center justify-center flex-shrink-0 ${
@@ -78,7 +78,7 @@ export function StreamSelectorBanner({
             {isCritical ? <ShieldAlert className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
           </div>
           <div>
-            <div className="text-white font-sans font-bold text-sm tracking-tight">
+            <div className="text-tactical-text font-sans font-bold text-sm tracking-tight">
               {currentStream.server_name || currentStream.dst_ip}
             </div>
             <div className="text-[11px] text-tactical-dim font-mono">
@@ -90,7 +90,7 @@ export function StreamSelectorBanner({
         <div className="flex items-center gap-5 text-xs font-mono">
           <div>
             <span className="text-[9px] uppercase text-tactical-dim block">Protocol Version</span>
-            <span className="text-white font-bold">{currentStream.tls_version || "Plaintext"}</span>
+            <span className="text-tactical-text font-bold">{currentStream.tls_version || "Plaintext"}</span>
           </div>
           <div>
             <span className="text-[9px] uppercase text-tactical-dim block">Forward Secrecy</span>

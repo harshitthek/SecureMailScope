@@ -51,7 +51,7 @@ export function BpfFilterBar({ filter, onFilterChange, matchCount }: BpfFilterBa
               className={`px-2 py-0.5 text-[10px] uppercase font-bold border transition-colors ${
                 isActive
                   ? "border-phosphor-green bg-phosphor-green/10 text-phosphor-green"
-                  : "border-tactical-border bg-tactical-surface text-tactical-dim hover:text-white hover:border-tactical-highlight"
+                  : "border-tactical-border bg-tactical-surface text-tactical-dim hover:text-tactical-text hover:border-tactical-highlight"
               }`}
             >
               [{p.label}]

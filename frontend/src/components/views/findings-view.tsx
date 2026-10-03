@@ -32,41 +32,41 @@ export function FindingsView({
   });
 
   return (
-    <div className="p-6 lg:p-12 max-w-[1360px] mx-auto w-full select-none font-mono space-y-6">
+    <div className="px-6 py-5 lg:px-8 lg:py-6 max-w-[1360px] mx-auto w-full select-none font-mono space-y-5">
       {/* 1. Header & Filter Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-tactical-border/70 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-tactical-border/70 gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-phosphor-hazard" />
-            <h2 className="text-xl font-sans font-bold text-white uppercase tracking-wider">
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="w-5 h-5 text-phosphor-hazard" />
+            <h2 className="text-[20px] sm:text-[22px] font-sans font-bold text-tactical-text uppercase tracking-wider">
               CRYPTOGRAPHIC FINDINGS ({vulnerabilities.length})
             </h2>
           </div>
-          <p className="text-xs text-tactical-dim mt-1">
+          <p className="text-[13px] text-tactical-dim mt-0.5">
             Prioritized forensic audit records with evidence citations and remediation guidance
           </p>
         </div>
 
         {/* Severity & Category Filters */}
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <div className="flex items-center gap-1 border border-tactical-border/80 p-0.5 bg-black/40">
+        <div className="flex flex-wrap items-center gap-3 text-[13px]">
+          <div className="flex items-center gap-1 border border-tactical-border/80 p-1 bg-tactical-surface">
             {(["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((sev) => (
               <button
                 key={sev}
                 onClick={() => setSeverityFilter(sev)}
-                className={`px-2 py-0.5 text-[10px] font-bold transition-colors ${severityFilter === sev ? "bg-tactical-elevated text-white border border-phosphor-cyan" : "text-tactical-dim hover:text-white"}`}
+                className={`px-2.5 py-1 text-[12px] font-bold transition-colors ${severityFilter === sev ? "bg-tactical-elevated text-tactical-text border border-phosphor-cyan" : "text-tactical-dim hover:text-tactical-text"}`}
               >
                 {sev}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-1 border border-tactical-border/80 p-0.5 bg-black/40">
+          <div className="flex items-center gap-1 border border-tactical-border/80 p-1 bg-tactical-surface">
             {(["ALL", "TLS", "STARTTLS", "CERTIFICATE", "CIPHER", "PROTOCOL"] as const).map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-2 py-0.5 text-[10px] font-bold transition-colors ${categoryFilter === cat ? "bg-tactical-elevated text-white border border-phosphor-cyan" : "text-tactical-dim hover:text-white"}`}
+                className={`px-2.5 py-1 text-[12px] font-bold transition-colors ${categoryFilter === cat ? "bg-tactical-elevated text-tactical-text border border-phosphor-cyan" : "text-tactical-dim hover:text-tactical-text"}`}
               >
                 {cat}
               </button>
@@ -76,7 +76,7 @@ export function FindingsView({
       </div>
 
       {/* 2. Compact Forensic Records List (NOT GIANT CARDS) */}
-      <div className="divide-y divide-tactical-border/40 text-xs">
+      <div className="divide-y divide-tactical-border/40 text-[14px]">
         {filtered.length > 0 ? (
           filtered.map((v) => {
             const isCrit = v.severity === "critical";
@@ -86,12 +86,12 @@ export function FindingsView({
             return (
               <div
                 key={v.id}
-                className="py-4 hover:bg-tactical-surfaceHover/50 transition-colors border-l-2 border-transparent hover:border-phosphor-cyan pl-4 space-y-2 group"
+                className="py-5 hover:bg-tactical-surfaceHover/50 transition-colors border-l-2 border-transparent hover:border-phosphor-cyan pl-4 space-y-2.5 group"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
                     <span
-                      className={`text-[9px] font-bold uppercase px-1.5 py-0.5 border ${
+                      className={`text-[11px] font-bold uppercase px-2 py-0.5 border ${
                         isCrit
                           ? "border-phosphor-hazard/60 text-phosphor-hazard bg-phosphor-hazard/10"
                           : isHigh
@@ -102,29 +102,29 @@ export function FindingsView({
                       {v.severity}
                     </span>
 
-                    <h4 className="font-sans font-bold text-sm text-white uppercase group-hover:text-phosphor-cyan transition-colors">
+                    <h4 className="font-sans font-bold text-[16px] text-tactical-text uppercase group-hover:text-phosphor-cyan transition-colors">
                       {v.title}
                     </h4>
 
-                    <span className="text-[10px] text-tactical-dim uppercase px-1.5 py-0.2 bg-black/40 border border-tactical-border/60">
+                    <span className="text-[12px] text-tactical-dim uppercase px-2 py-0.5 bg-tactical-surface border border-tactical-border/60">
                       FLOW #{firstAffectedSession < 10 ? `0${firstAffectedSession}` : firstAffectedSession}
                     </span>
                   </div>
 
                   <button
                     onClick={() => onOpenSessionDetail(firstAffectedSession)}
-                    className="text-tactical-dim group-hover:text-phosphor-cyan text-[11px] font-bold uppercase inline-flex items-center gap-1 transition-colors"
+                    className="text-tactical-dim group-hover:text-phosphor-cyan text-[13px] font-bold uppercase inline-flex items-center gap-1.5 transition-colors"
                   >
-                    <span>INSPECT FLOW →</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <span>INSPECT FLOW</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <p className="text-tactical-text text-xs font-sans leading-relaxed">
+                <p className="text-tactical-text text-[14px] font-sans leading-relaxed">
                   {v.description}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-6 text-[11px] text-tactical-dim pt-1">
+                <div className="flex flex-wrap items-center gap-6 text-[13px] text-tactical-dim pt-1">
                   <div>
                     <span className="text-tactical-muted">STANDARD: </span>
                     <span className="text-tactical-text font-bold">{v.nist_reference || "NIST SP 800-52r2"}</span>
@@ -138,7 +138,7 @@ export function FindingsView({
             );
           })
         ) : (
-          <div className="py-12 text-center text-tactical-dim text-xs">
+          <div className="py-12 text-center text-tactical-dim text-[14px]">
             No forensic findings match the selected filters.
           </div>
         )}

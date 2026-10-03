@@ -21,8 +21,8 @@ export function Ja3Card({ ja3Hash, ja3ClientName, ja3IsKnown }: Ja3CardProps) {
   };
 
   return (
-    <div className="border border-tactical-border bg-black/40 p-3 space-y-2">
-      <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/70 text-white font-bold">
+    <div className="border border-tactical-border bg-tactical-surface p-3 space-y-2">
+      <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/70 text-tactical-text font-bold">
         <div className="flex items-center gap-1.5 text-phosphor-green">
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>JA3 CLIENT SIGNATURE</span>
@@ -35,7 +35,7 @@ export function Ja3Card({ ja3Hash, ja3ClientName, ja3IsKnown }: Ja3CardProps) {
       <div className="space-y-2 text-[11px] text-tactical-dim">
         <div>
           <span className="text-[9px] uppercase text-tactical-muted block">Identified Client Engine</span>
-          <span className="text-white font-bold">
+          <span className="text-tactical-text font-bold">
             {ja3ClientName || "Unknown Mail Client / Cleartext Agent"}
           </span>
         </div>
@@ -47,7 +47,7 @@ export function Ja3Card({ ja3Hash, ja3ClientName, ja3IsKnown }: Ja3CardProps) {
             {ja3Hash && (
               <button
                 onClick={copyJa3}
-                className="p-1 text-tactical-dim hover:text-white transition-colors focus-visible:ring-1 focus-visible:ring-phosphor-cyan"
+                className="p-1 text-tactical-dim hover:text-tactical-text transition-colors focus-visible:ring-1 focus-visible:ring-phosphor-cyan"
                 title="Copy JA3 Hash"
               >
                 {copied ? <Check className="w-3 h-3 text-phosphor-green" /> : <Copy className="w-3 h-3" />}

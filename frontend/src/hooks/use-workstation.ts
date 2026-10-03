@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { EvidenceCase, Severity, Session, NavView, SessionDetailTab } from "@/lib/types";
 import { EVIDENCE_CASES } from "@/lib/mock-data";
 import { uploadPcap, getAnalysis } from "@/lib/api";
@@ -13,8 +13,31 @@ export const DEFAULT_BPF_FILTER = "tcp and (port 25 or 587 or 465 or 143 or 993 
 
 export function useWorkstation() {
   const [cases, setCases] = useState<EvidenceCase[]>(EVIDENCE_CASES);
-  const [activeCaseId, setActiveCaseId] = useState<string>("CASE-04");
-  const [activeView, setActiveView] = useState<NavView>("OVERVIEW");
+  const [activeCaseId, setActiveCaseIdState] = useState<string>("CASE-04");
+  const [activeView, setActiveViewState] = useState<NavView>("OVERVIEW");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const search = new URLSearchParams(window.location.search);
+      const viewParam = search.get("view")?.toUpperCase();
+      if (viewParam && ["OVERVIEW", "SESSIONS", "FINDINGS", "CERTIFICATES", "DISSECTOR", "STANDARDS", "REPORTS"].includes(viewParam)) {
+        setActiveViewState(viewParam as NavView);
+      }
+      const caseParam = search.get("case");
+      if (caseParam && EVIDENCE_CASES.some((c) => c.id === caseParam)) {
+        setActiveCaseIdState(caseParam);
+      }
+    }
+  }, []);
+
+  const setActiveView = useCallback((view: NavView) => {
+    setActiveViewState(view);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", view);
+      window.history.replaceState(null, "", url.toString());
+    }
+  }, []);
 
   // Session detail slide-over / modal state
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
@@ -38,7 +61,12 @@ export function useWorkstation() {
   }, [cases, activeCaseId]);
 
   const selectCase = useCallback((id: string) => {
-    setActiveCaseId(id);
+    setActiveCaseIdState(id);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("case", id);
+      window.history.replaceState(null, "", url.toString());
+    }
     const targetCase = cases.find((c) => c.id === id);
     if (targetCase) {
       setBpfFilter(DEFAULT_BPF_FILTER);
@@ -131,7 +159,7 @@ export function useWorkstation() {
     setSelectedStreamId(streamId);
     setActiveView("DISSECTOR");
     setIsDetailOpen(false);
-  }, []);
+  }, [setActiveView]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     setIsAnalyzing(true);
@@ -160,7 +188,7 @@ export function useWorkstation() {
         data,
       };
       setCases((prev) => [newCase, ...prev]);
-      setActiveCaseId(customId);
+      setActiveCaseIdState(customId);
       const firstId = data.sessions[0]?.session_id ?? null;
       setSelectedStreamId(firstId);
       setSelectedSessionId(firstId);
@@ -186,7 +214,7 @@ export function useWorkstation() {
         data: cases[3].data,
       };
       setCases((prev) => [fallbackCase, ...prev]);
-      setActiveCaseId(customId);
+      setActiveCaseIdState(customId);
       setSelectedStreamId(1);
       setSelectedSessionId(1);
     } finally {

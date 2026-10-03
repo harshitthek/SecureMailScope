@@ -29,10 +29,10 @@ export function TelemetryStrip({ sessions, vulnerabilities }: TelemetryStripProp
           )}
         </div>
         <div className="my-1 flex items-baseline gap-1">
-          <span className="text-xl font-bold text-white tabular-nums">{encPercent}%</span>
+          <span className="text-xl font-bold text-tactical-text tabular-nums">{encPercent}%</span>
           <span className="text-[10px] text-tactical-dim">({encryptedCount}/{total})</span>
         </div>
-        <div className="w-full h-1 bg-black border border-tactical-border/60">
+        <div className="w-full h-1 bg-tactical-elevated border border-tactical-border/60">
           <div
             className={`h-full ${encPercent >= 80 ? "bg-phosphor-green" : "bg-phosphor-hazard"}`}
             style={{ width: `${encPercent}%` }}
@@ -47,10 +47,10 @@ export function TelemetryStrip({ sessions, vulnerabilities }: TelemetryStripProp
           <span className="text-[9px] text-tactical-dim">ECDHE/DHE</span>
         </div>
         <div className="my-1 flex items-baseline gap-1">
-          <span className="text-xl font-bold text-white tabular-nums">{pfsPercent}%</span>
+          <span className="text-xl font-bold text-tactical-text tabular-nums">{pfsPercent}%</span>
           <span className="text-[10px] text-tactical-dim">({pfsCount}/{total})</span>
         </div>
-        <div className="w-full h-1 bg-black border border-tactical-border/60">
+        <div className="w-full h-1 bg-tactical-elevated border border-tactical-border/60">
           <div
             className={`h-full ${pfsPercent >= 80 ? "bg-phosphor-green" : "bg-phosphor-amber"}`}
             style={{ width: `${pfsPercent}%` }}

@@ -66,26 +66,26 @@ export function SecondaryAnalyticsBlock({ sessions }: SecondaryAnalyticsBlockPro
     <section className="w-full py-8 select-none">
       <div className="flex items-center justify-between pb-4">
         <div>
-          <span className="text-[10px] font-mono tracking-widest text-tactical-dim uppercase block">
+          <span className="text-[12px] font-mono tracking-widest text-tactical-dim uppercase block">
             TELEMETRY BREAKDOWN
           </span>
-          <h3 className="text-xl sm:text-2xl font-sans font-black text-white uppercase tracking-tight mt-0.5">
+          <h3 className="text-[24px] sm:text-[28px] font-sans font-black text-tactical-text uppercase tracking-tight mt-0.5">
             CRYPTOGRAPHIC &amp; CERTIFICATE PROFILE
           </h3>
         </div>
-        <span className="text-xs font-mono text-tactical-dim">
+        <span className="text-[13px] font-mono text-tactical-dim">
           PASSIVE DEEP DISSECTION
         </span>
       </div>
 
       {/* Single Unified Analytical Grid: Aligned Data (NO CARDS) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 font-mono text-xs">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 font-mono text-[14px]">
         {/* Column 1: TLS Version Distribution */}
         <TlsDistributionStrip stats={tlsStats} totalFlows={sessions.length} />
 
         {/* Column 2: Cipher Suite Profile */}
         <div className="space-y-3 md:border-l border-tactical-border/40 md:pl-8">
-          <div className="border-b border-tactical-border/70 pb-2 text-[10px] uppercase tracking-widest text-tactical-dim font-bold">
+          <div className="border-b border-tactical-border/70 pb-2 text-[12px] uppercase tracking-widest text-tactical-dim font-bold">
             CIPHER SUITE PROFILE
           </div>
           <div className="space-y-2.5">
@@ -95,10 +95,10 @@ export function SecondaryAnalyticsBlock({ sessions }: SecondaryAnalyticsBlockPro
 
               return (
                 <div key={cipher} className="flex items-baseline justify-between border-b border-tactical-border/20 pb-1.5">
-                  <span className={isSecure ? "text-phosphor-green" : isCrit ? "text-phosphor-hazard" : "text-tactical-text"}>
+                  <span className={isSecure ? "text-phosphor-green font-semibold" : isCrit ? "text-phosphor-hazard font-semibold" : "text-tactical-text font-semibold"}>
                     {cipher}
                   </span>
-                  <span className="text-white font-bold tabular-nums">
+                  <span className="text-tactical-text font-bold tabular-nums">
                     {count}
                   </span>
                 </div>
@@ -109,13 +109,13 @@ export function SecondaryAnalyticsBlock({ sessions }: SecondaryAnalyticsBlockPro
 
         {/* Column 3: Certificate Health */}
         <div className="space-y-3 md:border-l border-tactical-border/40 md:pl-8">
-          <div className="border-b border-tactical-border/70 pb-2 text-[10px] uppercase tracking-widest text-tactical-dim font-bold">
+          <div className="border-b border-tactical-border/70 pb-2 text-[12px] uppercase tracking-widest text-tactical-dim font-bold">
             CERTIFICATE HEALTH
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5 text-[14px]">
             <div className="flex items-baseline justify-between border-b border-tactical-border/20 pb-1.5">
               <span className="text-tactical-dim">Certificates Dissected</span>
-              <span className="text-white font-bold tabular-nums">{certStats.dissected}</span>
+              <span className="text-tactical-text font-bold tabular-nums">{certStats.dissected}</span>
             </div>
             <div className="flex items-baseline justify-between border-b border-tactical-border/20 pb-1.5">
               <span className="text-tactical-dim">Valid Cryptographic State</span>

@@ -42,7 +42,7 @@ export function PostureDial({ score, grade, caseCode }: PostureDialProps) {
     <div className="border border-tactical-border bg-tactical-surface p-4 flex flex-col justify-between h-full relative select-none">
       {/* Top Header */}
       <div className="flex items-center justify-between pb-2 border-b border-tactical-border text-xs font-mono uppercase">
-        <span className="font-bold text-white tracking-wider flex items-center gap-1.5">
+        <span className="font-bold text-tactical-text tracking-wider flex items-center gap-1.5">
           <span className="w-2 h-2 bg-phosphor-cyan" />
           CRYPTOGRAPHIC POSTURE INDEX
         </span>
@@ -87,7 +87,7 @@ export function PostureDial({ score, grade, caseCode }: PostureDialProps) {
 
           {/* Central Telemetry readout */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-5xl font-mono font-black tracking-tight tabular-nums text-white">
+            <span className="text-5xl font-mono font-black tracking-tight tabular-nums text-tactical-text">
               {score}
             </span>
             <span className="text-[10px] font-mono uppercase tracking-widest text-tactical-dim mt-0.5">
@@ -119,7 +119,7 @@ export function PostureDial({ score, grade, caseCode }: PostureDialProps) {
           )}
         </div>
 
-        <span className="font-bold text-white uppercase px-2 py-1 border border-tactical-border bg-black/40 text-xs">
+        <span className="font-bold text-tactical-text uppercase px-2 py-1 border border-tactical-border bg-tactical-surfaceHover text-xs">
           GRADE {grade}
         </span>
       </div>

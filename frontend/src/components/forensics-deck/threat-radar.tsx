@@ -11,7 +11,7 @@ export function ThreatRadar({ vulnerabilities }: ThreatRadarProps) {
   return (
     <div className="border border-tactical-border bg-tactical-surface p-3 font-mono text-xs space-y-2">
       <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/70 text-[10px] text-tactical-dim uppercase">
-        <div className="flex items-center gap-1.5 text-white font-bold">
+        <div className="flex items-center gap-1.5 text-tactical-text font-bold">
           <AlertOctagon className="w-3.5 h-3.5 text-phosphor-hazard" />
           <span>CRYPTOGRAPHIC THREAT FINDINGS &amp; REMEDIATION ({vulnerabilities.length})</span>
         </div>
@@ -31,7 +31,7 @@ export function ThreatRadar({ vulnerabilities }: ThreatRadarProps) {
             return (
               <div
                 key={v.id}
-                className="p-2 border border-tactical-border/80 bg-black/40 space-y-1.5"
+                className="p-2 border border-tactical-border/80 bg-tactical-surfaceHover space-y-1.5"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -44,7 +44,7 @@ export function ThreatRadar({ vulnerabilities }: ThreatRadarProps) {
                     >
                       {v.severity}
                     </span>
-                    <span className="font-bold text-white text-[11px]">{v.title}</span>
+                    <span className="font-bold text-tactical-text text-[11px]">{v.title}</span>
                   </div>
 
                   <div className="flex items-center gap-1 text-[9px]">

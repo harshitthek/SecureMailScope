@@ -42,7 +42,7 @@ export function ExportButtons({ analysisId, data }: ExportButtonsProps) {
     <div className="flex items-center gap-1.5 font-mono">
       <button
         onClick={handleExportJson}
-        className="inline-flex items-center gap-1 px-2 py-1 border border-tactical-border bg-tactical-surface hover:border-phosphor-cyan text-tactical-text hover:text-white text-[10px] uppercase font-bold tracking-wider transition-colors"
+        className="inline-flex items-center gap-1 h-[32px] px-2.5 border border-tactical-border bg-tactical-surface hover:border-phosphor-cyan text-tactical-text hover:text-tactical-text text-[12px] uppercase font-bold tracking-wider transition-colors"
         title="Download complete structured forensic JSON analysis"
       >
         <FileCode2 className="w-3 h-3 text-phosphor-cyan" />
@@ -52,7 +52,7 @@ export function ExportButtons({ analysisId, data }: ExportButtonsProps) {
       <button
         onClick={handleExportPdf}
         disabled={downloading}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-phosphor-green/40 bg-phosphor-green/15 hover:bg-phosphor-green hover:text-black text-phosphor-green text-[10px] uppercase font-bold tracking-wider transition-all disabled:opacity-50"
+        className="inline-flex items-center gap-1 h-[32px] px-2.5 border border-phosphor-green/40 bg-phosphor-green/15 hover:bg-phosphor-green hover:text-black text-phosphor-green text-[12px] uppercase font-bold tracking-wider transition-all disabled:opacity-50"
         title="Generate official ReportLab forensic audit PDF"
       >
         {downloading ? (

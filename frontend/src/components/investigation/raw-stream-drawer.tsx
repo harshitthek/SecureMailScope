@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { RawStreamChunk } from "@/lib/types";
-import { ChevronDown, ChevronUp, Binary } from "lucide-react";
+import { Binary, ChevronDown, ChevronUp } from "lucide-react";
 
 interface RawStreamDrawerProps {
-  chunks: RawStreamChunk[];
   streamId: number;
+  chunks: RawStreamChunk[];
 }
 
-export function RawStreamDrawer({ chunks, streamId }: RawStreamDrawerProps) {
-  const [isOpen, setIsOpen] = useState(true);
+export function RawStreamDrawer({ streamId, chunks }: RawStreamDrawerProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [streamTab, setStreamTab] = useState<"DECODED" | "HEX" | "ASCII">("DECODED");
 
   return (
@@ -18,9 +18,9 @@ export function RawStreamDrawer({ chunks, streamId }: RawStreamDrawerProps) {
       {/* Drawer Header Toggle */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="px-6 py-2.5 bg-black/60 flex items-center justify-between cursor-pointer hover:bg-tactical-surfaceHover text-xs border-b border-tactical-border/50"
+        className="px-6 py-2.5 bg-tactical-surface flex items-center justify-between cursor-pointer hover:bg-tactical-surfaceHover text-xs border-b border-tactical-border/50"
       >
-        <div className="flex items-center gap-2.5 text-white font-bold">
+        <div className="flex items-center gap-2.5 text-tactical-text font-bold">
           <Binary className="w-3.5 h-3.5 text-phosphor-cyan" />
           <span>RAW STREAM // FLOW #{streamId}</span>
           <span className="text-tactical-dim font-normal">({chunks.length} RECORD CHUNKS)</span>
@@ -35,8 +35,8 @@ export function RawStreamDrawer({ chunks, streamId }: RawStreamDrawerProps) {
                 onClick={() => setStreamTab(tab)}
                 className={`px-2 py-0.5 text-[10px] font-bold border transition-colors ${
                   streamTab === tab
-                    ? "border-phosphor-cyan text-white bg-tactical-elevated"
-                    : "border-transparent text-tactical-dim hover:text-white"
+                    ? "border-phosphor-cyan text-tactical-text bg-tactical-elevated"
+                    : "border-transparent text-tactical-dim hover:text-tactical-text"
                 }`}
               >
                 {tab}
@@ -44,7 +44,7 @@ export function RawStreamDrawer({ chunks, streamId }: RawStreamDrawerProps) {
             ))}
           </div>
 
-          <button className="text-tactical-dim hover:text-white">
+          <button className="text-tactical-dim hover:text-tactical-text">
             {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
         </div>
@@ -66,7 +66,7 @@ export function RawStreamDrawer({ chunks, streamId }: RawStreamDrawerProps) {
                       ? "border-phosphor-hazard/60 bg-phosphor-hazard/10"
                       : isSecure
                       ? "border-phosphor-green/40 bg-phosphor-green/5"
-                      : "border-tactical-border/70 bg-black/40"
+                      : "border-tactical-border/70 bg-tactical-surface"
                   }`}
                 >
                   {chunk.highlight_label && (
@@ -86,7 +86,7 @@ export function RawStreamDrawer({ chunks, streamId }: RawStreamDrawerProps) {
                   {streamTab === "DECODED" && (
                     <div className="flex items-start gap-4 text-xs">
                       <span className="text-phosphor-cyan font-bold select-none">{chunk.offset}</span>
-                      <span className="text-white select-all flex-1 tracking-wider">{chunk.hex}</span>
+                      <span className="text-tactical-text select-all flex-1 tracking-wider">{chunk.hex}</span>
                       <span className="text-tactical-dim select-all border-l border-tactical-border pl-3">
                         {chunk.ascii}
                       </span>
@@ -96,7 +96,7 @@ export function RawStreamDrawer({ chunks, streamId }: RawStreamDrawerProps) {
                   {streamTab === "HEX" && (
                     <div className="flex items-start gap-4 text-xs">
                       <span className="text-phosphor-cyan font-bold select-none">{chunk.offset}</span>
-                      <span className="text-white select-all flex-1 tracking-wider font-mono">
+                      <span className="text-tactical-text select-all flex-1 tracking-wider font-mono">
                         {chunk.hex}
                       </span>
                     </div>

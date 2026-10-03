@@ -14,10 +14,10 @@ export function FlowIndexPane({
   onSelectSession,
 }: FlowIndexPaneProps) {
   return (
-    <aside className="w-72 min-w-[260px] max-w-[280px] border-r border-tactical-border/70 bg-tactical-surface/50 flex flex-col overflow-y-auto select-none font-mono">
-      <div className="px-4 py-3 border-b border-tactical-border/70 text-[10px] uppercase tracking-widest text-tactical-dim font-bold flex items-center justify-between">
+    <aside className="w-72 min-w-[240px] max-w-[288px] border-r border-tactical-border/70 bg-tactical-surface/50 flex flex-col overflow-y-auto select-none font-mono">
+      <div className="px-4 py-3 border-b border-tactical-border/70 text-[12px] uppercase tracking-widest text-tactical-dim font-bold flex items-center justify-between">
         <span>FLOW INDEX</span>
-        <span className="text-phosphor-cyan font-bold">{sessions.length} FLOWS</span>
+        <span className="text-phosphor-cyan font-bold text-[13px]">{sessions.length} FLOWS</span>
       </div>
 
       <div className="divide-y divide-tactical-border/30">
@@ -38,22 +38,22 @@ export function FlowIndexPane({
             <button
               key={s.session_id}
               onClick={() => onSelectSession(s.session_id)}
-              className={`w-full p-3.5 text-left transition-colors flex items-center justify-between border-l-2 ${
+              className={`w-full p-3 text-left transition-colors flex items-center justify-between border-l-2 ${
                 isSelected
-                  ? "bg-tactical-elevated border-phosphor-cyan text-white shadow-[inset_2px_0_6px_rgba(0,216,246,0.15)]"
+                  ? "bg-tactical-elevated border-phosphor-cyan text-tactical-text shadow-[inset_2px_0_6px_rgba(0,216,246,0.15)]"
                   : "border-transparent text-tactical-text hover:bg-tactical-surfaceHover"
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className={`w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0`} />
+                <span className={`w-2 h-2 rounded-full ${dotColor} flex-shrink-0`} />
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-white">{flowCode}</span>
-                    <span className="text-[11px] text-tactical-dim">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-[13px] text-tactical-text">{flowCode}</span>
+                    <span className="text-[12px] text-tactical-dim">
                       {s.protocol} :{s.dst_port}
                     </span>
                   </div>
-                  <div className="text-[10px] text-tactical-dim truncate max-w-[150px]">
+                  <div className="text-[12px] text-tactical-dim truncate max-w-[130px]">
                     {s.server_name || s.dst_ip}
                   </div>
                 </div>
@@ -61,7 +61,7 @@ export function FlowIndexPane({
 
               <div className="text-right flex flex-col items-end flex-shrink-0">
                 <span
-                  className={`text-[11px] font-bold tabular-nums px-1.5 py-0.5 border ${
+                  className={`text-[13px] font-bold tabular-nums px-2 py-0.5 border ${
                     isCrit
                       ? "border-phosphor-hazard/60 text-phosphor-hazard bg-phosphor-hazard/10"
                       : isDegraded
@@ -72,7 +72,7 @@ export function FlowIndexPane({
                   {s.session_score} {s.session_grade}
                 </span>
                 {isSelected && (
-                  <span className="text-[9px] text-phosphor-cyan font-bold tracking-wider uppercase mt-1">
+                  <span className="text-[11px] text-phosphor-cyan font-bold tracking-wider uppercase mt-1">
                     SELECTED
                   </span>
                 )}

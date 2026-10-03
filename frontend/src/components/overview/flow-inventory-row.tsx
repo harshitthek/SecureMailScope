@@ -46,13 +46,13 @@ export function FlowInventoryRow({ session, index, onSelect }: FlowInventoryRowP
   return (
     <div
       onClick={() => onSelect(session.session_id)}
-      className="w-full py-3 px-4 hover:bg-tactical-surfaceHover relative group cursor-pointer transition-colors border-l-2 border-transparent hover:border-phosphor-cyan space-y-1 select-none"
+      className="w-full py-3.5 px-4 min-h-[66px] flex flex-col justify-center hover:bg-tactical-surfaceHover relative group cursor-pointer transition-colors border-l-2 border-transparent hover:border-phosphor-cyan space-y-1 select-none"
     >
-      {/* Line 1: Flow Index, Endpoint, and Score */}
+      {/* Line 1: Flow Index, Endpoint, Dotted Leader, and Score */}
       <div className="flex items-center justify-between font-mono">
         <div className="flex items-center gap-3">
           <span
-            className={`w-1.5 h-1.5 rounded-full ${
+            className={`w-2 h-2 rounded-full ${
               isCrit
                 ? "bg-phosphor-hazard"
                 : isDegraded
@@ -60,23 +60,25 @@ export function FlowInventoryRow({ session, index, onSelect }: FlowInventoryRowP
                 : "bg-phosphor-green"
             }`}
           />
-          <span className="text-tactical-dim font-bold text-xs">{flowIdStr}</span>
-          <span className="text-white font-bold text-sm tracking-tight">
+          <span className="text-tactical-dim font-bold text-[14px]">{flowIdStr}</span>
+          <span className="text-tactical-text font-bold text-[15px] sm:text-[16px] tracking-tight">
             {endpointDisplay}
           </span>
         </div>
 
+        <div className="flex-1 mx-4 border-b border-dotted border-tactical-border/40 hidden sm:block" />
+
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-bold tabular-nums ${scoreColor}`}>
+          <span className={`text-[16px] font-bold tabular-nums ${scoreColor}`}>
             {session.session_score} {session.session_grade}
           </span>
         </div>
       </div>
 
       {/* Line 2: Telemetry tokens & Inspect action */}
-      <div className="flex items-center justify-between font-mono text-xs text-tactical-dim pl-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-white font-semibold">{session.protocol}</span>
+      <div className="flex items-center justify-between font-mono text-[13px] sm:text-[14px] text-tactical-dim pl-5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <span className="text-tactical-text font-semibold">{session.protocol}</span>
           <span>·</span>
           <span
             className={
@@ -111,9 +113,9 @@ export function FlowInventoryRow({ session, index, onSelect }: FlowInventoryRowP
           </span>
         </div>
 
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] text-phosphor-cyan font-bold uppercase">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 text-[13px] text-phosphor-cyan font-bold uppercase">
           <span>INSPECT</span>
-          <ArrowRight className="w-3 h-3" />
+          <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ export function ProtocolChart({ data }: ProtocolChartProps) {
     <div className="flex flex-col h-full p-4 border border-tactical-border bg-tactical-surface">
       <div className="flex items-center justify-between pb-3 border-b border-tactical-border">
         <div>
-          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-tactical-text flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-phosphor-cyan" />
             TLS Version Distribution
           </h3>
@@ -29,7 +29,7 @@ export function ProtocolChart({ data }: ProtocolChartProps) {
             Active encryption protocols across wire streams
           </p>
         </div>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-black/40 text-phosphor-cyan border border-tactical-border">
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-tactical-surfaceHover text-phosphor-cyan border border-tactical-border">
           {total} ACTIVE FLOWS
         </span>
       </div>
@@ -52,7 +52,7 @@ export function ProtocolChart({ data }: ProtocolChartProps) {
                     <Cell
                       key={`cell-${index}`}
                       fill={entry.color}
-                      stroke="#0d1117"
+                      stroke="var(--background)"
                       strokeWidth={2}
                     />
                   ))}
@@ -63,8 +63,8 @@ export function ProtocolChart({ data }: ProtocolChartProps) {
                       const item = payload[0].payload as DistributionItem;
                       const pct = total > 0 ? ((item.value / total) * 100).toFixed(0) : "0";
                       return (
-                        <div className="p-2 border border-tactical-border bg-black/95 text-xs font-mono shadow-xl">
-                          <div className="flex items-center gap-1.5 font-bold text-white">
+                        <div className="p-2 border border-tactical-border bg-tactical-surface text-xs font-mono shadow-xl">
+                          <div className="flex items-center gap-1.5 font-bold text-tactical-text">
                             <span className="w-2 h-2" style={{ backgroundColor: item.color }} />
                             <span>{item.name}</span>
                           </div>
@@ -81,7 +81,7 @@ export function ProtocolChart({ data }: ProtocolChartProps) {
             </ResponsiveContainer>
             {/* Center Donut Telemetry Label */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-              <span className="text-xl font-bold font-mono tracking-tight text-white tabular-nums">
+              <span className="text-xl font-bold font-mono tracking-tight text-tactical-text tabular-nums">
                 {total}
               </span>
               <span className="text-[9px] font-mono uppercase tracking-widest text-tactical-dim">
@@ -99,15 +99,15 @@ export function ProtocolChart({ data }: ProtocolChartProps) {
         {data.map((item) => {
           const pct = total > 0 ? ((item.value / total) * 100).toFixed(0) : "0";
           return (
-            <div key={item.name} className="flex items-center justify-between p-1.5 bg-black/40 border border-tactical-border">
+            <div key={item.name} className="flex items-center justify-between p-1.5 bg-tactical-surfaceHover border border-tactical-border">
               <div className="flex items-center gap-1.5 truncate">
                 <span className="w-2 h-2 flex-shrink-0" style={{ backgroundColor: item.color }} />
                 <span className="text-tactical-text truncate text-[11px] font-bold">{item.name}</span>
               </div>
-              <span className="font-bold tabular-nums text-white text-[11px] ml-2 flex items-center gap-1">
+              <div className="font-bold tabular-nums text-tactical-text text-[11px] ml-2 flex items-center gap-1">
                 <span>{item.value}</span>
                 <span className="text-[9px] text-tactical-dim font-normal">({pct}%)</span>
-              </span>
+              </div>
             </div>
           );
         })}

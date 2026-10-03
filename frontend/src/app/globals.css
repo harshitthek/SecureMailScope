@@ -5,6 +5,92 @@
 :root {
   --background: #07090c;
   --foreground: #f2f4f5;
+
+  /* Tactical Color Palette Channels (R, G, B) - Dark Mode Default */
+  --tactical-bg: 7 9 12;
+  --tactical-surface: 13 17 23;
+  --tactical-surface-hover: 17 23 32;
+  --tactical-elevated: 22 29 40;
+  --tactical-raw: 8 10 14;
+  --tactical-recessed: 5 7 10;
+  --tactical-border: 30 38 51;
+  --tactical-border-highlight: 46 58 78;
+  --tactical-text: 242 244 245;
+  --tactical-dim: 139 152 167;
+  --tactical-muted: 78 93 112;
+  --tactical-selected: 22 29 40;
+  --tactical-rail: 34 211 238;
+
+  /* Phosphor Telemetry Channels (R, G, B) */
+  --phosphor-green: 34 197 94;
+  --phosphor-hazard: 239 51 64;
+  --phosphor-amber: 245 158 11;
+  --phosphor-cyan: 34 211 238;
+  --phosphor-cyan-active: 56 189 248;
+
+  /* Grid & Accents */
+  --tactical-grid-line: rgba(255, 255, 255, 0.025);
+  --tactical-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.6);
+
+  /* Scrollbars */
+  --scrollbar-track: #080a0e;
+  --scrollbar-thumb: #1b2330;
+  --scrollbar-thumb-hover: #2c384e;
+  --scrollbar-border: #0d1117;
+}
+
+.light, [data-theme="light"] {
+  --background: #fbf6e8;
+  --foreground: #1c160f;
+
+  /* Tactical Forensic Channels (R, G, B) - Warm Daylight Mode (Zero Eye Strain) */
+  --tactical-bg: 246 238 218;
+  --tactical-surface: 253 250 242;
+  --tactical-surface-hover: 243 235 214;
+  --tactical-elevated: 247 240 223;
+  --tactical-raw: 240 231 209;
+  --tactical-recessed: 242 234 212;
+  --tactical-border: 222 210 183;
+  --tactical-border-highlight: 198 181 146;
+  --tactical-text: 28 22 15;
+  --tactical-dim: 99 85 66;
+  --tactical-muted: 143 128 106;
+  --tactical-selected: 248 236 200;
+  --tactical-rail: 180 83 9;
+
+  /* Phosphor Channels (R, G, B) - Daylight Mode */
+  --phosphor-green: 21 128 61;
+  --phosphor-hazard: 185 28 28;
+  --phosphor-amber: 217 119 6;
+  --phosphor-cyan: 14 116 144;
+  --phosphor-cyan-active: 3 105 161;
+
+  /* Grid & Accents */
+  --tactical-grid-line: rgba(198, 181, 146, 0.20);
+  --tactical-shadow: 0 1px 3px rgba(35, 25, 10, 0.05);
+
+  /* Scrollbars */
+  --scrollbar-track: #f0e7d1;
+  --scrollbar-thumb: #ded2b7;
+  --scrollbar-thumb-hover: #c6b592;
+  --scrollbar-border: #ded2b7;
+}
+
+/* Light Theme Ambient Warm Yellow Gradient */
+.light body,
+[data-theme="light"] body {
+  background-color: #fbf6e8;
+  background-image: 
+    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(251, 191, 36, 0.16), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(245, 158, 11, 0.09), transparent),
+    linear-gradient(180deg, #fbf6e8 0%, #f6ecd5 45%, #efe2bd 100%);
+  background-attachment: fixed;
+}
+
+.light header,
+[data-theme="light"] header {
+  background: linear-gradient(90deg, #fbf6e8 0%, #fefcf5 50%, #fbf6e8 100%);
+  border-bottom-color: #ded2b7;
 }
 
 /* Enforce absolute mechanical brutalism: 90-degree corners everywhere */
@@ -27,8 +113,8 @@ body {
 /* Tactical Telemetry Mechanical Grid */
 .bg-tactical-grid {
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(to right, var(--tactical-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--tactical-grid-line) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -44,16 +130,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #080a0e;
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1b2330;
-  border: 1px solid #0d1117;
+  background: var(--scrollbar-thumb);
+  border: 1px solid var(--scrollbar-border);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2c384e;
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Monospace telemetry data styling */

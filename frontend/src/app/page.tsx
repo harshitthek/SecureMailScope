@@ -17,38 +17,16 @@ export default function Home() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   const {
-    activeView,
-    setActiveView,
-
-    cases,
-    activeCaseId,
-    activeCase,
-    selectCase,
-
-    bpfFilter,
-    setBpfFilter,
+    activeView, setActiveView,
+    cases, activeCaseId, activeCase, selectCase,
     filteredSessions,
-    matchCount,
-
-    activeSession,
-    isDetailOpen,
-    detailTab,
-    openSessionDetail,
-    closeSessionDetail,
-    setDetailTab,
-
-    selectedStreamId,
-    setSelectedStreamId,
-    navigateToDissector,
-
-    isAnalyzing,
-    uploadError,
-    clearUploadError,
-    handleFileUpload,
+    activeSession, isDetailOpen, detailTab, openSessionDetail, closeSessionDetail, setDetailTab,
+    selectedStreamId, setSelectedStreamId, navigateToDissector,
+    isAnalyzing, uploadError, clearUploadError, handleFileUpload,
   } = useWorkstation();
 
   return (
-    <div className="min-h-screen bg-tactical-bg text-tactical-text flex flex-col bg-tactical-grid selection:bg-phosphor-cyan/20 selection:text-white relative">
+    <div className="min-h-screen bg-tactical-bg text-tactical-text flex flex-col bg-tactical-grid selection:bg-phosphor-cyan/20 selection:text-tactical-text relative">
       {/* 1. Full-Width Forensic Instrument Control Surface Header */}
       <TopHeader
         cases={cases}
@@ -57,9 +35,6 @@ export default function Home() {
         activeCase={activeCase}
         activeView={activeView}
         onSelectView={setActiveView}
-        bpfFilter={bpfFilter}
-        onFilterChange={setBpfFilter}
-        matchCount={matchCount}
         isAnalyzing={isAnalyzing}
         onFileUpload={handleFileUpload}
         onOpenUploadModal={() => setIsUploadOpen(true)}
@@ -71,7 +46,7 @@ export default function Home() {
           <span>{uploadError}</span>
           <button
             onClick={clearUploadError}
-            className="text-[10px] font-bold uppercase underline hover:text-white"
+            className="text-[10px] font-bold uppercase underline hover:text-tactical-text"
           >
             DISMISS
           </button>

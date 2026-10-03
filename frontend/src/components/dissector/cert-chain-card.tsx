@@ -9,8 +9,8 @@ interface CertChainCardProps {
 
 export function CertChainCard({ certificate }: CertChainCardProps) {
   return (
-    <div className="border border-tactical-border bg-black/40 p-3 space-y-2">
-      <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/70 text-white font-bold">
+    <div className="border border-tactical-border bg-tactical-surface p-3 space-y-2">
+      <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/70 text-tactical-text font-bold">
         <div className="flex items-center gap-1.5 text-phosphor-cyan">
           <Key className="w-3.5 h-3.5" />
           <span>X.509 CERTIFICATE CHAIN</span>
@@ -24,7 +24,7 @@ export function CertChainCard({ certificate }: CertChainCardProps) {
         <div className="space-y-1.5 text-[11px] text-tactical-dim">
           <div>
             <span className="text-[9px] uppercase text-tactical-muted block">Subject Common Name</span>
-            <span className="text-white font-bold break-all">{certificate.subject_cn}</span>
+            <span className="text-tactical-text font-bold break-all">{certificate.subject_cn}</span>
           </div>
           <div>
             <span className="text-[9px] uppercase text-tactical-muted block">Certificate Authority (Issuer)</span>

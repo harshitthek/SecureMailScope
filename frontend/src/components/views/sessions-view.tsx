@@ -50,22 +50,22 @@ export function SessionsView({
   return (
     <div className="h-full flex flex-col font-mono select-none overflow-hidden bg-tactical-bg">
       {/* 1. Top Investigation Ribbon */}
-      <div className="border-b border-tactical-border/80 bg-tactical-surface px-6 py-3 flex items-center justify-between flex-shrink-0">
+      <div className="border-b border-tactical-border/80 bg-tactical-surface px-6 py-3 min-h-[58px] flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <Network className="w-4 h-4 text-phosphor-cyan" />
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-sans font-bold text-white uppercase tracking-wider">
+            <div className="flex items-center gap-2.5">
+              <span className="text-[15px] font-sans font-bold text-tactical-text uppercase tracking-wider">
                 FLOW INVESTIGATION WORKSPACE
               </span>
-              <span className="text-xs text-tactical-dim font-mono">
+              <span className="text-[13px] text-tactical-dim font-mono">
                 {"// "}{currentSession.server_name || currentSession.dst_ip}
               </span>
             </div>
-            <div className="text-[11px] text-tactical-dim flex items-center gap-2 mt-0.5">
+            <div className="text-[13px] text-tactical-dim flex items-center gap-2 mt-0.5">
               <span>FLOW #{currentSession.session_id < 10 ? `0${currentSession.session_id}` : currentSession.session_id}</span>
               <span className="text-tactical-muted">•</span>
-              <span className="text-white font-mono">
+              <span className="text-tactical-text font-mono">
                 {currentSession.src_ip}:{currentSession.src_port} &rarr; {currentSession.dst_ip}:{currentSession.dst_port}
               </span>
               <span className="text-tactical-muted">•</span>
@@ -76,11 +76,11 @@ export function SessionsView({
 
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <span className="text-[9px] uppercase tracking-widest text-tactical-dim block">
+            <span className="text-[11px] uppercase tracking-widest text-tactical-dim block font-bold">
               POSTURE
             </span>
             <span
-              className={`text-xs font-bold tabular-nums px-2 py-0.5 border ${
+              className={`text-[13px] font-bold tabular-nums px-2.5 py-0.5 border ${
                 isCrit
                   ? "border-phosphor-hazard/60 bg-phosphor-hazard/10 text-phosphor-hazard"
                   : isDeg
@@ -94,7 +94,7 @@ export function SessionsView({
 
           <button
             onClick={() => onNavigateToDissector(currentSession.session_id)}
-            className="px-3 py-1.5 border border-phosphor-cyan/60 bg-tactical-elevated hover:bg-tactical-surfaceHover text-phosphor-cyan text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 transition-all active:translate-y-[1px]"
+            className="px-3.5 py-1.5 border border-phosphor-cyan/60 bg-tactical-elevated hover:bg-tactical-surfaceHover text-phosphor-cyan text-[13px] font-bold tracking-wider uppercase flex items-center gap-1.5 transition-all active:translate-y-[1px]"
           >
             <Binary className="w-3.5 h-3.5" />
             <span>DISSECT</span>

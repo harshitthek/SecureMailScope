@@ -23,7 +23,7 @@ export function StreamMatrix({
       {/* Header bar */}
       <div className="p-2.5 border-b border-tactical-border flex items-center justify-between bg-tactical-bg">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-white uppercase text-[11px]">
+          <span className="font-bold text-tactical-text uppercase text-[11px]">
             RECONSTRUCTED EMAIL STREAM MATRIX ({sessions.length})
           </span>
           <span className="text-[10px] text-tactical-dim uppercase hidden sm:inline">
@@ -37,7 +37,7 @@ export function StreamMatrix({
 
       {/* Table view or Empty Filter State */}
       {sessions.length === 0 ? (
-        <div className="py-12 px-4 text-center space-y-3 bg-black/40">
+        <div className="py-12 px-4 text-center space-y-3 bg-tactical-surfaceHover">
           <div className="flex items-center justify-center text-phosphor-amber gap-2">
             <Filter className="w-4 h-4" />
             <span className="font-bold text-xs uppercase tracking-wider">

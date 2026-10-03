@@ -15,7 +15,7 @@ export function TopTelemetryHeader({ activeCase, bufferPercent = 74 }: TopTeleme
   return (
     <header className="w-full border-b border-tactical-border bg-tactical-surface text-tactical-text font-mono">
       {/* Classification Ribbon */}
-      <div className="w-full border-b border-tactical-border/70 bg-black/60 px-4 py-0.5 flex items-center justify-between text-[10px] tracking-widest text-tactical-dim uppercase">
+      <div className="w-full border-b border-tactical-border/70 bg-tactical-surface px-4 py-0.5 flex items-center justify-between text-[10px] tracking-widest text-tactical-dim uppercase">
         <div className="flex items-center gap-2">
           <span className="text-phosphor-hazard font-bold">NTRO RESTRICTED</span>
           <span>{"//"}</span>
@@ -39,7 +39,7 @@ export function TopTelemetryHeader({ activeCase, bufferPercent = 74 }: TopTeleme
           </div>
           <div>
             <div className="flex items-center gap-2 text-xs font-bold tracking-wider">
-              <span className="text-white">NTRO SECUREMAILSCOPE</span>
+              <span className="text-tactical-text font-bold">NTRO SECUREMAILSCOPE</span>
               <span className="text-tactical-muted">{"//"}</span>
               <span className="text-phosphor-green flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-none bg-phosphor-green animate-pulse" />
@@ -60,7 +60,7 @@ export function TopTelemetryHeader({ activeCase, bufferPercent = 74 }: TopTeleme
           <div className="hidden md:flex flex-col items-end border-l border-tactical-border/80 pl-3">
             <span className="text-[9px] uppercase tracking-wider text-tactical-dim">Packet Ring Buffer</span>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <div className="w-24 h-2 border border-tactical-border bg-black">
+              <div className="w-24 h-2 border border-tactical-border bg-tactical-elevated">
                 <div
                   className="h-full bg-phosphor-cyan transition-all"
                   style={{ width: `${bufferPercent}%` }}
@@ -78,7 +78,7 @@ export function TopTelemetryHeader({ activeCase, bufferPercent = 74 }: TopTeleme
             </div>
             <div>
               <span className="text-[9px] uppercase tracking-wider text-tactical-dim block">Packets</span>
-              <span className="text-xs font-bold text-white tabular-nums">{packet_count} Pkts</span>
+              <span className="text-xs font-bold text-tactical-text tabular-nums">{packet_count} Pkts</span>
             </div>
             <div>
               <span className="text-[9px] uppercase tracking-wider text-tactical-dim block">Dissect Latency</span>

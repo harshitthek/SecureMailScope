@@ -45,7 +45,7 @@ export function UploadModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-mono select-none">
       <div className="w-full max-w-xl bg-tactical-surface border border-tactical-border/90 shadow-2xl p-6 space-y-6 relative">
         {!isAnalyzing && (
-          <button onClick={onClose} className="absolute top-4 right-4 text-tactical-dim hover:text-white transition-colors">
+          <button onClick={onClose} className="absolute top-4 right-4 text-tactical-dim hover:text-tactical-text transition-colors">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -53,7 +53,7 @@ export function UploadModal({
         <div className="border-b border-tactical-border/70 pb-3 flex items-center gap-2.5">
           <Shield className="w-4 h-4 text-phosphor-cyan" />
           <div>
-            <h3 className="text-sm font-sans font-bold text-white uppercase tracking-wider">
+            <h3 className="text-sm font-sans font-bold text-tactical-text uppercase tracking-wider">
               PASSIVE EMAIL FORENSIC INGESTION
             </h3>
             <span className="text-[11px] text-tactical-dim">
@@ -64,7 +64,7 @@ export function UploadModal({
 
         {isAnalyzing ? (
           <div className="py-6 space-y-4">
-            <span className="text-xs text-white font-bold uppercase tracking-wider block">
+            <span className="text-xs text-tactical-text font-bold uppercase tracking-wider block">
               ANALYZING PACKET WIRE STREAM...
             </span>
             <div className="space-y-2">
@@ -77,7 +77,7 @@ export function UploadModal({
                   ) : (
                     <span className="w-3.5 h-3.5 border border-tactical-border inline-block" />
                   )}
-                  <span className={idx === currentStage ? "text-phosphor-cyan font-bold" : idx < currentStage ? "text-white" : "text-tactical-dim"}>
+                  <span className={idx === currentStage ? "text-phosphor-cyan font-bold" : idx < currentStage ? "text-tactical-text" : "text-tactical-dim"}>
                     {stage}
                   </span>
                 </div>
@@ -92,7 +92,7 @@ export function UploadModal({
               if (e.dataTransfer.files?.[0]) onFileUpload(e.dataTransfer.files[0]);
             }}
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-tactical-border hover:border-phosphor-cyan/70 p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-black/30 group"
+            className="border-2 border-dashed border-tactical-border hover:border-phosphor-cyan/70 p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-tactical-surface hover:bg-tactical-surfaceHover group"
           >
             <input
               type="file"
@@ -104,7 +104,7 @@ export function UploadModal({
               }}
             />
             <Upload className="w-8 h-8 text-tactical-dim group-hover:text-phosphor-cyan mb-2 transition-colors" />
-            <span className="font-sans font-bold text-sm text-white uppercase tracking-wider">
+            <span className="font-sans font-bold text-sm text-tactical-text uppercase tracking-wider">
               DROP PCAP / PCAPNG EVIDENCE FILE HERE
             </span>
             <span className="text-xs text-tactical-dim mt-0.5">

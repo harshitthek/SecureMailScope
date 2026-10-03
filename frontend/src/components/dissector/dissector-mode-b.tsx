@@ -12,7 +12,7 @@ export function DissectorModeB({ session }: DissectorModeBProps) {
 
   if (!inspection) {
     return (
-      <div className="p-6 text-center font-mono text-tactical-muted text-xs border border-tactical-border bg-black/40">
+      <div className="p-6 text-center font-mono text-tactical-muted text-xs border border-tactical-border bg-tactical-surface">
         No raw wire dissection chunks captured for this flow.
       </div>
     );
@@ -23,9 +23,9 @@ export function DissectorModeB({ session }: DissectorModeBProps) {
   return (
     <div className="space-y-3 font-mono text-xs">
       {/* 1. Protocol State Machine Progression */}
-      <div className="border border-tactical-border bg-black/40 p-2.5">
+      <div className="border border-tactical-border bg-tactical-surface p-2.5">
         <div className="flex items-center justify-between pb-1.5 border-b border-tactical-border/60 text-[10px] text-tactical-dim uppercase">
-          <span className="font-bold text-white">PROTOCOL STATE MACHINE TRANSITIONS</span>
+          <span className="font-bold text-tactical-text">PROTOCOL STATE MACHINE TRANSITIONS</span>
           <span>DISSECTED TCP REASSEMBLY</span>
         </div>
 
@@ -63,7 +63,7 @@ export function DissectorModeB({ session }: DissectorModeBProps) {
       </div>
 
       {/* 2. Raw ASCII / Hex Wire Stream Dump */}
-      <div className="border border-tactical-border bg-black/60 p-3 font-mono">
+      <div className="border border-tactical-border bg-tactical-surface p-3 font-mono">
         <div className="flex items-center justify-between pb-2 border-b border-tactical-border/70 text-[10px] text-tactical-dim uppercase">
           <span className="font-bold text-phosphor-cyan">
             RAW WIRE STREAM HEX & ASCII INSPECTION
@@ -92,12 +92,12 @@ export function DissectorModeB({ session }: DissectorModeBProps) {
                 <div
                   className={`grid grid-cols-12 gap-1 p-1 text-[11px] items-center border ${
                     isDanger
-                      ? "border-phosphor-hazard/60 bg-phosphor-hazard/20 text-white font-bold"
+                      ? "border-phosphor-hazard/60 bg-phosphor-hazard/20 text-tactical-text font-bold"
                       : isSecure
-                      ? "border-phosphor-green/60 bg-phosphor-green/15 text-white font-bold"
+                      ? "border-phosphor-green/60 bg-phosphor-green/15 text-tactical-text font-bold"
                       : isWarning
-                      ? "border-phosphor-amber/60 bg-phosphor-amber/15 text-white"
-                      : "border-transparent text-tactical-dim hover:bg-tactical-surface"
+                      ? "border-phosphor-amber/60 bg-phosphor-amber/15 text-tactical-text"
+                      : "border-transparent text-tactical-dim hover:bg-tactical-surfaceHover"
                   }`}
                 >
                   <span className="col-span-2 text-tactical-muted tabular-nums">

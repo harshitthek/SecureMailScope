@@ -20,7 +20,7 @@ export function StreamRow({ session: s, isSelected, onSelect }: StreamRowProps) 
       aria-selected={isSelected}
       className={`border-b border-tactical-border/70 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-phosphor-cyan ${
         isSelected
-          ? "bg-tactical-elevated text-white"
+          ? "bg-tactical-elevated text-tactical-text"
           : "hover:bg-tactical-surfaceHover text-tactical-text"
       }`}
     >
@@ -29,7 +29,7 @@ export function StreamRow({ session: s, isSelected, onSelect }: StreamRowProps) 
       </td>
 
       <td className="py-2.5 px-2.5">
-        <span className="font-bold text-white block truncate max-w-[220px]">
+        <span className="font-bold text-tactical-text block truncate max-w-[220px]">
           {s.server_name}
         </span>
         <div className="flex items-center gap-1 text-[10px] text-tactical-dim mt-0.5 tabular-nums">
@@ -40,7 +40,7 @@ export function StreamRow({ session: s, isSelected, onSelect }: StreamRowProps) 
       </td>
 
       <td className="py-2.5 px-2.5">
-        <span className="px-1.5 py-0.5 border border-tactical-border bg-black/40 text-[10px] font-bold uppercase">
+        <span className="px-1.5 py-0.5 border border-tactical-border bg-tactical-surfaceHover text-[10px] font-bold uppercase">
           {s.protocol}
         </span>
       </td>
@@ -107,7 +107,7 @@ export function StreamRow({ session: s, isSelected, onSelect }: StreamRowProps) 
           className={`px-2 py-0.5 border text-[10px] uppercase font-bold transition-colors inline-flex items-center gap-1 focus-visible:ring-1 focus-visible:ring-phosphor-cyan ${
             isSelected
               ? "border-phosphor-cyan bg-phosphor-cyan text-black"
-              : "border-tactical-border bg-tactical-bg hover:border-phosphor-cyan text-tactical-dim hover:text-white"
+              : "border-tactical-border bg-tactical-bg hover:border-phosphor-cyan text-tactical-dim hover:text-tactical-text"
           }`}
         >
           <Eye className="w-3 h-3" />

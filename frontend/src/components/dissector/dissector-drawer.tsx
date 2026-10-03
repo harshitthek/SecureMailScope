@@ -22,7 +22,7 @@ export function DissectorDrawer({ session, mode, onModeChange, onClose }: Dissec
       <div className="flex flex-wrap items-center justify-between pb-2 border-b border-tactical-border gap-2">
         <div className="flex items-center gap-2">
           <Cpu className="w-4 h-4 text-phosphor-cyan" />
-          <span className="font-bold text-white text-[11px] uppercase">
+          <span className="font-bold text-tactical-text text-[11px] uppercase">
             DEEP STREAM DISSECTOR // FLOW #{session.session_id} ({session.protocol})
           </span>
           <span className="text-[10px] text-tactical-dim hidden sm:inline">
@@ -32,13 +32,13 @@ export function DissectorDrawer({ session, mode, onModeChange, onClose }: Dissec
 
         {/* Tab Controls & Close */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center border border-tactical-border bg-black/40 p-0.5">
+          <div className="flex items-center border border-tactical-border bg-tactical-surface p-0.5">
             <button
               onClick={() => onModeChange("AUDIT")}
               className={`px-2.5 py-1 text-[10px] uppercase font-bold transition-colors ${
                 mode === "AUDIT"
                   ? "bg-phosphor-cyan text-black"
-                  : "text-tactical-dim hover:text-white"
+                  : "text-tactical-dim hover:text-tactical-text"
               }`}
             >
               [ MODE A: CRYPTANALYSIS &amp; AUDIT ]
@@ -48,7 +48,7 @@ export function DissectorDrawer({ session, mode, onModeChange, onClose }: Dissec
               className={`px-2.5 py-1 text-[10px] uppercase font-bold transition-colors ${
                 mode === "RAW_STREAM"
                   ? "bg-phosphor-green text-black"
-                  : "text-tactical-dim hover:text-white"
+                  : "text-tactical-dim hover:text-tactical-text"
               }`}
             >
               [ MODE B: RAW STREAM &amp; PROTOCOL STATE ]
