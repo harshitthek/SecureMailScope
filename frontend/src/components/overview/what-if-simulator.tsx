@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   Sliders, 
   Sparkles, 
@@ -9,9 +9,17 @@ import {
   Terminal, 
   RotateCcw,
   TrendingUp,
-  Download
+  Download,
+  Activity,
+  ShieldAlert,
+  Table
 } from "lucide-react";
 import { EvidenceCase, Grade } from "@/lib/types";
+import { SimulationPlaybackControls } from "./what-if/simulation-playback-controls";
+import { SimulationWirePipeline } from "./what-if/simulation-wire-pipeline";
+import { SimulationCrtTicker } from "./what-if/simulation-crt-ticker";
+import { SimulationThreatMatrix } from "./what-if/simulation-threat-matrix";
+import { SimulationStreamLedger } from "./what-if/simulation-stream-ledger";
 
 interface WhatIfSimulatorProps {
   activeCase: EvidenceCase;
@@ -24,6 +32,56 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
   const [renewCerts, setRenewCerts] = useState(false);
   const [copied, setCopied] = useState(false);
   const [viewTab, setViewTab] = useState<"SIMULATION" | "CONFIG">("SIMULATION");
+  const [simVisualTab, setSimVisualTab] = useState<"PIPELINE" | "TERMINAL" | "THREATS" | "LEDGER">("PIPELINE");
+
+  // Live simulation playback states
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentStage, setCurrentStage] = useState(0);
+  const [speed, setSpeed] = useState<1 | 2>(1);
+
+  // Playback loop effect
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const intervalTime = speed === 1 ? 1400 : 700;
+    const timer = setInterval(() => {
+      setCurrentStage((prev) => {
+        if (prev >= 4) {
+          setIsPlaying(false);
+          return 4;
+        }
+        return prev + 1;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, speed]);
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+    } else {
+      if (currentStage >= 4) {
+        setCurrentStage(0);
+      }
+      setIsPlaying(true);
+    }
+  };
+
+  const stepForward = () => {
+    if (currentStage < 4) {
+      setCurrentStage((prev) => prev + 1);
+    }
+  };
+
+  const resetSimulation = () => {
+    setIsPlaying(false);
+    setCurrentStage(0);
+  };
+
+  const toggleSpeed = () => {
+    setSpeed((s) => (s === 1 ? 2 : 1));
+  };
 
   const simulatedResults = useMemo(() => {
     const sessions = activeCase.data.sessions;
@@ -77,6 +135,7 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
     setEnforcePfs(false);
     setEnforceAead(false);
     setRenewCerts(false);
+    resetSimulation();
   };
 
   const applyAllPolicies = () => {
@@ -84,6 +143,8 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
     setEnforcePfs(true);
     setEnforceAead(true);
     setRenewCerts(true);
+    setCurrentStage(0);
+    setIsPlaying(true);
   };
 
   const generatedConfig = useMemo(() => {
@@ -173,14 +234,14 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
                 Interactive Hardening Sandbox
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[#121317] text-[#34d399] border border-[#34d399]/30">
-                WHAT-IF ENGINE
+                WHAT-IF ENGINE (LIVE)
               </span>
             </div>
             <h3 className="text-xl font-serif font-normal text-white tracking-[0.01em]">
-              Real-Time Posture Elevation Simulator
+              Real-Time Posture Elevation &amp; Threat Remediation Simulator
             </h3>
             <p className="text-xs text-[#9194a1] mt-0.5">
-              Simulate enterprise policy hardening across captured streams and generate verified Postfix &amp; Dovecot patches
+              Simulate cryptographic hardening policies across intercepted wire streams with live packet interception telemetry
             </p>
           </div>
         </div>
@@ -191,11 +252,12 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
             <button
               type="button"
               onClick={() => setViewTab("SIMULATION")}
-              className={`px-3 py-1 rounded-full transition-colors ${
+              className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${
                 viewTab === "SIMULATION" ? "bg-white text-black font-semibold" : "text-[#9194a1] hover:text-white"
               }`}
             >
-              Simulator Deck
+              <Activity className="w-3 h-3" />
+              <span>Simulator Deck</span>
             </button>
             <button
               type="button"
@@ -212,196 +274,319 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
       </div>
 
       {viewTab === "SIMULATION" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* Left: 4 Policy Switches */}
-          <div className="lg:col-span-7 flex flex-col justify-between gap-3 font-mono text-xs">
-            <div className="flex items-center justify-between pb-1">
-              <span className="text-[11px] text-[#9194a1] uppercase tracking-wider font-semibold">
-                Defense Policy Levers ({activeTogglesCount}/4 ACTIVE)
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={resetPolicies}
-                  className="text-[11px] text-[#9194a1] hover:text-white flex items-center gap-1 transition-colors"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset</span>
-                </button>
-                <span className="text-[#2e3038]">•</span>
-                <button
-                  type="button"
-                  onClick={applyAllPolicies}
-                  className="text-[11px] text-[#cc9166] hover:text-white flex items-center gap-1 transition-colors"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>Max Hardening</span>
-                </button>
+        <div className="flex flex-col gap-5">
+          {/* Top Row: 4 Policy Switches (Left) + Projected Delta Card (Right) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Left: 4 Policy Switches */}
+            <div className="lg:col-span-7 flex flex-col justify-between gap-3 font-mono text-xs">
+              <div className="flex items-center justify-between pb-1">
+                <span className="text-[11px] text-[#9194a1] uppercase tracking-wider font-semibold">
+                  Defense Policy Levers ({activeTogglesCount}/4 ACTIVE)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={resetPolicies}
+                    className="text-[11px] text-[#9194a1] hover:text-white flex items-center gap-1 transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                  <span className="text-[#2e3038]">•</span>
+                  <button
+                    type="button"
+                    onClick={applyAllPolicies}
+                    className="text-[11px] text-[#cc9166] hover:text-white flex items-center gap-1 transition-colors"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Max Hardening</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Switch 1: Mandate TLS 1.3 */}
+              <label className={`p-3.5 rounded-[10px] border transition-all cursor-pointer flex items-start justify-between gap-4 ${
+                enforceTls13 ? "bg-[#121317] border-[#cc9166]/60 text-white" : "bg-[#08080a] border-[#1c1d22] text-[#9194a1] hover:border-[#2e3038]"
+              }`}>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white">1. Mandate TLS 1.3 (RFC 8446)</span>
+                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-[#1c1d22] text-[#cc9166]">NIST §3.1</span>
+                  </div>
+                  <p className="text-[11px] text-[#9194a1] font-sans">
+                    Eliminates legacy TLS 1.0/1.1 and POODLE/Lucky13 fallback vectors. Immunizes against submission downgrade.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={enforceTls13}
+                  onChange={(e) => {
+                    setEnforceTls13(e.target.checked);
+                    if (e.target.checked) setCurrentStage(1);
+                  }}
+                  className="mt-1 w-4 h-4 accent-[#cc9166] cursor-pointer"
+                />
+              </label>
+
+              {/* Switch 2: Enforce Ephemeral PFS */}
+              <label className={`p-3.5 rounded-[10px] border transition-all cursor-pointer flex items-start justify-between gap-4 ${
+                enforcePfs ? "bg-[#121317] border-[#cc9166]/60 text-white" : "bg-[#08080a] border-[#1c1d22] text-[#9194a1] hover:border-[#2e3038]"
+              }`}>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white">2. Enforce Ephemeral Forward Secrecy (ECDHE)</span>
+                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-[#1c1d22] text-[#cc9166]">NIST §3.3.1</span>
+                  </div>
+                  <p className="text-[11px] text-[#9194a1] font-sans">
+                    Prohibits static RSA key exchange. Defends against retrospective decryption if MTA private key is compromised.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={enforcePfs}
+                  onChange={(e) => {
+                    setEnforcePfs(e.target.checked);
+                    if (e.target.checked) setCurrentStage(2);
+                  }}
+                  className="mt-1 w-4 h-4 accent-[#cc9166] cursor-pointer"
+                />
+              </label>
+
+              {/* Switch 3: AEAD Only */}
+              <label className={`p-3.5 rounded-[10px] border transition-all cursor-pointer flex items-start justify-between gap-4 ${
+                enforceAead ? "bg-[#121317] border-[#cc9166]/60 text-white" : "bg-[#08080a] border-[#1c1d22] text-[#9194a1] hover:border-[#2e3038]"
+              }`}>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white">3. Mandate Authenticated AEAD Ciphers</span>
+                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-[#1c1d22] text-[#cc9166]">NIST §3.3.2</span>
+                  </div>
+                  <p className="text-[11px] text-[#9194a1] font-sans">
+                    Restricts ciphers to AES-GCM and ChaCha20-Poly1305. Purges 3DES Sweet32 and CBC padding oracles.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={enforceAead}
+                  onChange={(e) => {
+                    setEnforceAead(e.target.checked);
+                    if (e.target.checked) setCurrentStage(3);
+                  }}
+                  className="mt-1 w-4 h-4 accent-[#cc9166] cursor-pointer"
+                />
+              </label>
+
+              {/* Switch 4: Renew & CA-Sign Certs */}
+              <label className={`p-3.5 rounded-[10px] border transition-all cursor-pointer flex items-start justify-between gap-4 ${
+                renewCerts ? "bg-[#121317] border-[#cc9166]/60 text-white" : "bg-[#08080a] border-[#1c1d22] text-[#9194a1] hover:border-[#2e3038]"
+              }`}>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white">4. CA Trust Anchor &amp; 3072-bit Key Renewal</span>
+                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-[#1c1d22] text-[#cc9166]">NIST §3.4</span>
+                  </div>
+                  <p className="text-[11px] text-[#9194a1] font-sans">
+                    Replaces self-signed certificates and weak 1024-bit RSA keys with verified root authority certificates.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={renewCerts}
+                  onChange={(e) => {
+                    setRenewCerts(e.target.checked);
+                    if (e.target.checked) setCurrentStage(4);
+                  }}
+                  className="mt-1 w-4 h-4 accent-[#cc9166] cursor-pointer"
+                />
+              </label>
             </div>
 
-            {/* Switch 1: Mandate TLS 1.3 */}
-            <label className={`p-3.5 rounded-[10px] border transition-all cursor-pointer flex items-start justify-between gap-4 ${
-              enforceTls13 ? "bg-[#121317] border-[#cc9166]/60 text-white" : "bg-[#08080a] border-[#1c1d22] text-[#9194a1] hover:border-[#2e3038]"
-            }`}>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white">1. Mandate TLS 1.3 (RFC 8446)</span>
-                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-[#1c1d22] text-[#cc9166]">NIST §3.1</span>
+            {/* Right: Projected Score Impact Card */}
+            <div className="lg:col-span-5 bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-[#1c1d22]">
+                  <span className="text-xs font-mono text-[#9194a1] uppercase font-semibold">
+                    Projected Posture Delta
+                  </span>
+                  <span className="text-xs font-mono text-[#cc9166] flex items-center gap-1 font-semibold">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>+{simulatedResults.delta} PTS</span>
+                  </span>
                 </div>
-                <p className="text-[11px] text-[#9194a1] font-sans">
-                  Eliminates legacy TLS 1.0/1.1 and POODLE/Lucky13 fallback vectors. Immunizes against submission downgrade.
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={enforceTls13}
-                onChange={(e) => setEnforceTls13(e.target.checked)}
-                className="mt-1 w-4 h-4 accent-[#cc9166] cursor-pointer"
-              />
-            </label>
 
-            {/* Switch 2: Enforce Ephemeral PFS */}
-            <label className={`p-3.5 rounded-[10px] border transition-all cursor-pointer flex items-start justify-between gap-4 ${
-              enforcePfs ? "bg-[#121317] border-[#cc9166]/60 text-white" : "bg-[#08080a] border-[#1c1d22] text-[#9194a1] hover:border-[#2e3038]"
-            }`}>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white">2. Enforce Ephemeral Forward Secrecy (ECDHE)</span>
-                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-[#1c1d22] text-[#cc9166]">NIST §3.3.1</span>
-                </div>
-                <p className="text-[11px] text-[#9194a1] font-sans">
-                  Prohibits static RSA key exchange. Defends against retrospective decryption if MTA private key is compromised.
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={enforcePfs}
-                onChange={(e) => setEnforcePfs(e.target.checked)}
-                className="mt-1 w-4 h-4 accent-[#cc9166] cursor-pointer"
-              />
-            </label>
+                {/* Score Split Card */}
+                <div className="grid grid-cols-2 gap-3 py-4 text-center">
+                  <div className="p-3.5 rounded-[8px] bg-[#121317] border border-[#1c1d22]">
+                    <span className="text-[10px] font-mono text-[#777a88] uppercase block mb-1">
+                      Current Capture
+                    </span>
+                    <span className="text-3xl font-serif text-white block">
+                      {activeCase.data.enterprise_score}
+                    </span>
+                    <span className="text-xs font-mono text-[#9194a1] mt-0.5 block">
+                      Grade {activeCase.data.enterprise_grade}
+                    </span>
+                  </div>
 
-            {/* Switch 3: AEAD Only */}
-            <label className={`p-3.5 rounded-[10px] border transition-all cursor-pointer flex items-start justify-between gap-4 ${
-              enforceAead ? "bg-[#121317] border-[#cc9166]/60 text-white" : "bg-[#08080a] border-[#1c1d22] text-[#9194a1] hover:border-[#2e3038]"
-            }`}>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white">3. Mandate Authenticated AEAD Ciphers</span>
-                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-[#1c1d22] text-[#cc9166]">NIST §3.3.2</span>
+                  <div className="p-3.5 rounded-[8px] bg-[#121317] border border-[#34d399]/40 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-8 h-8 bg-[#34d399]/10 rounded-bl-full" />
+                    <span className="text-[10px] font-mono text-[#34d399] uppercase block mb-1 font-semibold">
+                      Simulated Projected
+                    </span>
+                    <span className="text-3xl font-serif text-[#34d399] block">
+                      {simulatedResults.score}
+                    </span>
+                    <span className="text-xs font-mono text-[#34d399] mt-0.5 block font-semibold">
+                      Grade {simulatedResults.grade}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-[11px] text-[#9194a1] font-sans">
-                  Restricts ciphers to AES-GCM and ChaCha20-Poly1305. Purges 3DES Sweet32 and CBC padding oracles.
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={enforceAead}
-                onChange={(e) => setEnforceAead(e.target.checked)}
-                className="mt-1 w-4 h-4 accent-[#cc9166] cursor-pointer"
-              />
-            </label>
 
-            {/* Switch 4: Renew & CA-Sign Certs */}
-            <label className={`p-3.5 rounded-[10px] border transition-all cursor-pointer flex items-start justify-between gap-4 ${
-              renewCerts ? "bg-[#121317] border-[#cc9166]/60 text-white" : "bg-[#08080a] border-[#1c1d22] text-[#9194a1] hover:border-[#2e3038]"
-            }`}>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white">4. CA Trust Anchor &amp; 3072-bit Key Renewal</span>
-                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-[#1c1d22] text-[#cc9166]">NIST §3.4</span>
+                {/* Progress Bar */}
+                <div className="space-y-1.5 py-2 font-mono text-xs">
+                  <div className="flex justify-between text-[11px] text-[#9194a1]">
+                    <span>Posture Index Elevation</span>
+                    <span>{simulatedResults.score} / 100</span>
+                  </div>
+                  <div className="h-2 w-full bg-[#121317] rounded-full overflow-hidden border border-[#1c1d22]">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#cc9166] to-[#34d399] transition-all duration-300"
+                      style={{ width: `${simulatedResults.score}%` }}
+                    />
+                  </div>
                 </div>
-                <p className="text-[11px] text-[#9194a1] font-sans">
-                  Replaces self-signed certificates and weak 1024-bit RSA keys with verified root authority certificates.
-                </p>
+
+                {/* Highlights */}
+                <div className="space-y-2 pt-3 text-xs font-mono text-[#acafb9]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#9194a1]">• Compliant Wire Streams:</span>
+                    <span className="text-white font-medium">{simulatedResults.compliantStreams} / {activeCase.data.total_sessions}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#9194a1]">• Cryptographic Headroom:</span>
+                    <span className="text-[#34d399] font-medium">
+                      {100 - simulatedResults.score === 0 ? "Zero Residual Vulnerability" : `${100 - simulatedResults.score} pts remaining`}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <input
-                type="checkbox"
-                checked={renewCerts}
-                onChange={(e) => setRenewCerts(e.target.checked)}
-                className="mt-1 w-4 h-4 accent-[#cc9166] cursor-pointer"
-              />
-            </label>
+
+              <button
+                type="button"
+                onClick={() => setViewTab("CONFIG")}
+                className="mt-4 w-full py-2.5 rounded-full bg-[#121317] hover:bg-[#1c1d22] border border-[#2e3038] hover:border-[#cc9166] text-[#cc9166] text-xs font-mono font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <Terminal className="w-3.5 h-3.5" />
+                <span>Inspect Generated Configuration Directives</span>
+              </button>
+            </div>
           </div>
 
-          {/* Right: Projected Score Impact Card */}
-          <div className="lg:col-span-5 bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-5 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between pb-3 border-b border-[#1c1d22]">
-                <span className="text-xs font-mono text-[#9194a1] uppercase font-semibold">
-                  Projected Posture Delta
-                </span>
-                <span className="text-xs font-mono text-[#cc9166] flex items-center gap-1">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>+{simulatedResults.delta} PTS</span>
-                </span>
-              </div>
+          {/* Middle Row: Playback Controls HUD */}
+          <SimulationPlaybackControls
+            isPlaying={isPlaying}
+            currentStage={currentStage}
+            speed={speed}
+            onTogglePlay={togglePlay}
+            onStepForward={stepForward}
+            onReset={resetSimulation}
+            onToggleSpeed={toggleSpeed}
+            onSelectStage={(st) => setCurrentStage(st)}
+          />
 
-              {/* Score Split Card */}
-              <div className="grid grid-cols-2 gap-3 py-4 text-center">
-                <div className="p-3.5 rounded-[8px] bg-[#121317] border border-[#1c1d22]">
-                  <span className="text-[10px] font-mono text-[#777a88] uppercase block mb-1">
-                    Current Capture
-                  </span>
-                  <span className="text-3xl font-serif text-white block">
-                    {activeCase.data.enterprise_score}
-                  </span>
-                  <span className="text-xs font-mono text-[#9194a1] mt-0.5 block">
-                    Grade {activeCase.data.enterprise_grade}
-                  </span>
-                </div>
+          {/* Interactive Visual Deck Subtabs */}
+          <div className="flex items-center justify-between border-b border-[#1c1d22] pb-2 font-mono text-xs">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setSimVisualTab("PIPELINE")}
+                className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${
+                  simVisualTab === "PIPELINE"
+                    ? "bg-[#cc9166] text-black font-semibold"
+                    : "bg-[#121317] text-[#9194a1] hover:text-white border border-[#2e3038]"
+                }`}
+              >
+                <Activity className="w-3 h-3" />
+                <span>Wire Topology Pipeline</span>
+              </button>
 
-                <div className="p-3.5 rounded-[8px] bg-[#121317] border border-[#34d399]/40 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-8 h-8 bg-[#34d399]/10 rounded-bl-full" />
-                  <span className="text-[10px] font-mono text-[#34d399] uppercase block mb-1 font-semibold">
-                    Simulated Projected
-                  </span>
-                  <span className="text-3xl font-serif text-[#34d399] block">
-                    {simulatedResults.score}
-                  </span>
-                  <span className="text-xs font-mono text-[#34d399] mt-0.5 block font-semibold">
-                    Grade {simulatedResults.grade}
-                  </span>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setSimVisualTab("TERMINAL")}
+                className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${
+                  simVisualTab === "TERMINAL"
+                    ? "bg-[#34d399] text-black font-semibold"
+                    : "bg-[#121317] text-[#9194a1] hover:text-white border border-[#2e3038]"
+                }`}
+              >
+                <Terminal className="w-3 h-3" />
+                <span>Forensic CRT Ticker</span>
+              </button>
 
-              {/* Progress Bar */}
-              <div className="space-y-1.5 py-2 font-mono text-xs">
-                <div className="flex justify-between text-[11px] text-[#9194a1]">
-                  <span>Posture Index Elevation</span>
-                  <span>{simulatedResults.score} / 100</span>
-                </div>
-                <div className="h-2 w-full bg-[#121317] rounded-full overflow-hidden border border-[#1c1d22]">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#cc9166] to-[#34d399] transition-all duration-300"
-                    style={{ width: `${simulatedResults.score}%` }}
-                  />
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setSimVisualTab("THREATS")}
+                className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${
+                  simVisualTab === "THREATS"
+                    ? "bg-white text-black font-semibold"
+                    : "bg-[#121317] text-[#9194a1] hover:text-white border border-[#2e3038]"
+                }`}
+              >
+                <ShieldAlert className="w-3 h-3" />
+                <span>MITRE Threat Matrix</span>
+              </button>
 
-              {/* Highlights */}
-              <div className="space-y-2 pt-3 text-xs font-mono text-[#acafb9]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#9194a1]">• Compliant Wire Streams:</span>
-                  <span className="text-white font-medium">{simulatedResults.compliantStreams} / {activeCase.data.total_sessions}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#9194a1]">• Cryptographic Headroom:</span>
-                  <span className="text-[#34d399] font-medium">{100 - simulatedResults.score === 0 ? "Zero Residual Vulnerability" : `${100 - simulatedResults.score} pts remaining`}</span>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setSimVisualTab("LEDGER")}
+                className={`px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${
+                  simVisualTab === "LEDGER"
+                    ? "bg-white text-black font-semibold"
+                    : "bg-[#121317] text-[#9194a1] hover:text-white border border-[#2e3038]"
+                }`}
+              >
+                <Table className="w-3 h-3" />
+                <span>Stream Diff Ledger</span>
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setViewTab("CONFIG")}
-              className="mt-4 w-full py-2.5 rounded-full bg-[#121317] hover:bg-[#1c1d22] border border-[#2e3038] hover:border-[#cc9166] text-[#cc9166] text-xs font-mono font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              <Terminal className="w-3.5 h-3.5" />
-              <span>Inspect Generated Configuration Directives</span>
-            </button>
+            <span className="text-[10px] text-[#777a88] hidden sm:inline">
+              STAGE: {currentStage} / 4 ACTIVE
+            </span>
           </div>
+
+          {/* Active Visual Subdeck Display */}
+          {simVisualTab === "PIPELINE" && (
+            <SimulationWirePipeline
+              currentStage={currentStage}
+              activeCase={activeCase}
+              enforceTls13={enforceTls13}
+              enforcePfs={enforcePfs}
+              enforceAead={enforceAead}
+              renewCerts={renewCerts}
+            />
+          )}
+
+          {simVisualTab === "TERMINAL" && (
+            <SimulationCrtTicker
+              currentStage={currentStage}
+              activeCase={activeCase}
+            />
+          )}
+
+          {simVisualTab === "THREATS" && (
+            <SimulationThreatMatrix
+              currentStage={currentStage}
+              activeCase={activeCase}
+            />
+          )}
+
+          {simVisualTab === "LEDGER" && (
+            <SimulationStreamLedger
+              currentStage={currentStage}
+              activeCase={activeCase}
+            />
+          )}
         </div>
       ) : (
         /* Configuration Patch View */
