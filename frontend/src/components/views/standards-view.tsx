@@ -55,7 +55,7 @@ export function StandardsView({ activeCase }: StandardsViewProps) {
           </div>
 
           {/* Standards Filter Pills */}
-          <div className="flex items-center flex-wrap gap-2 text-xs font-mono-tech">
+          <div className="flex items-center flex-wrap gap-2 text-xs font-mono">
             {standardsList.map((std) => {
               const isSelected = selectedStandard === std;
               return (
@@ -77,7 +77,7 @@ export function StandardsView({ activeCase }: StandardsViewProps) {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 pt-5 font-mono-tech">
+        <div className="grid grid-cols-3 gap-3 pt-5 font-mono">
           <div className="p-3.5 rounded-[10px] bg-[#08080a] border border-[#1c1d22] text-center sm:text-left">
             <span className="text-[11px] font-semibold text-[#10b981] uppercase tracking-wider block">
               Requirements Passed
@@ -136,14 +136,14 @@ export function StandardsView({ activeCase }: StandardsViewProps) {
                     <h3 className="font-serif font-normal text-base text-white">
                       {item.requirement}
                     </h3>
-                    <span className="text-xs font-mono-tech text-[#9194a1]">
+                    <span className="text-xs font-mono text-[#9194a1]">
                       {item.standard} · Section {item.section}
                     </span>
                   </div>
                 </div>
 
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-mono-tech font-semibold uppercase tracking-wider self-start sm:self-auto ${
+                  className={`px-3 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wider self-start sm:self-auto ${
                     isPass
                       ? "bg-[#064e3b]/20 text-[#10b981] border border-[#10b981]/40"
                       : isFail
@@ -155,7 +155,7 @@ export function StandardsView({ activeCase }: StandardsViewProps) {
                 </span>
               </div>
 
-              <div className="pt-3 text-xs font-mono-tech text-[#e2e3e9] leading-relaxed">
+              <div className="pt-3 text-xs font-mono text-[#e2e3e9] leading-relaxed">
                 <strong className="text-[#cc9166] font-semibold">Observed Wire Evaluation: </strong>
                 {item.details}
               </div>

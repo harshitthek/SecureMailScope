@@ -108,8 +108,8 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
 
         {/* Metric Cards Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 font-mono">
-          <div className="p-3.5 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
-            <span className="text-[11px] font-medium text-[#f87171] uppercase tracking-wider block">
+          <div className="p-3.5 rounded-[10px] bg-[#08080a] border border-[#1c1d22]">
+            <span className="text-[11px] font-semibold text-[#f87171] uppercase tracking-wider block">
               Critical Exploits
             </span>
             <span className="text-3xl font-serif text-[#f87171] mt-1 block">
@@ -118,8 +118,8 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
             <span className="text-[10px] text-[#777a88]">MITM downgrades / plain auth</span>
           </div>
 
-          <div className="p-3.5 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
-            <span className="text-[11px] font-medium text-[#cc9166] uppercase tracking-wider block">
+          <div className="p-3.5 rounded-[10px] bg-[#08080a] border border-[#1c1d22]">
+            <span className="text-[11px] font-semibold text-[#cc9166] uppercase tracking-wider block">
               High Severity
             </span>
             <span className="text-3xl font-serif text-[#cc9166] mt-1 block">
@@ -128,8 +128,8 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
             <span className="text-[10px] text-[#777a88]">Legacy TLS / weak ciphers</span>
           </div>
 
-          <div className="p-3.5 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
-            <span className="text-[11px] font-medium text-[#9194a1] uppercase tracking-wider block">
+          <div className="p-3.5 rounded-[10px] bg-[#08080a] border border-[#1c1d22]">
+            <span className="text-[11px] font-semibold text-[#9194a1] uppercase tracking-wider block">
               Medium Severity
             </span>
             <span className="text-3xl font-serif text-white mt-1 block">
@@ -138,8 +138,8 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
             <span className="text-[10px] text-[#777a88]">CBC mode / non-AEAD suites</span>
           </div>
 
-          <div className="p-3.5 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
-            <span className="text-[11px] font-medium text-[#777a88] uppercase tracking-wider block">
+          <div className="p-3.5 rounded-[10px] bg-[#08080a] border border-[#1c1d22]">
+            <span className="text-[11px] font-semibold text-[#777a88] uppercase tracking-wider block">
               Low Severity
             </span>
             <span className="text-3xl font-serif text-white mt-1 block">

@@ -49,7 +49,7 @@ export function ReportView({ activeCase }: ReportViewProps) {
             <button
               type="button"
               onClick={() => handleDownload("pdf")}
-              className="h-9 px-4 rounded-full border border-[#f87171]/40 bg-[#7f1d1d]/20 hover:bg-[#7f1d1d]/30 text-[#f87171] font-medium text-xs font-mono-tech flex items-center gap-2 transition-colors"
+              className="h-9 px-4 rounded-full border border-[#f87171]/40 bg-[#7f1d1d]/20 hover:bg-[#7f1d1d]/30 text-[#f87171] font-medium text-xs font-mono flex items-center gap-2 transition-colors"
             >
               <FileText className="w-3.5 h-3.5" />
               <span>Export PDF</span>
@@ -58,7 +58,7 @@ export function ReportView({ activeCase }: ReportViewProps) {
             <button
               type="button"
               onClick={() => handleDownload("json")}
-              className="h-9 px-4 rounded-full border border-[#cc9166]/40 bg-[#121317] hover:bg-[#1c1d22] text-[#cc9166] font-medium text-xs font-mono-tech flex items-center gap-2 transition-colors"
+              className="h-9 px-4 rounded-full border border-[#cc9166]/40 bg-[#121317] hover:bg-[#1c1d22] text-[#cc9166] font-medium text-xs font-mono flex items-center gap-2 transition-colors"
             >
               <FileJson className="w-3.5 h-3.5" />
               <span>Export JSON</span>
@@ -67,7 +67,7 @@ export function ReportView({ activeCase }: ReportViewProps) {
             <button
               type="button"
               onClick={() => window.print()}
-              className="h-9 px-4 rounded-full bg-white hover:bg-white/90 text-black font-semibold text-xs font-mono-tech flex items-center gap-2 transition-colors shadow-xs"
+              className="h-9 px-4 rounded-full bg-white hover:bg-white/90 text-black font-semibold text-xs font-mono flex items-center gap-2 transition-colors shadow-xs"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print Dossier</span>
@@ -76,7 +76,7 @@ export function ReportView({ activeCase }: ReportViewProps) {
         </div>
 
         {/* Executive Meta Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 font-mono-tech text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 font-mono text-xs">
           <div className="p-3 rounded-[8px] bg-[#08080a] border border-[#1c1d22]">
             <span className="text-[10px] text-[#9194a1] uppercase block font-medium">Dossier ID</span>
             <span className="font-semibold text-white block mt-0.5">{activeCase.data.analysis_id}</span>
@@ -111,7 +111,7 @@ export function ReportView({ activeCase }: ReportViewProps) {
               Passive Cryptographic Traffic Forensics &amp; Posture Assessment Dossier
             </p>
           </div>
-          <span className="text-xs font-mono-tech font-semibold px-3 py-1 bg-[#121317] border border-[#1c1d22] rounded-full text-[#cc9166]">
+          <span className="text-xs font-mono font-semibold px-3 py-1 bg-[#121317] border border-[#1c1d22] rounded-full text-[#cc9166]">
             SIH26159
           </span>
         </div>
@@ -123,12 +123,12 @@ export function ReportView({ activeCase }: ReportViewProps) {
           </h3>
           <p className="text-[#e2e3e9] leading-relaxed">
             Passive deep packet analysis was conducted on network capture{" "}
-            <code className="font-mono-tech font-semibold text-[#cc9166]">{activeCase.data.filename}</code>{" "}
+            <code className="font-mono font-semibold text-[#cc9166]">{activeCase.data.filename}</code>{" "}
             containing <strong className="text-white">{activeCase.data.total_packets.toLocaleString()}</strong> packets
             and <strong className="text-white">{activeCase.data.total_sessions}</strong> reassembled email transport streams.
             The evaluation measured conformance against NIST Special Publication 800-52 Revision 2 and IETF RFC 8314.
           </p>
-          <div className="p-4 rounded-[10px] bg-[#08080a] border border-[#1c1d22] flex items-center justify-between font-mono-tech">
+          <div className="p-4 rounded-[10px] bg-[#08080a] border border-[#1c1d22] flex items-center justify-between font-mono">
             <div>
               <span className="text-xs text-[#9194a1] uppercase block">Enterprise Cryptographic Grade</span>
               <span className={`text-2xl sm:text-3xl font-serif font-normal ${isFail ? "text-[#f87171]" : "text-[#10b981]"}`}>
@@ -146,7 +146,7 @@ export function ReportView({ activeCase }: ReportViewProps) {
           <h3 className="font-serif font-normal text-lg text-white uppercase tracking-wide border-b border-[#1c1d22] pb-2">
             2. Stream Findings &amp; Risk Posture
           </h3>
-          <div className="space-y-2 font-mono-tech text-xs">
+          <div className="space-y-2 font-mono text-xs">
             {activeCase.data.sessions.map((s, idx) => (
               <div key={s.session_id} className="p-3 rounded-[8px] bg-[#08080a] border border-[#1c1d22] flex justify-between items-center">
                 <div>
@@ -165,7 +165,7 @@ export function ReportView({ activeCase }: ReportViewProps) {
         </section>
 
         {/* Official Certification Footer */}
-        <div className="pt-8 border-t border-[#1c1d22] font-mono-tech text-xs text-[#9194a1] flex justify-between items-end">
+        <div className="pt-8 border-t border-[#1c1d22] font-mono text-xs text-[#9194a1] flex justify-between items-end">
           <div>
             <div>Automated Signature: SECUREMAILSCOPE-ENGINE-V1.4</div>
             <div>Sensor ID: NTRO-PASSIVE-MIRROR-01</div>

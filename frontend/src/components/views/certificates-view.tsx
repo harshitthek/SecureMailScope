@@ -44,7 +44,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 font-mono-tech">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 font-mono">
           <div className="p-3.5 rounded-[10px] bg-[#08080a] border border-[#1c1d22]">
             <span className="text-[11px] font-semibold text-[#10b981] uppercase tracking-wider block">
               Valid Certificates
@@ -131,11 +131,11 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                         <h3 className="font-serif font-normal text-base sm:text-lg text-white">
                           {cert.subject_cn || s.server_name || "Unknown Host"}
                         </h3>
-                        <span className="text-xs font-mono-tech px-2.5 py-0.5 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#1c1d22]">
+                        <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#1c1d22]">
                           {s.protocol} :{s.dst_port}
                         </span>
                       </div>
-                      <span className="text-xs font-mono-tech text-[#9194a1]">
+                      <span className="text-xs font-mono text-[#9194a1]">
                         Serial: {cert.serial_number || "0x4F8A92BC10"}
                       </span>
                     </div>
@@ -143,7 +143,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
 
                   {/* Status Badge */}
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-mono-tech font-semibold uppercase tracking-wider self-start sm:self-auto ${
+                    className={`px-3 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wider self-start sm:self-auto ${
                       isExpired
                         ? "bg-[#7f1d1d]/20 text-[#f87171] border border-[#f87171]/40"
                         : isWeakKey
@@ -156,7 +156,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                 </div>
 
                 {/* Body Specs Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 py-4 text-xs font-mono-tech">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 py-4 text-xs font-mono">
                   <div className="p-3 rounded-[8px] bg-[#08080a] border border-[#1c1d22]">
                     <span className="text-[10px] text-[#9194a1] uppercase block font-medium mb-1">
                       Issuer Authority
@@ -196,7 +196,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
 
                 {/* SAN Entries */}
                 {cert.san_entries && cert.san_entries.length > 0 && (
-                  <div className="pt-3 border-t border-[#1c1d22] flex items-center flex-wrap gap-2 text-xs font-mono-tech">
+                  <div className="pt-3 border-t border-[#1c1d22] flex items-center flex-wrap gap-2 text-xs font-mono">
                     <span className="text-[#9194a1] flex items-center gap-1 font-medium">
                       <Globe className="w-3.5 h-3.5" />
                       <span>SANs:</span>

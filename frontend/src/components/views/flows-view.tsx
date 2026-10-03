@@ -81,8 +81,8 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
             </div>
           </div>
 
-          {/* Quick Filters (Pill controls) */}
-          <div className="flex items-center flex-wrap gap-2 text-xs font-medium">
+          {/* Quick Filters (Pill controls with tactile dots) */}
+          <div className="flex items-center flex-wrap gap-2 text-xs font-sans font-medium">
             {(["ALL", "SECURE", "CRITICAL", "WARNING"] as const).map((filter) => {
               const isActive = statusFilter === filter;
               return (
@@ -90,16 +90,38 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
                   key={filter}
                   type="button"
                   onClick={() => setStatusFilter(filter)}
-                  className={`px-3.5 py-1 rounded-full border transition-all duration-150 ${
+                  className={`px-3.5 py-1 rounded-full border transition-all duration-150 flex items-center gap-1.5 ${
                     isActive
                       ? "bg-white text-black border-white"
-                      : "bg-[#121317] text-[#9194a1] border-[#2e3038] hover:text-white"
+                      : "bg-[#121317] text-[#9194a1] border-[#2e3038] hover:text-white hover:border-[#777a88]"
                   }`}
                 >
-                  {filter === "ALL" && "All Streams"}
-                  {filter === "SECURE" && "🟢 Secure (≥80)"}
-                  {filter === "CRITICAL" && "🔴 Critical (<50)"}
-                  {filter === "WARNING" && "🟠 Warning (50-79)"}
+                  {filter === "ALL" && (
+                    <>
+                      <span>All Streams</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${isActive ? "bg-black/10 text-black" : "bg-[#040406] text-[#777a88]"}`}>
+                        {activeCase.data.total_sessions}
+                      </span>
+                    </>
+                  )}
+                  {filter === "SECURE" && (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+                      <span>Secure (≥80)</span>
+                    </>
+                  )}
+                  {filter === "CRITICAL" && (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f87171]" />
+                      <span>Critical (&lt;50)</span>
+                    </>
+                  )}
+                  {filter === "WARNING" && (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#fbbf24]" />
+                      <span>Warning (50-79)</span>
+                    </>
+                  )}
                 </button>
               );
             })}
@@ -284,11 +306,14 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
                   <Lock className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg text-white font-normal">
-                    Stream Forensic Inspection: {selectedSession.protocol} :{selectedSession.dst_port}
+                  <span className="text-[11px] font-mono text-[#cc9166] uppercase font-semibold tracking-wider block">
+                    Forensic Stream Dissection
+                  </span>
+                  <h3 className="font-serif text-lg text-white font-normal mt-0.5">
+                    Stream #{selectedSession.session_id} · {selectedSession.protocol} :{selectedSession.dst_port}
                   </h3>
-                  <span className="text-xs font-mono text-[#9194a1]">
-                    Session ID: #{selectedSession.session_id} · {selectedSession.server_name || selectedSession.dst_ip}
+                  <span className="text-[11px] font-mono text-[#9194a1] block mt-0.5">
+                    Target: {selectedSession.server_name || selectedSession.dst_ip}
                   </span>
                 </div>
               </div>
@@ -296,7 +321,7 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
               <button
                 type="button"
                 onClick={() => setSelectedSession(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[#777a88] hover:text-white hover:bg-[#121317]"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#777a88] hover:text-white hover:bg-[#121317] transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -305,39 +330,51 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
             <div className="mt-5 space-y-4 font-mono text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3.5 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
-                  <span className="text-[11px] text-[#9194a1] uppercase block">Cryptographic Posture</span>
-                  <div className="text-lg font-serif text-white mt-1">
-                    {selectedSession.session_score}/100 (Grade {selectedSession.session_grade})
+                  <span className="text-[11px] text-[#9194a1] uppercase block font-sans">Cryptographic Posture</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-3xl font-serif font-normal text-white">
+                      {selectedSession.session_score}
+                    </span>
+                    <span className="text-sm font-serif text-[#9194a1]">/100</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase ml-auto border ${
+                      selectedSession.session_score >= 80
+                        ? "bg-[#064e3b]/20 text-[#10b981] border-[#10b981]/30"
+                        : selectedSession.session_score < 50
+                        ? "bg-[#7f1d1d]/20 text-[#f87171] border-[#f87171]/30"
+                        : "bg-[#78350f]/20 text-[#fbbf24] border-[#fbbf24]/30"
+                    }`}>
+                      GRADE {selectedSession.session_grade}
+                    </span>
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
-                  <span className="text-[11px] text-[#9194a1] uppercase block">STARTTLS Status</span>
-                  <div className={`text-sm font-medium mt-1 ${selectedSession.starttls_stripped ? "text-[#f87171]" : "text-[#34d399]"}`}>
+                  <span className="text-[11px] text-[#9194a1] uppercase block font-sans">STARTTLS Status</span>
+                  <div className={`text-xs font-semibold mt-2.5 ${selectedSession.starttls_stripped ? "text-[#f87171]" : "text-[#10b981]"}`}>
                     {selectedSession.starttls_stripped ? "STRIPPED (MITM Downgrade)" : selectedSession.starttls_detected ? "Negotiated & Enforced" : "Implicit TLS (No STARTTLS)"}
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22] space-y-2">
-                <div className="flex justify-between">
+              <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22] space-y-2.5">
+                <div className="flex justify-between items-center">
                   <span className="text-[#9194a1]">Cipher Suite:</span>
                   <span className="font-medium text-white">{selectedSession.cipher_suite_name || "None (Cleartext)"}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-[#9194a1]">TLS Protocol Version:</span>
                   <span className="font-medium text-white">{selectedSession.tls_version || "Cleartext"}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-[#9194a1]">Key Exchange &amp; PFS:</span>
                   <span className="font-medium text-white">{selectedSession.key_exchange || "None"} ({selectedSession.has_forward_secrecy ? "PFS Active" : "No PFS"})</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-[#9194a1]">JA3 Fingerprint Hash:</span>
                   <span className="font-medium text-white break-all">{selectedSession.ja3_hash || "N/A"}</span>
                 </div>
                 {selectedSession.ja3_client_name && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-[#9194a1]">JA3 Client Identity:</span>
                     <span className="font-medium text-[#cc9166]">{selectedSession.ja3_client_name}</span>
                   </div>
@@ -354,7 +391,9 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
 
                 return (
                   <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
-                    <span className="font-medium uppercase text-[11px] text-[#9194a1] block mb-2 font-mono">Scoring Deductions</span>
+                    <span className="font-medium uppercase text-[11px] text-[#cc9166] block mb-2 font-mono">
+                      Scoring Deductions (NIST SP 800-52r2)
+                    </span>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
                       <div className="p-2 rounded bg-[#040406] border border-[#1c1d22]">
                         <span className="text-[10px] text-[#777a88] block">Protocol</span>
@@ -391,10 +430,10 @@ export function FlowsView({ activeCase, onInspectFlowInDissector }: FlowsViewPro
                   }
                   setSelectedSession(null);
                 }}
-                className="h-10 px-5 rounded-full bg-white hover:bg-[#e2e3e9] text-black font-medium text-xs font-mono flex items-center gap-2"
+                className="h-9 px-4 rounded-full bg-white hover:bg-white/90 text-black font-sans font-medium text-xs flex items-center gap-1.5 transition-colors"
               >
                 <span>Open in Full Dissector</span>
-                <ArrowUpRight className="w-4 h-4 text-black" />
+                <ArrowUpRight className="w-3.5 h-3.5 text-black" />
               </button>
             </div>
           </div>

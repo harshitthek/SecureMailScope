@@ -105,7 +105,7 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalPro
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4.5 border-b border-[#1c1d22] bg-[#08080a]">
           <div>
-            <span className="text-[11px] font-semibold tracking-wide uppercase text-[#cc9166] block font-mono-tech">
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-[#cc9166] block font-mono">
               PASSIVE EMAIL TRAFFIC DECONSTRUCTION
             </span>
             <h2 className="text-base font-serif font-normal text-white mt-0.5">
@@ -133,7 +133,7 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalPro
                 <h3 className="font-serif font-normal text-white text-base">
                   Forensic Ingestion In Progress
                 </h3>
-                <span className="text-xs font-mono-tech text-[#9194a1]">
+                <span className="text-xs font-mono text-[#9194a1]">
                   {fileName}
                 </span>
               </div>
@@ -149,7 +149,7 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalPro
                   return (
                     <div
                       key={step.key}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-full text-xs font-mono-tech transition-colors ${
+                      className={`flex items-center gap-3 px-3 py-2 rounded-full text-xs font-mono transition-colors ${
                         isCurrent
                           ? "bg-[#121317] text-white font-semibold border border-[#cc9166]/50"
                           : isDone
@@ -212,7 +212,7 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalPro
                 Upload raw packet capture for automated stream reassembly, TLS inspection, and NIST SP 800-52r2 compliance auditing.
               </p>
 
-              <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px] font-mono-tech text-[#e2e3e9]">
+              <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px] font-mono text-[#e2e3e9]">
                 <span className="px-2.5 py-0.5 rounded-full bg-[#121317] border border-[#1c1d22]">.pcap</span>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#121317] border border-[#1c1d22]">.pcapng</span>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#121317] border border-[#1c1d22]">.cap</span>
@@ -225,7 +225,7 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalPro
           )}
 
           {error && (
-            <div className="mt-4 p-3.5 rounded-[10px] border border-[#f87171]/40 bg-[#7f1d1d]/20 flex items-start gap-3 text-xs text-[#f87171] font-mono-tech">
+            <div className="mt-4 p-3.5 rounded-[10px] border border-[#f87171]/40 bg-[#7f1d1d]/20 flex items-start gap-3 text-xs text-[#f87171] font-mono">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} />
               <div>
                 <span className="font-bold">Ingestion Failure: </span>
@@ -234,7 +234,7 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalPro
             </div>
           )}
 
-          <div className="mt-5 border-t border-[#1c1d22] pt-4 flex items-center justify-between text-xs text-[#9194a1] font-mono-tech">
+          <div className="mt-5 border-t border-[#1c1d22] pt-4 flex items-center justify-between text-xs text-[#9194a1] font-mono">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
               OFFLINE PASSIVE FORENSICS
