@@ -15,6 +15,7 @@ import { CertificatesView } from "@/components/views/certificates-view";
 import { DissectorView } from "@/components/views/dissector-view";
 import { StandardsView } from "@/components/views/standards-view";
 import { ReportView } from "@/components/views/report-view";
+import { ApplicationFooter } from "@/components/shell/footer";
 
 function ForensicWorkstationInner() {
   const searchParams = useSearchParams();
@@ -160,6 +161,9 @@ function ForensicWorkstationInner() {
       {activeTab === "REPORT" && (
         <ReportView activeCase={activeCase} />
       )}
+
+      {/* 5. Slash Editorial Footer */}
+      <ApplicationFooter />
 
       {/* Upload PCAP Ingestion Modal */}
       <UploadModal

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, X, ArrowRight, GitFork, ShieldAlert, AlertTriangle, Award, Layers } from "lucide-react";
+import { Check, X, ArrowRight, ShieldAlert, AlertTriangle, Award, Layers } from "lucide-react";
 import { EvidenceCase } from "@/lib/types";
 
 interface ProtocolDivergenceStripProps {
@@ -24,190 +24,177 @@ export function ProtocolDivergenceStrip({ activeCase }: ProtocolDivergenceStripP
   const observedFlowTag = activeCase.case_code === "CASE-04" ? "FLOW 03" : "FLOW 01";
 
   return (
-    <section className="sms-card bg-sms-surface-primary border border-sms-border rounded-2xl p-6 sm:p-7 shadow-card hover:shadow-cardHover transition-smooth select-none">
+    <section className="bg-[#040406] border border-[#1c1d22] rounded-[10px] p-6 select-none font-sans">
       {/* Section Header */}
-      <div className="flex items-center justify-between pb-4 mb-5 border-b border-sms-border">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-            <GitFork className="w-4 h-4" strokeWidth={2} />
-          </div>
-          <div>
-            <h3 className="text-base sm:text-lg font-bold text-sms-text-primary tracking-tight">
-              Protocol Divergence Analysis
-            </h3>
-            <span className="text-xs font-mono-tech text-sms-text-muted">
-              RFC 8314 Compliant Cryptographic Path vs Captured Wire Traces
-            </span>
-          </div>
+      <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#1c1d22]">
+        <div>
+          <span className="text-[13px] font-semibold tracking-[-0.02em] text-[#cc9166] uppercase block">
+            Compliance Verification
+          </span>
+          <h2 className="text-xl sm:text-2xl font-serif font-normal text-white tracking-[0.01em] mt-0.5">
+            Expected Protocol Baseline vs Observed Wire Traces
+          </h2>
         </div>
 
-        <span className="text-xs font-mono-tech px-2.5 py-1 rounded-md bg-sms-surface-secondary text-sms-text-secondary border border-sms-border hidden sm:inline-block">
-          DIVERGENCE SENSOR
+        <span className="text-xs font-mono px-3 py-1 rounded-full bg-[#121317] text-[#9194a1] border border-[#2e3038] hidden sm:inline-block">
+          RFC 8314 AUDIT
         </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        {/* ----------------------------------------------------
-            LEFT (65%): PROTOCOL TRACKS (EXPECTED VS OBSERVED)
-            ---------------------------------------------------- */}
-        <div className="lg:col-span-8 flex flex-col gap-4">
-          {/* TRACK 1: EXPECTED PROTOCOL TRACK (Green/Teal Accent) */}
-          <div className="bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 rounded-xl p-4 flex flex-col gap-2.5">
+        {/* LEFT: PROTOCOL TRACKS (EXPECTED VS OBSERVED) */}
+        <div className="lg:col-span-8 flex flex-col gap-3">
+          {/* TRACK 1: EXPECTED PROTOCOL TRACK */}
+          <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <Check className="w-3 h-3" strokeWidth={2.5} />
+                <div className="w-4 h-4 rounded-full bg-[#34d399]/20 text-[#34d399] flex items-center justify-center">
+                  <Check className="w-2.5 h-2.5" strokeWidth={2.5} />
                 </div>
-                <span className="text-xs font-mono-tech font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
-                  RFC 8314 Expected Security Path
+                <span className="text-xs font-mono font-medium text-[#34d399] uppercase tracking-wider">
+                  RFC 8314 Expected Security Baseline
                 </span>
               </div>
-              <span className="text-[11px] font-mono-tech text-emerald-600 dark:text-emerald-400 font-semibold hidden sm:inline">
+              <span className="text-[11px] font-mono text-[#9194a1] hidden sm:inline">
                 ENFORCED ENCRYPTION
               </span>
             </div>
 
-            <div className="flex items-center flex-wrap gap-2 text-xs font-mono-tech pt-1">
-              <span className="px-2.5 py-1 rounded-lg bg-sms-surface-primary text-sms-text-primary border border-sms-border shadow-xs font-semibold">
+            <div className="flex items-center flex-wrap gap-2 text-xs font-mono pt-1">
+              <span className="px-3 py-1 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#2e3038] font-medium">
                 EHLO GREETING
               </span>
-              <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2} />
-              <span className="px-2.5 py-1 rounded-lg bg-sms-surface-primary text-sms-text-primary border border-sms-border shadow-xs font-semibold">
+              <ArrowRight className="w-3.5 h-3.5 text-[#cc9166] shrink-0" strokeWidth={1.75} />
+              <span className="px-3 py-1 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#2e3038] font-medium">
                 STARTTLS NEGOTIATION
               </span>
-              <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2} />
-              <span className="px-2.5 py-1 rounded-lg bg-sms-surface-primary text-sms-text-primary border border-sms-border shadow-xs font-semibold">
+              <ArrowRight className="w-3.5 h-3.5 text-[#cc9166] shrink-0" strokeWidth={1.75} />
+              <span className="px-3 py-1 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#2e3038] font-medium">
                 TLS 1.3 HANDSHAKE
               </span>
-              <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2} />
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold shadow-xs">
+              <ArrowRight className="w-3.5 h-3.5 text-[#cc9166] shrink-0" strokeWidth={1.75} />
+              <span className="px-3 py-1 rounded-full bg-[#34d399]/15 text-[#34d399] border border-[#34d399]/30 font-medium">
                 ENCRYPTED PAYLOAD
               </span>
             </div>
           </div>
 
           {/* TRACK 2: OBSERVED WIRE TRACE */}
-          <div
-            className={`border rounded-xl p-4 flex flex-col gap-2.5 ${
-              isHardened
-                ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-900/40"
-                : "bg-red-50/40 dark:bg-red-950/20 border-red-200/80 dark:border-red-900/40"
-            }`}
-          >
+          <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  className={`w-4 h-4 rounded-full flex items-center justify-center ${
                     isHardened
-                      ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/60 dark:text-emerald-400"
-                      : "bg-red-100 text-red-600 dark:bg-red-900/60 dark:text-red-400"
+                      ? "bg-[#34d399]/20 text-[#34d399]"
+                      : "bg-[#f87171]/20 text-[#f87171]"
                   }`}
                 >
                   {isHardened ? (
-                    <Check className="w-3 h-3" strokeWidth={2.5} />
+                    <Check className="w-2.5 h-2.5" strokeWidth={2.5} />
                   ) : (
-                    <X className="w-3 h-3" strokeWidth={2.5} />
+                    <X className="w-2.5 h-2.5" strokeWidth={2.5} />
                   )}
                 </div>
                 <span
-                  className={`text-xs font-mono-tech font-bold uppercase tracking-wider ${
-                    isHardened ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"
+                  className={`text-xs font-mono font-medium uppercase tracking-wider ${
+                    isHardened ? "text-[#34d399]" : "text-[#f87171]"
                   }`}
                 >
-                  Observed Wire Trace ({observedFlowTag}) · {isHardened ? "Compliant" : "Critical Divergence"}
+                  Observed Wire Trace ({observedFlowTag})
                 </span>
               </div>
               <span
-                className={`text-[11px] font-mono-tech font-bold hidden sm:inline ${
-                  isHardened ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+                className={`text-[11px] font-mono hidden sm:inline ${
+                  isHardened ? "text-[#34d399]" : "text-[#f87171]"
                 }`}
               >
-                {isHardened ? "ZERO TAMPERING" : "ATTACK / DOWNGRADE"}
+                {isHardened ? "VERIFIED CONFORMANT" : "WIRE DIVERGENCE DETECTED"}
               </span>
             </div>
 
-            {isHardened ? (
-              <div className="flex items-center flex-wrap gap-2 text-xs font-mono-tech pt-1">
-                <span className="px-2.5 py-1 rounded-lg bg-sms-surface-primary text-sms-text-primary border border-sms-border shadow-xs font-semibold">
-                  TCP PORT 465 (IMPLICIT TLS)
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2} />
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-700">
-                  TLS 1.3 RECORD (0x16 0x03)
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2} />
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold shadow-xs">
-                  AES-256-GCM CIPHERTEXT
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center flex-wrap gap-2 text-xs font-mono-tech pt-1">
-                <span className="px-2.5 py-1 rounded-lg bg-sms-surface-primary text-sms-text-primary border border-sms-border shadow-xs font-semibold">
-                  EHLO GREETING
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 text-red-500 shrink-0" strokeWidth={2} />
-                <span className="px-2.5 py-1 rounded-lg bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 font-bold border border-red-300 dark:border-red-800">
-                  STARTTLS STRIPPED
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 text-red-500 shrink-0" strokeWidth={2} />
-                <span className="px-2.5 py-1 rounded-lg bg-red-600 text-white font-bold shadow-xs animate-pulse">
-                  PLAINTEXT AUTH OBSERVED
-                </span>
-              </div>
-            )}
+            <div className="flex items-center flex-wrap gap-2 text-xs font-mono pt-1">
+              <span className="px-3 py-1 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#2e3038] font-medium">
+                EHLO GREETING
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#cc9166] shrink-0" strokeWidth={1.75} />
+              {isHardened ? (
+                <>
+                  <span className="px-3 py-1 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#2e3038] font-medium">
+                    STARTTLS ANNOUNCED
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#cc9166] shrink-0" strokeWidth={1.75} />
+                  <span className="px-3 py-1 rounded-full bg-[#121317] text-[#e2e3e9] border border-[#2e3038] font-medium">
+                    TLS 1.3 NEGOTIATED
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#cc9166] shrink-0" strokeWidth={1.75} />
+                  <span className="px-3 py-1 rounded-full bg-[#34d399]/15 text-[#34d399] border border-[#34d399]/30 font-medium">
+                    AEAD CIPHER ACTIVE
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="px-3 py-1 rounded-full bg-[#f87171]/10 text-[#f87171] border border-[#f87171]/30 font-medium">
+                    STARTTLS OMITTED / BYPASSED
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#f87171] shrink-0" strokeWidth={1.75} />
+                  <span className="px-3 py-1 rounded-full bg-[#f87171]/15 text-[#f87171] border border-[#f87171]/40 font-medium">
+                    PLAINTEXT AUTH EXPOSURE
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ----------------------------------------------------
-            RIGHT (35%): 4-CARD FORENSIC INVENTORY GRID
-            ---------------------------------------------------- */}
+        {/* RIGHT: KEY DIVERGENCE PROOF POINTS (Stat Displays) */}
         <div className="lg:col-span-4 grid grid-cols-2 gap-3">
-          {/* Critical Vulnerabilities */}
-          <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-200/80 dark:border-red-900/50 p-4 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-red-600 dark:text-red-400 mb-1">
-              <span className="text-[11px] font-mono-tech uppercase font-bold tracking-wider">Critical</span>
-              <ShieldAlert className="w-4 h-4" />
+          {/* Critical */}
+          <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[#f87171]">
+              <span className="text-[11px] font-mono uppercase font-semibold">Critical</span>
+              <ShieldAlert className="w-3.5 h-3.5" />
             </div>
-            <div className="text-3xl font-black text-red-600 dark:text-red-400 tnum leading-tight font-sans">
-              {String(criticalFindings || 2).padStart(2, "0")}
+            <div className="text-3xl font-serif font-normal text-[#f87171] my-1">
+              {String(criticalFindings).padStart(2, "0")}
             </div>
-            <span className="text-[11px] text-sms-text-muted mt-0.5">Threat vectors</span>
+            <span className="text-[10px] text-[#9194a1] font-mono">MITM / Plaintext</span>
           </div>
 
-          {/* High Severity Warnings */}
-          <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/50 p-4 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-1">
-              <span className="text-[11px] font-mono-tech uppercase font-bold tracking-wider">High Risk</span>
-              <AlertTriangle className="w-4 h-4" />
+          {/* High */}
+          <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[#cc9166]">
+              <span className="text-[11px] font-mono uppercase font-semibold">High Risk</span>
+              <AlertTriangle className="w-3.5 h-3.5" />
             </div>
-            <div className="text-3xl font-black text-amber-600 dark:text-amber-400 tnum leading-tight font-sans">
-              {String(highFindings || 2).padStart(2, "0")}
+            <div className="text-3xl font-serif font-normal text-[#cc9166] my-1">
+              {String(highFindings).padStart(2, "0")}
             </div>
-            <span className="text-[11px] text-sms-text-muted mt-0.5">Policy violations</span>
+            <span className="text-[10px] text-[#9194a1] font-mono">Weak Ciphers</span>
           </div>
 
-          {/* Expired Certificates */}
-          <div className="bg-sms-surface-secondary/70 border border-sms-border p-4 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-sms-text-secondary mb-1">
-              <span className="text-[11px] font-mono-tech uppercase font-bold tracking-wider">Expired Cert</span>
-              <Award className="w-4 h-4" />
+          {/* Expired Certs */}
+          <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[#9194a1]">
+              <span className="text-[11px] font-mono uppercase font-semibold">Expired Cert</span>
+              <Award className="w-3.5 h-3.5" />
             </div>
-            <div className="text-3xl font-black text-sms-text-primary tnum leading-tight font-sans">
-              {String(expiredCerts || 1).padStart(2, "0")}
+            <div className="text-3xl font-serif font-normal text-white my-1">
+              {String(expiredCerts).padStart(2, "0")}
             </div>
-            <span className="text-[11px] text-sms-text-muted mt-0.5">Invalid chains</span>
+            <span className="text-[10px] text-[#9194a1] font-mono">X.509 Trust Chain</span>
           </div>
 
-          {/* Total Reconstructed Flows */}
-          <div className="bg-sms-surface-secondary/70 border border-sms-border p-4 rounded-xl flex flex-col justify-between">
-            <div className="flex items-center justify-between text-sms-text-secondary mb-1">
-              <span className="text-[11px] font-mono-tech uppercase font-bold tracking-wider">Total Flows</span>
-              <Layers className="w-4 h-4" />
+          {/* Total Flows */}
+          <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-[#9194a1]">
+              <span className="text-[11px] font-mono uppercase font-semibold">Total Flows</span>
+              <Layers className="w-3.5 h-3.5" />
             </div>
-            <div className="text-3xl font-black text-sms-text-primary tnum leading-tight font-sans">
-              {String(totalFlows || 4).padStart(2, "0")}
+            <div className="text-3xl font-serif font-normal text-white my-1">
+              {String(totalFlows).padStart(2, "0")}
             </div>
-            <span className="text-[11px] text-sms-text-muted mt-0.5">Network streams</span>
+            <span className="text-[10px] text-[#9194a1] font-mono">Reassembled TCP</span>
           </div>
         </div>
       </div>

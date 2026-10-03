@@ -26,147 +26,103 @@ export function CaseContextStrip({ activeCase }: CaseContextStripProps) {
   const formattedTime = new Date(activeCase.data.analyzed_at).toUTCString();
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 mb-4">
-      <div className="bg-sms-surface-secondary/60 border border-sms-border rounded-xl px-4 py-2.5 flex items-center justify-between flex-wrap gap-3 text-xs font-mono-tech select-none">
+    <div className="w-full max-w-[1216px] mx-auto px-6 py-3">
+      <div className="bg-[#040406] border border-[#1c1d22] rounded-[10px] px-4 py-2.5 flex items-center justify-between flex-wrap gap-3 text-xs font-mono select-none">
         {/* Primary Case Metadata Chips */}
         <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
-          {/* File Name */}
-          <div className="flex items-center gap-1.5 text-sms-text-primary font-bold bg-sms-surface-primary px-2.5 py-1 rounded-lg border border-sms-border shadow-xs">
-            <FileCode className="w-3.5 h-3.5 text-sky-500 shrink-0" strokeWidth={2} />
+          {/* File Name Pill */}
+          <div className="flex items-center gap-1.5 text-white font-medium bg-[#121317] px-3 py-1 rounded-full border border-[#2e3038]">
+            <FileCode className="w-3.5 h-3.5 text-[#cc9166] shrink-0" strokeWidth={1.75} />
             <span>{activeCase.data.filename}</span>
           </div>
 
           {/* Packets */}
-          <div className="flex items-center gap-1.5 text-sms-text-secondary">
-            <Layers className="w-3.5 h-3.5 text-sms-text-muted shrink-0" />
+          <div className="flex items-center gap-1.5 text-[#9194a1]">
+            <Layers className="w-3.5 h-3.5 text-[#5e616e] shrink-0" />
             <span>
-              <strong className="text-sms-text-primary font-bold">
+              <strong className="text-white font-medium">
                 {activeCase.data.total_packets.toLocaleString()}
               </strong>{" "}
               Packets
             </span>
           </div>
 
-          <span className="text-sms-border-strong hidden sm:inline">•</span>
+          <span className="text-[#2e3038] hidden sm:inline">•</span>
 
           {/* Streams */}
-          <div className="flex items-center gap-1.5 text-sms-text-secondary">
+          <div className="flex items-center gap-1.5 text-[#9194a1]">
             <span>
-              <strong className="text-sms-text-primary font-bold">
+              <strong className="text-white font-medium">
                 {activeCase.data.total_sessions}
               </strong>{" "}
               Reconstructed Streams
             </span>
           </div>
 
-          <span className="text-sms-border-strong hidden md:inline">•</span>
+          <span className="text-[#2e3038] hidden md:inline">•</span>
 
           {/* Hash */}
-          <div className="hidden md:flex items-center gap-1.5 text-sms-text-muted">
-            <Hash className="w-3.5 h-3.5 text-sms-text-muted shrink-0" />
+          <div className="hidden md:flex items-center gap-1.5 text-[#777a88]">
+            <Hash className="w-3.5 h-3.5 text-[#5e616e] shrink-0" />
             <span>SHA-256: {shortHash}</span>
           </div>
 
-          <span className="text-sms-border-strong hidden xl:inline">•</span>
+          <span className="text-[#2e3038] hidden xl:inline">•</span>
 
           {/* Time */}
-          <div className="hidden xl:flex items-center gap-1.5 text-sms-text-muted">
-            <Clock className="w-3.5 h-3.5 text-sms-text-muted shrink-0" />
+          <div className="hidden xl:flex items-center gap-1.5 text-[#777a88]">
+            <Clock className="w-3.5 h-3.5 text-[#5e616e] shrink-0" />
             <span>{formattedTime}</span>
           </div>
         </div>
 
-        {/* Capture Scope Popover */}
+        {/* Capture Scope Popover Button (Pill shaped) */}
         <div className="relative ml-auto" ref={scopeRef}>
           <button
             type="button"
             onClick={() => setScopeOpen(!scopeOpen)}
-            className={`h-8 px-3 rounded-lg border text-xs font-semibold flex items-center gap-2 transition-all duration-150 shadow-xs ${
+            className={`h-8 px-3.5 rounded-full border text-xs font-sans font-medium flex items-center gap-2 transition-colors ${
               scopeOpen
-                ? "border-sky-500 bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300"
-                : "border-sms-border hover:border-sms-border-strong bg-sms-surface-primary text-sms-text-secondary hover:text-sms-text-primary"
+                ? "border-[#cc9166] bg-[#121317] text-[#cc9166]"
+                : "border-[#2e3038] hover:border-[#777a88] bg-[#121317] text-[#e2e3e9]"
             }`}
             aria-expanded={scopeOpen}
           >
-            <Filter className="w-3.5 h-3.5 text-sky-500" strokeWidth={2} />
+            <Filter className="w-3.5 h-3.5 text-[#cc9166]" strokeWidth={1.75} />
             <span>Capture Parameters</span>
             <ChevronDown
-              className={`w-3 h-3 text-sms-text-muted transition-transform duration-150 ${scopeOpen ? "rotate-180" : ""}`}
-              strokeWidth={2}
+              className={`w-3 h-3 text-[#777a88] transition-transform duration-150 ${scopeOpen ? "rotate-180" : ""}`}
+              strokeWidth={1.75}
             />
           </button>
 
           {scopeOpen && (
-            <div className="absolute right-0 mt-2 w-[460px] rounded-2xl border border-sms-border-strong bg-sms-surface-primary shadow-modal z-50 p-5 font-sans animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between pb-3 border-b border-sms-border">
+            <div className="absolute right-0 mt-2 w-[440px] rounded-[10px] border border-[#2e3038] bg-[#040406] shadow-2xl z-50 p-5 font-sans animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between pb-3 border-b border-[#1c1d22]">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-sky-600 dark:text-sky-400">
-                    <ShieldCheck className="w-4 h-4" strokeWidth={2} />
-                  </div>
-                  <span className="font-bold text-sm text-sms-text-primary">
-                    Forensic Capture Parameters
-                  </span>
+                  <ShieldCheck className="w-4 h-4 text-[#cc9166]" />
+                  <span className="font-serif font-normal text-sm text-white">Capture Parameters &amp; Filter</span>
                 </div>
-                <span className="text-[11px] font-mono-tech font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-500/20">
-                  VERIFIED SCOPE
-                </span>
+                <span className="text-[11px] font-mono text-[#cc9166] uppercase">Sensor TAP-01</span>
               </div>
 
-              <div className="mt-4 space-y-3.5 text-xs">
+              <div className="py-3 space-y-3 text-xs font-mono">
                 <div>
-                  <span className="font-mono-tech text-sms-text-muted uppercase font-semibold block mb-1">
-                    BPF Kernel Filter Expression
-                  </span>
-                  <code className="text-xs font-mono-tech block bg-sms-surface-secondary p-2.5 rounded-lg border border-sms-border text-sky-600 dark:text-sky-400 break-all select-all font-semibold">
-                    {activeCase.bpf_filter || "tcp and (port 25 or 587 or 465 or 993 or 110)"}
-                  </code>
+                  <span className="text-[#9194a1] block text-[11px] mb-1">Active BPF Filter Expression</span>
+                  <div className="p-2.5 rounded-[8px] bg-[#08080a] border border-[#1c1d22] text-[#e2e3e9]">
+                    {activeCase.bpf_filter}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="bg-sms-surface-secondary/50 p-2.5 rounded-lg border border-sms-border">
-                    <span className="font-mono-tech text-sms-text-muted uppercase text-[10px] block font-semibold">
-                      Protocol Scope
-                    </span>
-                    <span className="font-mono-tech font-bold text-sms-text-primary block mt-0.5">
-                      {activeCase.data.protocols_detected.join(", ") || "SMTP, SMTPS, IMAP, IMAPS"}
-                    </span>
+                  <div>
+                    <span className="text-[#9194a1] block text-[11px]">Monitored Protocols</span>
+                    <span className="font-medium text-white block mt-0.5">SMTP (25/587), SMTPS (465), IMAP(S), POP3(S)</span>
                   </div>
-
-                  <div className="bg-sms-surface-secondary/50 p-2.5 rounded-lg border border-sms-border">
-                    <span className="font-mono-tech text-sms-text-muted uppercase text-[10px] block font-semibold">
-                      Sensor Tap Interface
-                    </span>
-                    <span className="font-mono-tech font-bold text-sms-text-primary block mt-0.5">
-                      eth0 (Passive Mirror Tap)
-                    </span>
+                  <div>
+                    <span className="text-[#9194a1] block text-[11px]">Audit Standards</span>
+                    <span className="font-medium text-white block mt-0.5">NIST SP 800-52r2 · RFC 8314</span>
                   </div>
-
-                  <div className="bg-sms-surface-secondary/50 p-2.5 rounded-lg border border-sms-border">
-                    <span className="font-mono-tech text-sms-text-muted uppercase text-[10px] block font-semibold">
-                      Raw Payload Size
-                    </span>
-                    <span className="font-mono-tech font-bold text-sms-text-primary block mt-0.5">
-                      {(activeCase.data.file_size_bytes / 1024).toFixed(1)} KB
-                    </span>
-                  </div>
-
-                  <div className="bg-sms-surface-secondary/50 p-2.5 rounded-lg border border-sms-border">
-                    <span className="font-mono-tech text-sms-text-muted uppercase text-[10px] block font-semibold">
-                      Processing Latency
-                    </span>
-                    <span className="font-mono-tech font-bold text-emerald-600 dark:text-emerald-400 block mt-0.5">
-                      {activeCase.data.processing_time_ms} ms
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-sms-border">
-                  <span className="font-mono-tech text-sms-text-muted uppercase text-[10px] block font-semibold">
-                    SHA-256 PCAP Image Digest
-                  </span>
-                  <span className="text-[11px] font-mono-tech text-sms-text-secondary block mt-0.5 select-all break-all bg-sms-surface-secondary p-1.5 rounded border border-sms-border">
-                    7f8a9e4b2d1c60a8e5f32190db4a78103c5e8821ad5b4142f1a6ce72901bca
-                  </span>
                 </div>
               </div>
             </div>

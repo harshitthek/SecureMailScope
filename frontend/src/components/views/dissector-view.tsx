@@ -24,33 +24,36 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
   const isSecure = session.session_score >= 80;
 
   return (
-    <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col gap-6 pb-16 select-none font-sans">
+    <main className="flex-1 w-full max-w-[1216px] mx-auto px-6 py-4 flex flex-col gap-6 pb-20 select-none font-sans">
       {/* Header & Mode Switcher */}
-      <div className="sms-card bg-sms-surface-primary border border-sms-border rounded-2xl p-6 shadow-card">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-5 border-b border-sms-border gap-4">
+      <div className="bg-[#040406] border border-[#1c1d22] rounded-[10px] p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-[#1c1d22] gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
-              <Binary className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-full bg-[#121317] border border-[#2e3038] text-[#cc9166] flex items-center justify-center font-bold">
+              <Binary className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-sms-text-primary tracking-tight">
+              <span className="text-[13px] font-semibold tracking-[-0.02em] text-[#cc9166] uppercase block">
                 Deep Packet Protocol Dissector
+              </span>
+              <h2 className="text-xl sm:text-2xl font-serif font-normal text-white tracking-[0.01em]">
+                Wire Analysis &amp; Handshake Disassembly
               </h2>
-              <p className="text-xs text-sms-text-muted mt-0.5">
+              <p className="text-xs text-[#9194a1] mt-0.5">
                 Low-level wire analysis, TLS handshake record tree, and ASCII/Hex stream disassembly
               </p>
             </div>
           </div>
 
-          {/* Mode Selector */}
-          <div className="flex items-center gap-2 bg-sms-surface-secondary p-1 rounded-xl border border-sms-border">
+          {/* Mode Selector (Pill group) */}
+          <div className="flex items-center gap-1.5 bg-[#121317] p-1 rounded-full border border-[#2e3038]">
             <button
               type="button"
               onClick={() => setMode("AUDIT")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
                 mode === "AUDIT"
-                  ? "bg-slate-900 text-white dark:bg-sky-500/20 dark:text-sky-300 dark:border dark:border-sky-500/40 shadow-xs"
-                  : "text-sms-text-secondary hover:text-sms-text-primary"
+                  ? "bg-white text-black"
+                  : "text-[#9194a1] hover:text-white"
               }`}
             >
               Mode A: Cryptanalysis &amp; Audit
@@ -58,10 +61,10 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
             <button
               type="button"
               onClick={() => setMode("RAW")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
                 mode === "RAW"
-                  ? "bg-slate-900 text-white dark:bg-sky-500/20 dark:text-sky-300 dark:border dark:border-sky-500/40 shadow-xs"
-                  : "text-sms-text-secondary hover:text-sms-text-primary"
+                  ? "bg-white text-black"
+                  : "text-[#9194a1] hover:text-white"
               }`}
             >
               Mode B: Raw Stream &amp; Hex Dump
@@ -71,7 +74,7 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
 
         {/* Stream Selector Bar */}
         <div className="pt-4 flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-xs font-mono-tech text-sms-text-muted font-bold mr-2 shrink-0">
+          <span className="text-xs font-mono text-[#9194a1] mr-2 shrink-0">
             Select Stream:
           </span>
           {activeCase.data.sessions.map((s, idx) => {
@@ -84,19 +87,19 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
                 key={s.session_id}
                 type="button"
                 onClick={() => setSelectedStreamId(s.session_id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono-tech font-bold border transition-all flex items-center gap-2 shrink-0 ${
+                className={`px-3.5 py-1 rounded-full text-xs font-mono border transition-all flex items-center gap-2 shrink-0 ${
                   isSelected
-                    ? "bg-sky-50 text-sky-700 border-sky-400 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-600 shadow-xs"
-                    : "bg-sms-surface-secondary text-sms-text-secondary border-sms-border hover:bg-sms-surface-hover"
+                    ? "bg-[#121317] text-white border-[#cc9166]"
+                    : "bg-[#040406] text-[#9194a1] border-[#1c1d22] hover:border-[#2e3038] hover:text-white"
                 }`}
               >
                 <span
-                  className={`w-2 h-2 rounded-full ${
-                    sIsSec ? "bg-emerald-500" : sIsCrit ? "bg-red-500" : "bg-amber-500"
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    sIsSec ? "bg-[#34d399]" : sIsCrit ? "bg-[#f87171]" : "bg-[#cc9166]"
                   }`}
                 />
                 <span>Flow #{String(idx + 1).padStart(2, "0")}</span>
-                <span className="text-[10px] text-sms-text-muted">({s.protocol} :{s.dst_port})</span>
+                <span className="text-[10px] text-[#777a88]">({s.protocol} :{s.dst_port})</span>
               </button>
             );
           })}
@@ -105,60 +108,60 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
 
       {/* Dissector Mode Content */}
       {mode === "AUDIT" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left: Handshake Parameter Tree */}
-          <div className="lg:col-span-8 sms-card bg-sms-surface-primary border border-sms-border rounded-2xl p-6 shadow-card">
-            <h3 className="text-base font-extrabold text-sms-text-primary pb-3 mb-4 border-b border-sms-border flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-sky-500" />
+          <div className="lg:col-span-8 bg-[#040406] border border-[#1c1d22] rounded-[10px] p-6">
+            <h3 className="text-base font-serif font-normal text-white pb-3 mb-4 border-b border-[#1c1d22] flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-[#cc9166]" />
               <span>TLS Record Layer Handshake Tree</span>
             </h3>
 
-            <div className="space-y-4 font-mono-tech text-xs">
+            <div className="space-y-3.5 font-mono text-xs">
               {/* Client Hello Block */}
-              <div className="p-4 rounded-xl bg-sms-surface-secondary/70 border border-sms-border">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-sms-border">
-                  <span className="font-bold text-sky-600 dark:text-sky-400 uppercase">
+              <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1c1d22]">
+                  <span className="font-semibold text-white uppercase">
                     1. Client Hello (Record 0x16, Version 0x0303)
                   </span>
-                  <span className="text-sms-text-muted">SNI: {session.server_name || "N/A"}</span>
+                  <span className="text-[#9194a1]">SNI: {session.server_name || "N/A"}</span>
                 </div>
-                <div className="space-y-1.5 text-sms-text-secondary">
-                  <div>• Source IP &amp; Port: <span className="font-bold text-sms-text-primary">{session.src_ip}:{session.src_port}</span></div>
-                  <div>• Supported TLS Versions: <span className="font-bold text-sms-text-primary">TLS 1.3, TLS 1.2, TLS 1.1</span></div>
-                  <div>• Key Share Curve: <span className="font-bold text-sms-text-primary">x25519 (ECDH)</span></div>
-                  <div>• Signature Algorithms: <span className="font-bold text-sms-text-primary">ecdsa_secp256r1_sha256, rsa_pss_rsae_sha256</span></div>
+                <div className="space-y-1.5 text-[#acafb9]">
+                  <div>• Source IP &amp; Port: <span className="font-medium text-white">{session.src_ip}:{session.src_port}</span></div>
+                  <div>• Supported TLS Versions: <span className="font-medium text-white">TLS 1.3, TLS 1.2, TLS 1.1</span></div>
+                  <div>• Key Share Curve: <span className="font-medium text-[#cc9166]">x25519 (ECDH)</span></div>
+                  <div>• Signature Algorithms: <span className="font-medium text-white">ecdsa_secp256r1_sha256, rsa_pss_rsae_sha256</span></div>
                 </div>
               </div>
 
               {/* Server Hello Block */}
-              <div className="p-4 rounded-xl bg-sms-surface-secondary/70 border border-sms-border">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-sms-border">
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+              <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1c1d22]">
+                  <span className="font-semibold text-[#34d399] uppercase">
                     2. Server Hello &amp; Negotiated Session
                   </span>
-                  <span className="text-sms-text-muted">Status: {session.is_encrypted ? "Encrypted" : "Cleartext"}</span>
+                  <span className="text-[#9194a1]">Status: {session.is_encrypted ? "Encrypted" : "Cleartext"}</span>
                 </div>
-                <div className="space-y-1.5 text-sms-text-secondary">
-                  <div>• Negotiated Protocol: <span className="font-bold text-sms-text-primary">{session.tls_version || "None"}</span></div>
-                  <div>• Selected Cipher Suite: <span className="font-bold text-sms-text-primary">{session.cipher_suite_name || "None"}</span></div>
-                  <div>• Perfect Forward Secrecy: <span className={`font-bold ${session.has_forward_secrecy ? "text-emerald-500" : "text-red-500"}`}>{session.has_forward_secrecy ? "Enforced" : "Disabled"}</span></div>
-                  <div>• Target Host Endpoint: <span className="font-bold text-sms-text-primary">{session.dst_ip}:{session.dst_port}</span></div>
+                <div className="space-y-1.5 text-[#acafb9]">
+                  <div>• Negotiated Protocol: <span className="font-medium text-white">{session.tls_version || "None"}</span></div>
+                  <div>• Selected Cipher Suite: <span className="font-medium text-white">{session.cipher_suite_name || "None"}</span></div>
+                  <div>• Perfect Forward Secrecy: <span className={`font-medium ${session.has_forward_secrecy ? "text-[#34d399]" : "text-[#f87171]"}`}>{session.has_forward_secrecy ? "Enforced" : "Disabled"}</span></div>
+                  <div>• Target Host Endpoint: <span className="font-medium text-white">{session.dst_ip}:{session.dst_port}</span></div>
                 </div>
               </div>
 
               {/* JA3 Fingerprint Block */}
-              <div className="p-4 rounded-xl bg-sms-surface-secondary/70 border border-sms-border">
-                <span className="font-bold text-sms-text-primary uppercase block mb-1">
+              <div className="p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22]">
+                <span className="font-semibold text-white uppercase block mb-1">
                   3. JA3 Passive Fingerprint Verification
                 </span>
-                <p className="text-[11px] text-sms-text-muted mb-2">
+                <p className="text-[11px] text-[#9194a1] mb-2 font-sans">
                   MD5 signature generated from TLS Client Hello attributes.
                 </p>
-                <div className="p-2.5 rounded-lg bg-sms-surface-primary border border-sms-border break-all font-bold text-sky-600 dark:text-sky-400">
+                <div className="p-2.5 rounded-full bg-[#040406] border border-[#2e3038] break-all font-medium text-[#cc9166] px-4 text-center">
                   {session.ja3_hash || "e7d705a3286e19ea42f587b344ee6865"}
                 </div>
                 {session.ja3_client_name && (
-                  <div className="mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className="mt-2 text-xs font-medium text-[#34d399] text-center">
                     Match Identified: {session.ja3_client_name} (Known Mail Client)
                   </div>
                 )}
@@ -167,65 +170,65 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
           </div>
 
           {/* Right: Deduction Ledger */}
-          <div className="lg:col-span-4 sms-card bg-sms-surface-primary border border-sms-border rounded-2xl p-6 shadow-card flex flex-col justify-between">
+          <div className="lg:col-span-4 bg-[#040406] border border-[#1c1d22] rounded-[10px] p-6 flex flex-col justify-between">
             <div>
-              <h3 className="text-base font-extrabold text-sms-text-primary pb-3 mb-4 border-b border-sms-border">
+              <h3 className="text-base font-serif font-normal text-white pb-3 mb-4 border-b border-[#1c1d22]">
                 Cryptographic Scoring Ledger
               </h3>
 
-              <div className="flex items-center justify-between p-4 rounded-xl bg-sms-surface-secondary/70 border border-sms-border mb-4">
-                <span className="text-xs font-bold text-sms-text-muted uppercase">Final Stream Score</span>
-                <span className={`text-2xl font-black ${isSecure ? "text-emerald-600" : "text-red-600"}`}>
+              <div className="flex items-center justify-between p-4 rounded-[10px] bg-[#121317] border border-[#1c1d22] mb-4">
+                <span className="text-xs font-mono uppercase text-[#9194a1]">Final Stream Score</span>
+                <span className={`text-3xl font-serif ${isSecure ? "text-[#34d399]" : "text-[#f87171]"}`}>
                   {session.session_score}/100
                 </span>
               </div>
 
-              <div className="space-y-3 font-mono-tech text-xs">
-                <div className="flex justify-between py-1.5 border-b border-sms-border">
-                  <span className="text-sms-text-secondary">Base Maximum Score</span>
-                  <span className="font-bold text-sms-text-primary">100 pts</span>
+              <div className="space-y-3 font-mono text-xs">
+                <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
+                  <span className="text-[#9194a1]">Base Maximum Score</span>
+                  <span className="font-medium text-white">100 pts</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-sms-border">
-                  <span className="text-sms-text-secondary">Protocol Version Penalty</span>
-                  <span className="font-bold text-red-500">-{session.scoring_breakdown.protocol_penalty} pts</span>
+                <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
+                  <span className="text-[#9194a1]">Protocol Version Penalty</span>
+                  <span className="font-serif text-[#f87171]">-{session.scoring_breakdown.protocol_penalty} pts</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-sms-border">
-                  <span className="text-sms-text-secondary">Cipher Suite Penalty</span>
-                  <span className="font-bold text-red-500">-{session.scoring_breakdown.cipher_penalty} pts</span>
+                <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
+                  <span className="text-[#9194a1]">Cipher Suite Penalty</span>
+                  <span className="font-serif text-[#f87171]">-{session.scoring_breakdown.cipher_penalty} pts</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-sms-border">
-                  <span className="text-sms-text-secondary">Forward Secrecy (PFS)</span>
-                  <span className="font-bold text-red-500">-{session.scoring_breakdown.pfs_penalty} pts</span>
+                <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
+                  <span className="text-[#9194a1]">Forward Secrecy (PFS)</span>
+                  <span className="font-serif text-[#f87171]">-{session.scoring_breakdown.pfs_penalty} pts</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-sms-border">
-                  <span className="text-sms-text-secondary">Anomaly / Downgrade</span>
-                  <span className="font-bold text-red-500">-{session.scoring_breakdown.anomaly_penalty} pts</span>
+                <div className="flex justify-between py-1.5 border-b border-[#1c1d22]">
+                  <span className="text-[#9194a1]">Anomaly / Downgrade</span>
+                  <span className="font-serif text-[#f87171]">-{session.scoring_breakdown.anomaly_penalty} pts</span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-sms-border text-[11px] text-sms-text-muted">
+            <div className="mt-6 pt-4 border-t border-[#1c1d22] text-[11px] text-[#777a88]">
               Computed in compliance with NIST Special Publication 800-52 Revision 2 scoring rules.
             </div>
           </div>
         </div>
       ) : (
         /* Mode B: Raw Stream & Hex Dump */
-        <div className="sms-card bg-sms-surface-primary border border-sms-border rounded-2xl p-6 shadow-card font-mono-tech text-xs">
-          <div className="flex items-center justify-between pb-4 mb-4 border-b border-sms-border">
+        <div className="bg-[#040406] border border-[#1c1d22] rounded-[10px] p-6 font-mono text-xs">
+          <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-[#1c1d22]">
             <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-sky-500" />
-              <span className="font-bold text-sm text-sms-text-primary">
+              <Terminal className="w-4 h-4 text-[#cc9166]" />
+              <span className="font-medium text-sm text-white">
                 Raw Packet Disassembly: TCP Stream #{session.session_id}
               </span>
             </div>
-            <span className="px-2 py-0.5 rounded bg-sms-surface-secondary text-sms-text-muted text-[11px] border border-sms-border">
+            <span className="px-3 py-0.5 rounded-full bg-[#121317] text-[#9194a1] text-[11px] border border-[#2e3038]">
               ASCII &amp; HEX VIEW
             </span>
           </div>
 
-          <div className="bg-slate-950 text-slate-200 p-5 rounded-xl overflow-x-auto space-y-2 border border-slate-800 text-[11px] leading-relaxed">
-            <div className="text-emerald-400 font-bold mb-3">
+          <div className="bg-[#08080a] text-[#e2e3e9] p-5 rounded-[10px] overflow-x-auto space-y-2 border border-[#1c1d22] text-[11px] leading-relaxed">
+            <div className="text-[#34d399] font-medium mb-3">
               === REASSEMBLED TCP STREAM: {session.src_ip}:{session.src_port} &lt;--&gt; {session.dst_ip}:{session.dst_port} ===
             </div>
 
@@ -235,15 +238,15 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
             <div>00000030  61 6c 0d 0a 32 35 30 2d  6d 61 69 6c 2e 63 6f 72  |al..250-mail.cor| S-&gt;C</div>
 
             {session.starttls_stripped ? (
-              <div className="bg-red-950/80 text-red-300 p-2 rounded border border-red-800 my-2">
-                <span className="text-red-400 font-bold">[!] FORENSIC ANOMALY AT OFFSET 0x00000040:</span>
+              <div className="bg-[#f87171]/10 text-[#f87171] p-2.5 rounded-[10px] border border-[#f87171]/30 my-2">
+                <span className="font-semibold block">[!] FORENSIC ANOMALY AT OFFSET 0x00000040:</span>
                 <div>00000040  32 35 30 20 50 49 50 45  4c 49 4e 49 4e 47 0d 0a  |250 PIPELINING..| S-&gt;C</div>
-                <div className="text-red-400 font-bold mt-1">--&gt; &apos;250-STARTTLS&apos; CAPABILITY STRIPPED BY MITM INTERCEPTOR &lt;--</div>
+                <div className="font-semibold mt-1">--&gt; &apos;250-STARTTLS&apos; CAPABILITY STRIPPED BY MITM INTERCEPTOR &lt;--</div>
               </div>
             ) : (
-              <div className="bg-emerald-950/60 text-emerald-300 p-2 rounded border border-emerald-800 my-2">
+              <div className="bg-[#34d399]/10 text-[#34d399] p-2.5 rounded-[10px] border border-[#34d399]/30 my-2">
                 <div>00000040  32 35 30 2d 53 54 41 52  54 54 4c 53 0d 0a        |250-STARTTLS..| S-&gt;C</div>
-                <div className="text-emerald-400 font-bold mt-1">--&gt; STARTTLS ADVERTISED &amp; ACCEPTED &lt;--</div>
+                <div className="font-semibold mt-1">--&gt; STARTTLS ADVERTISED &amp; ACCEPTED &lt;--</div>
               </div>
             )}
 

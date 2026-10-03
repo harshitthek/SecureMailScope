@@ -3,120 +3,112 @@
 @tailwind utilities;
 
 /* ============================================================
-   SECUREMAILSCOPE DESIGN SYSTEM TOKENS
-   Enterprise Cybersecurity Theme: Light Mode First & Dark Operations
+   SLASH DESIGN SYSTEM TOKENS
+   Midnight Vault with Gilded Ledger Lines
    ============================================================ */
 
 :root {
-  /* LIGHT THEME (Default): Modern Enterprise Cybersecurity Dashboard */
-  --sms-canvas: #F8FAFC;
-  --sms-surface-primary: #FFFFFF;
-  --sms-surface-secondary: #F1F5F9;
-  --sms-surface-hover: #E2E8F0;
-  --sms-surface-selected: #EFF6FF;
-  --sms-surface-raw: #F8FAFC;
+  /* Direct Slash Tokens */
+  --color-obsidian: #08080a;
+  --color-onyx: #040406;
+  --color-carbon: #121317;
+  --color-graphite: #1c1d22;
+  --color-slate: #2e3038;
+  --color-smoke: #464853;
+  --color-ash: #5e616e;
+  --color-steel: #777a88;
+  --color-fog: #9194a1;
+  --color-mist: #acafb9;
+  --color-silver: #c7c9d1;
+  --color-bone: #e2e3e9;
+  --color-paper-white: #ffffff;
+  --color-copper: #cc9166;
+  --color-gilded-gradient: #ae9357;
+  --gradient-gilded: linear-gradient(103deg, rgb(174, 147, 87), rgb(255, 240, 204) 40%, rgb(174, 147, 87) 70%, rgba(189, 157, 79, 0));
 
-  --sms-border: #E2E8F0;
-  --sms-border-strong: #CBD5E1;
-  --sms-selected-rail: #2563EB;
+  /* SecureMailScope Surface Mapping */
+  --sms-canvas: #08080a;
+  --sms-surface-primary: #040406;
+  --sms-surface-secondary: #121317;
+  --sms-surface-hover: #1c1d22;
+  --sms-surface-selected: #16171d;
+  --sms-surface-raw: #08080a;
 
-  --sms-text-primary: #0F172A;
-  --sms-text-secondary: #334155;
-  --sms-text-muted: #64748B;
+  /* Hairline Borders */
+  --sms-border: #1c1d22;
+  --sms-border-strong: #2e3038;
+  --sms-selected-rail: #cc9166;
 
-  --sms-raw-text: #1E293B;
-  --sms-raw-offset: #64748B;
+  /* Typographic Registers */
+  --sms-text-primary: #ffffff;
+  --sms-text-secondary: #e2e3e9;
+  --sms-text-muted: #9194a1;
+  --sms-text-ash: #5e616e;
 
-  /* Primary Brand & Accents */
-  --sms-accent-cyan: #0284C7;       /* Cyber Blue/Teal */
-  --sms-accent-cyan-hover: #0369A1;
-  --sms-accent-cyan-dim: rgba(2, 132, 199, 0.08);
+  --sms-raw-text: #e2e3e9;
+  --sms-raw-offset: #777a88;
 
-  /* Primary Semantic Cybersecurity Accents: Green #22C55E & Red #EF4444 */
-  --sms-status-green: #22C55E;
-  --sms-status-green-dim: rgba(34, 197, 94, 0.12);
-  --sms-status-green-border: rgba(34, 197, 94, 0.35);
+  /* Single Chromatic Brand Accent: Copper */
+  --sms-accent-cyan: #cc9166;
+  --sms-accent-cyan-hover: #dfa77e;
+  --sms-accent-cyan-dim: rgba(204, 145, 102, 0.12);
 
-  --sms-status-red: #EF4444;
-  --sms-status-red-dim: rgba(239, 68, 68, 0.12);
-  --sms-status-red-border: rgba(239, 68, 68, 0.35);
+  /* Semantic State Indicators (Desaturated, Non-Vibrating) */
+  --sms-status-green: #34d399;
+  --sms-status-green-dim: rgba(52, 211, 153, 0.10);
+  --sms-status-green-border: rgba(52, 211, 153, 0.28);
 
-  --sms-status-amber: #F59E0B;
-  --sms-status-amber-dim: rgba(245, 158, 11, 0.12);
-  --sms-status-amber-border: rgba(245, 158, 11, 0.35);
+  --sms-status-red: #f87171;
+  --sms-status-red-dim: rgba(248, 113, 113, 0.10);
+  --sms-status-red-border: rgba(248, 113, 113, 0.28);
 
-  --sms-status-blue: #3B82F6;
-  --sms-status-blue-dim: rgba(59, 130, 246, 0.12);
+  --sms-status-amber: #cc9166;
+  --sms-status-amber-dim: rgba(204, 145, 102, 0.12);
+  --sms-status-amber-border: rgba(204, 145, 102, 0.30);
 
-  --sms-btn-primary-bg: #0F172A;
-  --sms-btn-primary-hover: #1E293B;
-  --sms-btn-primary-text: #FFFFFF;
-  --sms-btn-primary-border: #0F172A;
+  --sms-status-blue: #9194a1;
+  --sms-status-blue-dim: rgba(145, 148, 161, 0.12);
 
-  --sms-radius-tag: 6px;
-  --sms-radius-btn: 8px;
-  --sms-radius-surface: 14px;
-  --sms-radius-modal: 16px;
+  /* Buttons */
+  --sms-btn-primary-bg: #ffffff;
+  --sms-btn-primary-hover: #e2e3e9;
+  --sms-btn-primary-text: #000000;
+  --sms-btn-primary-border: #ffffff;
 
-  --sms-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --sms-shadow-card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.07), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --sms-shadow-header: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
-  --sms-shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px #E2E8F0;
+  /* Shapes */
+  --sms-radius-tag: 9999px;
+  --sms-radius-btn: 9999px;
+  --sms-radius-surface: 10px;
+  --sms-radius-modal: 10px;
+
+  /* Shadows: Hairline borders over heavy drop shadows */
+  --sms-shadow-card: none;
+  --sms-shadow-card-hover: 0 0 0 1px #2e3038;
+  --sms-shadow-header: none;
+  --sms-shadow-modal: 0 0 0 1px #2e3038;
 }
 
 .dark {
-  /* DARK THEME: Night Security Operations Console */
-  --sms-canvas: #0B0F17;
-  --sms-surface-primary: #111827;
-  --sms-surface-secondary: #1F2937;
-  --sms-surface-hover: #2D3748;
-  --sms-surface-selected: #1E293B;
-  --sms-surface-raw: #0D121D;
+  /* Reinforce Midnight Vault in Dark Mode */
+  --sms-canvas: #08080a;
+  --sms-surface-primary: #040406;
+  --sms-surface-secondary: #121317;
+  --sms-surface-hover: #1c1d22;
+  --sms-surface-selected: #16171d;
+  --sms-surface-raw: #08080a;
 
-  --sms-border: #1E293B;
-  --sms-border-strong: #334155;
-  --sms-selected-rail: #38BDF8;
+  --sms-border: #1c1d22;
+  --sms-border-strong: #2e3038;
+  --sms-selected-rail: #cc9166;
 
-  --sms-text-primary: #F8FAFC;
-  --sms-text-secondary: #CBD5E1;
-  --sms-text-muted: #94A3B8;
+  --sms-text-primary: #ffffff;
+  --sms-text-secondary: #e2e3e9;
+  --sms-text-muted: #9194a1;
+  --sms-text-ash: #5e616e;
 
-  --sms-raw-text: #E2E8F0;
-  --sms-raw-offset: #64748B;
-
-  --sms-accent-cyan: #38BDF8;
-  --sms-accent-cyan-hover: #7DD3FC;
-  --sms-accent-cyan-dim: rgba(56, 189, 248, 0.12);
-
-  --sms-status-green: #22C55E;
-  --sms-status-green-dim: rgba(34, 197, 94, 0.16);
-  --sms-status-green-border: rgba(34, 197, 94, 0.40);
-
-  --sms-status-red: #EF4444;
-  --sms-status-red-dim: rgba(239, 68, 68, 0.16);
-  --sms-status-red-border: rgba(239, 68, 68, 0.40);
-
-  --sms-status-amber: #F59E0B;
-  --sms-status-amber-dim: rgba(245, 158, 11, 0.16);
-  --sms-status-amber-border: rgba(245, 158, 11, 0.40);
-
-  --sms-status-blue: #60A5FA;
-  --sms-status-blue-dim: rgba(96, 165, 250, 0.16);
-
-  --sms-btn-primary-bg: #38BDF8;
-  --sms-btn-primary-hover: #7DD3FC;
-  --sms-btn-primary-text: #0B0F17;
-  --sms-btn-primary-border: #38BDF8;
-
-  --sms-radius-tag: 6px;
-  --sms-radius-btn: 8px;
-  --sms-radius-surface: 14px;
-  --sms-radius-modal: 16px;
-
-  --sms-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
-  --sms-shadow-card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  --sms-shadow-header: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-  --sms-shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px #334155;
+  --sms-accent-cyan: #cc9166;
+  --sms-accent-cyan-hover: #dfa77e;
+  --sms-accent-cyan-dim: rgba(204, 145, 102, 0.12);
 }
 
 /* ============================================================
@@ -128,14 +120,14 @@
 }
 
 html {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 body {
   background-color: var(--sms-canvas);
-  color: var(--sms-text-primary);
-  font-family: var(--font-geist-sans), Inter, system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
+  color: var(--sms-text-secondary);
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
@@ -145,6 +137,11 @@ body {
 /* ============================================================
    TYPOGRAPHY UTILITIES
    ============================================================ */
+
+.font-serif-display {
+  font-family: var(--font-serif), 'Playfair Display', 'Ivy Presto', 'DM Serif Display', Georgia, serif;
+  letter-spacing: 0.01em;
+}
 
 .font-mono-tech {
   font-family: var(--font-geist-mono), "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
@@ -156,18 +153,37 @@ body {
   font-feature-settings: "tnum" 1;
 }
 
-/* Modern Card Styling */
+/* Gilded ledger line utility */
+.gilded-line {
+  background: var(--gradient-gilded);
+}
+
+/* Modern Card Styling (10px radius, 1px graphite border) */
 .sms-card {
   background-color: var(--sms-surface-primary);
   border: 1px solid var(--sms-border);
-  border-radius: var(--sms-radius-surface);
-  box-shadow: var(--sms-shadow-card);
-  transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease;
+  border-radius: 10px;
+  transition: border-color 150ms ease, background-color 150ms ease;
 }
 
 .sms-card:hover {
-  box-shadow: var(--sms-shadow-card-hover);
   border-color: var(--sms-border-strong);
+}
+
+/* Pill control */
+.pill-control {
+  border-radius: 9999px;
+  border: 1px solid var(--sms-border-strong);
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--sms-text-secondary);
+  background: transparent;
+  transition: all 150ms ease;
+}
+
+.pill-control:hover {
+  color: #ffffff;
+  border-color: #777a88;
 }
 
 /* Interactive transitions */
@@ -181,7 +197,7 @@ body {
 
 /* Focus outline */
 :focus-visible {
-  outline: 2px solid var(--sms-accent-cyan);
+  outline: 2px solid var(--color-copper);
   outline-offset: 2px;
 }
 
@@ -192,14 +208,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #08080a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--sms-border-strong);
-  border-radius: 4px;
+  background: #1c1d22;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--sms-text-muted);
+  background: #2e3038;
 }
