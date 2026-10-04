@@ -263,15 +263,17 @@ class LiveTapDaemon:
         if self.state in ("SNIFFING", "REPLAYING"):
             self.stop()
 
-        pcap_path = settings.test_pcaps_dir / pcap_name
-        if not pcap_path.exists():
-            # Fallback check in backend/test_pcaps relative to current working dir
-            alt_path = Path("backend/test_pcaps") / pcap_name
-            if alt_path.exists():
-                pcap_path = alt_path
-            else:
-                self.error_message = f"Replay PCAP not found: {pcap_name}"
-                return False
+        pcap_path: Path | None = None
+        for replay_dir in (settings.test_pcaps_dir, Path("backend/test_pcaps")):
+            base = replay_dir.resolve()
+            candidate = (base / pcap_name).resolve()
+            if candidate.is_relative_to(base) and candidate.is_file():
+                pcap_path = candidate
+                break
+
+        if pcap_path is None:
+            self.error_message = f"Replay PCAP not found: {pcap_name}"
+            return False
 
         try:
             packets = rdpcap(str(pcap_path))

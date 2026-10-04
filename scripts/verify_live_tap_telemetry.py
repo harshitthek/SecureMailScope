@@ -92,9 +92,22 @@ async def main():
             "label": "Automated Wire Forensic Snapshot",
         }))
 
-        snapshot_frame = await asyncio.wait_for(ws.recv(), timeout=10.0)
-        snapshot_res = json.loads(snapshot_frame)
-        assert snapshot_res.get("type") == "SNAPSHOT_RESULT", f"Expected SNAPSHOT_RESULT, got {snapshot_res.get('type')}"
+        snapshot_res = None
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while asyncio.get_running_loop().time() < deadline:
+            remaining = max(0.1, deadline - asyncio.get_running_loop().time())
+            try:
+                frame_text = await asyncio.wait_for(ws.recv(), timeout=remaining)
+                parsed = json.loads(frame_text)
+                if parsed.get("type") == "SNAPSHOT_RESULT":
+                    snapshot_res = parsed
+                    break
+            except asyncio.TimeoutError:
+                break
+
+        assert snapshot_res is not None and snapshot_res.get("type") == "SNAPSHOT_RESULT", (
+            f"Expected SNAPSHOT_RESULT, got {snapshot_res}"
+        )
         snap_data = snapshot_res.get("data", {})
         assert snap_data.get("success") is True, f"Snapshot failed: {snap_data}"
 

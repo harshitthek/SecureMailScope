@@ -8,7 +8,8 @@ import os
 import time
 from playwright.sync_api import sync_playwright
 
-ARTIFACT_DIR = r"C:\Users\user\.gemini\antigravity\brain\3b2907a4-36d5-4db1-a876-bbe86a182082"
+ARTIFACT_DIR = os.getenv("ARTIFACT_DIR", os.path.join(os.path.dirname(__file__), "..", "artifacts"))
+os.makedirs(ARTIFACT_DIR, exist_ok=True)
 
 
 def main():

@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     if settings.auto_start_daemon:
         spool_daemon.start()
     yield
-    live_tap_daemon.stop()
+    await asyncio.to_thread(live_tap_daemon.stop)
     spool_daemon.stop()
 
 

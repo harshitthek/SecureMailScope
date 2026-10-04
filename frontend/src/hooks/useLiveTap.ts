@@ -88,7 +88,13 @@ export function useLiveTap() {
     return () => {
       unmounted = true;
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
-      if (wsRef.current) wsRef.current.close();
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onclose = null;
+        wsRef.current.onerror = null;
+        wsRef.current.close();
+      }
     };
   }, []);
 

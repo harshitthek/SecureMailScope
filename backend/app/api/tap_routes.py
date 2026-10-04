@@ -4,13 +4,15 @@ REST API endpoints for network TAP interface discovery, live capture control, an
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from scapy.all import IFACES
 
+from app.api.spool_routes import _verify_operator_auth
 from app.config import settings
 from app.daemon.live_tap_daemon import live_tap_daemon
 
@@ -85,7 +87,7 @@ async def list_available_replays() -> list[dict[str, Any]]:
 
 
 @tap_router.post("/start")
-async def start_live_tap(req: TapStartRequest) -> dict[str, Any]:
+async def start_live_tap(req: TapStartRequest, _auth: None = Depends(_verify_operator_auth)) -> dict[str, Any]:
     """Start passive wire capture on the specified interface."""
     success = live_tap_daemon.start_sniff(interface=req.interface, bpf_filter=req.bpf_filter)
     if not success:
@@ -100,7 +102,9 @@ async def start_live_tap(req: TapStartRequest) -> dict[str, Any]:
 
 
 @tap_router.post("/start-replay")
-async def start_simulated_replay(req: ReplayStartRequest) -> dict[str, Any]:
+async def start_simulated_replay(
+    req: ReplayStartRequest, _auth: None = Depends(_verify_operator_auth)
+) -> dict[str, Any]:
     """Start simulated packet replay from a reference PCAP to test wire detection."""
     success = await live_tap_daemon.start_replay(pcap_name=req.pcap_name, speed_pps=req.speed_pps)
     if not success:
@@ -117,9 +121,9 @@ async def start_simulated_replay(req: ReplayStartRequest) -> dict[str, Any]:
 
 
 @tap_router.post("/stop")
-async def stop_live_tap() -> dict[str, Any]:
+async def stop_live_tap(_auth: None = Depends(_verify_operator_auth)) -> dict[str, Any]:
     """Stop active sniffing or replay."""
-    live_tap_daemon.stop()
+    await asyncio.to_thread(live_tap_daemon.stop)
     return {
         "status": "stopped",
         "telemetry": live_tap_daemon.get_status(),
@@ -127,9 +131,9 @@ async def stop_live_tap() -> dict[str, Any]:
 
 
 @tap_router.post("/snapshot")
-async def snapshot_buffer(req: SnapshotRequest) -> dict[str, Any]:
+async def snapshot_buffer(req: SnapshotRequest, _auth: None = Depends(_verify_operator_auth)) -> dict[str, Any]:
     """Snapshot the buffered wire packets and run immediate deep forensic analysis."""
-    result = live_tap_daemon.snapshot(label=req.label)
+    result = await asyncio.to_thread(live_tap_daemon.snapshot, label=req.label)
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Snapshot failed."))
     return result

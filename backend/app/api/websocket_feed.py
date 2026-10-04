@@ -10,8 +10,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
+from app.api.spool_routes import _verify_operator_auth
 from app.daemon.live_tap_daemon import live_tap_daemon
 
 logger = logging.getLogger("securemailscope.ws")
@@ -113,7 +114,7 @@ ws_manager = TelemetryConnectionManager()
 
 
 @ws_router.websocket("/ws/telemetry")
-async def websocket_telemetry_endpoint(websocket: WebSocket) -> None:
+async def websocket_telemetry_endpoint(websocket: WebSocket, _auth: None = Depends(_verify_operator_auth)) -> None:
     """WebSocket endpoint streaming live packet activity, security alerts, and handling tap commands."""
     loop = asyncio.get_running_loop()
     ws_manager.set_event_loop(loop)
@@ -127,7 +128,13 @@ async def websocket_telemetry_endpoint(websocket: WebSocket) -> None:
             except Exception:
                 continue
 
-            action = msg.get("action", "").lower()
+            if not isinstance(msg, dict):
+                continue
+
+            action_raw = msg.get("action")
+            if not isinstance(action_raw, str):
+                continue
+            action = action_raw.lower()
 
             if action == "ping":
                 await websocket.send_json({"type": "PONG", "timestamp": datetime.now(timezone.utc).isoformat()})
@@ -145,8 +152,12 @@ async def websocket_telemetry_endpoint(websocket: WebSocket) -> None:
                 )
 
             elif action == "start_replay":
-                pcap_name = msg.get("pcap_name", "02_striptls_mitm_attack.pcap")
-                speed = float(msg.get("speed", 8.0))
+                pcap_name = str(msg.get("pcap_name") or "02_striptls_mitm_attack.pcap")
+                try:
+                    speed = float(msg.get("speed", 8.0))
+                    speed = max(0.5, min(100.0, speed))
+                except (ValueError, TypeError):
+                    speed = 8.0
                 success = await live_tap_daemon.start_replay(pcap_name=pcap_name, speed_pps=speed)
                 await websocket.send_json(
                     {
@@ -158,7 +169,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket) -> None:
                 )
 
             elif action == "stop_tap":
-                live_tap_daemon.stop()
+                await asyncio.to_thread(live_tap_daemon.stop)
                 await websocket.send_json(
                     {
                         "type": "COMMAND_RESULT",
@@ -169,8 +180,8 @@ async def websocket_telemetry_endpoint(websocket: WebSocket) -> None:
                 )
 
             elif action == "snapshot":
-                label = msg.get("label", "Live TAP Capture")
-                result = live_tap_daemon.snapshot(label=label)
+                label = str(msg.get("label") or "Live TAP Capture")
+                result = await asyncio.to_thread(live_tap_daemon.snapshot, label=label)
                 await websocket.send_json(
                     {
                         "type": "SNAPSHOT_RESULT",
