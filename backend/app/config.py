@@ -25,6 +25,8 @@ class AppSettings:
         self.spool_stability_threshold: float = float(os.getenv("SPOOL_STABILITY_THRESHOLD", "1.0"))
         self.max_file_size_bytes: int = int(os.getenv("MAX_FILE_SIZE_BYTES", str(100 * 1024 * 1024)))  # 100MB
         self.auto_start_daemon: bool = os.getenv("AUTO_START_SPOOL_DAEMON", "true").lower() in ("1", "true", "yes")
+        self.operator_api_key: str | None = os.getenv("OPERATOR_API_KEY")
+        self.spool_max_history: int = int(os.getenv("SPOOL_MAX_HISTORY", "100"))
 
     def ensure_directories(self) -> None:
         """Ensure all required spool subdirectories exist with defensive permissions."""

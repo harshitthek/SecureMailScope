@@ -6,9 +6,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
+from app.config import settings
 from app.daemon.spool_daemon import spool_daemon
 
 spool_router = APIRouter(prefix="/spool", tags=["Automated Spool Engine"])
@@ -16,6 +17,26 @@ spool_router = APIRouter(prefix="/spool", tags=["Automated Spool Engine"])
 
 class SpoolToggleRequest(BaseModel):
     action: str  # "start" or "stop"
+
+
+def _verify_operator_auth(
+    authorization: str | None = Header(default=None),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+) -> None:
+    """Validate operator authorization when an operator key is configured."""
+    if not settings.operator_api_key:
+        return
+
+    bearer_token = None
+    if authorization and authorization.lower().startswith("bearer "):
+        bearer_token = authorization[7:].strip()
+
+    provided_key = x_api_key or bearer_token
+    if not provided_key or provided_key != settings.operator_api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized. A valid operator API key or Bearer token is required.",
+        )
 
 
 @spool_router.get("/status")
@@ -49,8 +70,11 @@ async def get_spool_history() -> dict[str, Any]:
 
 
 @spool_router.post("/toggle")
-async def toggle_spool_daemon(req: SpoolToggleRequest) -> dict[str, Any]:
-    """Start or stop the background spool watcher service."""
+async def toggle_spool_daemon(
+    req: SpoolToggleRequest,
+    _auth: None = Depends(_verify_operator_auth),
+) -> dict[str, Any]:
+    """Start or stop the background spool watcher service with operator authorization."""
     if req.action == "start":
         spool_daemon.start()
         msg = "Spool daemon started"

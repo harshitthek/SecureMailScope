@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.config import settings
-from app.daemon.file_locker import FileLockVerifier
+from app.daemon.file_locker import FileLockVerifier, ReadinessStatus
 
 logger = logging.getLogger("securemailscope.spool")
 
@@ -23,6 +23,7 @@ class SpoolDaemon:
     def __init__(self) -> None:
         self.is_running: bool = False
         self._task: asyncio.Task | None = None
+        self._sweep_lock = asyncio.Lock()
         self.scanned_count: int = 0
         self.processed_count: int = 0
         self.failed_count: int = 0
@@ -33,7 +34,11 @@ class SpoolDaemon:
         """Return real-time operational telemetry for the spool daemon."""
         incoming_files = []
         if settings.spool_incoming_dir.exists():
-            incoming_files = [f.name for f in settings.spool_incoming_dir.glob("*") if f.is_file()]
+            incoming_files = [
+                f.name
+                for f in settings.spool_incoming_dir.glob("*")
+                if f.is_file() and not f.name.startswith(".") and f.name != ".gitkeep"
+            ]
 
         return {
             "is_running": self.is_running,
@@ -50,72 +55,125 @@ class SpoolDaemon:
         }
 
     async def sweep_once(self) -> list[dict[str, Any]]:
-        """Perform a single pass over the incoming directory and ingest ready captures."""
+        """
+        Perform a serialized sweep over incoming spool directory and ingest ready captures.
+        Guarded by _sweep_lock so concurrent sweeps cannot process the same capture.
+        """
         from app.api.routes import _results, _run_analysis
 
         settings.ensure_directories()
-        self.last_run_timestamp = datetime.now(timezone.utc).isoformat()
         newly_ingested: list[dict[str, Any]] = []
 
-        if not settings.spool_incoming_dir.exists():
-            return newly_ingested
+        async with self._sweep_lock:
+            self.last_run_timestamp = datetime.now(timezone.utc).isoformat()
 
-        for file_path in sorted(settings.spool_incoming_dir.iterdir()):
-            if not file_path.is_file() or not FileLockVerifier.is_valid_pcap_extension(file_path):
-                continue
+            if not settings.spool_incoming_dir.exists():
+                return newly_ingested
 
-            self.scanned_count += 1
-            is_ready = await FileLockVerifier.is_file_ready(
-                file_path, stability_window=settings.spool_stability_threshold
-            )
-            if not is_ready:
-                continue
+            for file_path in sorted(settings.spool_incoming_dir.iterdir()):
+                if not file_path.is_file() or file_path.name.startswith(".") or file_path.name == ".gitkeep":
+                    continue
 
-            target_filename = file_path.name
-            analysis_id = str(uuid.uuid4())
-            timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            case_code = f"AUTO-{timestamp_str[-6:]}"
+                self.scanned_count += 1
+                target_filename = file_path.name
+                timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                unique_suffix = uuid.uuid4().hex[:6]
 
-            try:
-                # Execute full forensic and cryptanalysis pipeline
-                analysis_data = _run_analysis(str(file_path), target_filename)
-                analysis_data["analysis_id"] = analysis_id
-                analysis_data["case_code"] = case_code
-                analysis_data["is_automated_spool"] = True
-                analysis_data["source"] = "DAEMON_SPOOL"
-
-                _results[analysis_id] = analysis_data
-
-                # Archive successfully processed capture
-                dest_path = settings.spool_processed_dir / f"{timestamp_str}_{target_filename}"
-                shutil.move(str(file_path), str(dest_path))
-
-                summary = {
-                    "analysis_id": analysis_id,
-                    "case_code": case_code,
-                    "filename": target_filename,
-                    "archived_path": str(dest_path),
-                    "enterprise_score": analysis_data.get("enterprise_score", 0),
-                    "enterprise_grade": analysis_data.get("enterprise_grade", "F"),
-                    "total_sessions": analysis_data.get("total_sessions", 0),
-                    "vulnerabilities_count": len(analysis_data.get("vulnerabilities", [])),
-                    "ingested_at": self.last_run_timestamp,
-                }
-                self.ingested_history.insert(0, summary)
-                newly_ingested.append(summary)
-                self.processed_count += 1
-                logger.info(
-                    "Spool ingested: %s as case %s (Score: %d)", target_filename, case_code, summary["enterprise_score"]
+                # 1. Multi-stage readiness verification
+                readiness = await FileLockVerifier.check_readiness(
+                    file_path, stability_window=settings.spool_stability_threshold
                 )
 
-            except Exception as exc:
-                self.failed_count += 1
-                dest_path = settings.spool_failed_dir / f"{timestamp_str}_{target_filename}"
-                logger.error("Spool processing failed for %s: %s", target_filename, exc)
+                if readiness == ReadinessStatus.STILL_WRITING:
+                    # Capture is actively in-flight or held by producer; leave for subsequent sweep
+                    continue
+
+                if readiness == ReadinessStatus.PERMANENT_INVALID:
+                    # File is fully written but corrupt or non-PCAP; quarantine to failed
+                    self.failed_count += 1
+                    dest_path = settings.spool_failed_dir / f"{timestamp_str}_{unique_suffix}_{target_filename}"
+                    logger.warning("Quarantining invalid capture %s to %s", target_filename, dest_path)
+                    try:
+                        shutil.move(str(file_path), str(dest_path))
+                    except OSError as err:
+                        logger.error("Failed to move invalid file %s: %s", target_filename, err)
+                    continue
+
+                # 2. Maximum file size check
                 try:
-                    shutil.move(str(file_path), str(dest_path))
+                    file_size = file_path.stat().st_size
                 except OSError:
-                    pass
+                    continue
+
+                if file_size > settings.max_file_size_bytes:
+                    self.failed_count += 1
+                    dest_path = settings.spool_failed_dir / f"{timestamp_str}_{unique_suffix}_{target_filename}"
+                    logger.warning(
+                        "File %s (%d bytes) exceeds size limit (%d bytes); moving to failed",
+                        target_filename,
+                        file_size,
+                        settings.max_file_size_bytes,
+                    )
+                    try:
+                        shutil.move(str(file_path), str(dest_path))
+                    except OSError as err:
+                        logger.error("Failed to quarantine oversized file %s: %s", target_filename, err)
+                    continue
+
+                # 3. Ingestion and analysis
+                analysis_id = str(uuid.uuid4())
+                case_code = f"AUTO-{timestamp_str[-6:]}"
+
+                try:
+                    # Offload CPU-bound analysis to worker thread
+                    analysis_data = await asyncio.to_thread(_run_analysis, str(file_path), target_filename)
+                    analysis_data["analysis_id"] = analysis_id
+                    analysis_data["case_code"] = case_code
+                    analysis_data["is_automated_spool"] = True
+                    analysis_data["source"] = "DAEMON_SPOOL"
+
+                    # Archive file to unique destination before publishing in-memory results
+                    dest_path = settings.spool_processed_dir / f"{timestamp_str}_{unique_suffix}_{target_filename}"
+                    shutil.move(str(file_path), str(dest_path))
+
+                    # Publish results only after successful archive
+                    _results[analysis_id] = analysis_data
+
+                    summary = {
+                        "analysis_id": analysis_id,
+                        "case_code": case_code,
+                        "filename": target_filename,
+                        "archived_path": str(dest_path),
+                        "enterprise_score": analysis_data.get("enterprise_score", 0),
+                        "enterprise_grade": analysis_data.get("enterprise_grade", "F"),
+                        "total_sessions": analysis_data.get("total_sessions", 0),
+                        "vulnerabilities_count": len(analysis_data.get("vulnerabilities", [])),
+                        "ingested_at": self.last_run_timestamp,
+                    }
+
+                    # Maintain bounded history
+                    self.ingested_history.insert(0, summary)
+                    if len(self.ingested_history) > settings.spool_max_history:
+                        self.ingested_history = self.ingested_history[: settings.spool_max_history]
+
+                    self.processed_count += 1
+                    newly_ingested.append(summary)
+                    logger.info(
+                        "Spool ingested: %s as case %s (Score: %d)",
+                        target_filename,
+                        case_code,
+                        summary["enterprise_score"],
+                    )
+
+                except Exception as exc:
+                    self.failed_count += 1
+                    dest_path = settings.spool_failed_dir / f"{timestamp_str}_{unique_suffix}_{target_filename}"
+                    logger.error("Spool processing failed for %s: %s", target_filename, exc)
+                    if file_path.exists():
+                        try:
+                            shutil.move(str(file_path), str(dest_path))
+                        except OSError:
+                            pass
 
         return newly_ingested
 
