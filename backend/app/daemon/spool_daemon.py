@@ -146,6 +146,13 @@ class SpoolDaemon:
                     except Exception as db_err:
                         logger.warning("Failed to persist spool capture to database: %s", db_err)
 
+                    try:
+                        from app.siem.dispatcher import alert_dispatcher
+
+                        await alert_dispatcher.dispatch_case_findings(analysis_data)
+                    except Exception as siem_err:
+                        logger.warning("Failed to dispatch SIEM alerts for spool case: %s", siem_err)
+
                     summary = {
                         "analysis_id": analysis_id,
                         "case_code": case_code,

@@ -88,6 +88,31 @@ export async function snapshotTapBuffer(label: string = "Live Wire Capture") {
   return res.json();
 }
 
+export async function getSiemStatus() {
+  const res = await fetch(`${API_BASE}/api/siem/status`);
+  if (!res.ok) throw new Error("Failed to fetch SIEM status");
+  return res.json();
+}
+
+export async function getSiemHistory() {
+  const res = await fetch(`${API_BASE}/api/siem/history`);
+  if (!res.ok) throw new Error("Failed to fetch SIEM history");
+  return res.json();
+}
+
+export async function sendSiemTestAlert(payload: { title?: string; severity?: string; mitre_attack_id?: string; description?: string }) {
+  const res = await fetch(`${API_BASE}/api/siem/test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to send SIEM test alert" }));
+    throw new Error(err.detail || "Failed to send SIEM test alert");
+  }
+  return res.json();
+}
+
 export async function listStoredCases(limit: number = 50, offset: number = 0) {
   const res = await fetch(`${API_BASE}/api/cases?limit=${limit}&offset=${offset}`);
   if (!res.ok) throw new Error("Failed to list stored cases");
@@ -99,5 +124,4 @@ export async function deleteStoredCase(caseId: string) {
   if (!res.ok) throw new Error("Failed to delete case");
   return res.json();
 }
-
 

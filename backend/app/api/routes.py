@@ -1116,6 +1116,13 @@ async def upload_pcap(file: UploadFile = File(...)):
         except Exception as db_err:
             logger.warning("Failed to persist uploaded PCAP to database: %s", db_err)
 
+        try:
+            from app.siem.dispatcher import alert_dispatcher
+
+            await alert_dispatcher.dispatch_case_findings(result)
+        except Exception as siem_err:
+            logger.warning("Failed to dispatch SIEM alerts for uploaded PCAP: %s", siem_err)
+
         return {"analysis_id": analysis_id}
 
     except HTTPException:
