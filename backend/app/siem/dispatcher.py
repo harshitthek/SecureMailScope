@@ -5,6 +5,7 @@ Syslog forwarding, webhook delivery, and dispatch audit history.
 
 from __future__ import annotations
 
+import asyncio
 import collections
 import logging
 from datetime import datetime, timezone
@@ -28,7 +29,7 @@ class SiemAlertDispatcher:
         finding = {
             "title": alert.get("title") or alert.get("type", "Wire Security Alert"),
             "severity": alert.get("severity", "critical"),
-            "mitre_attack_id": alert.get("mitre_attack_id"),
+            "mitre_attack_id": alert.get("mitre_attack_id") or alert.get("mitre_id"),
             "description": alert.get("description") or alert.get("msg", ""),
             "src_ip": alert.get("src_ip"),
             "src_port": alert.get("src_port"),
@@ -38,8 +39,9 @@ class SiemAlertDispatcher:
         }
 
         cef_line = format_finding_cef(finding, context=alert)
-        syslog_ok = await syslog_forwarder.forward_message(cef_line, severity=2, msg_id="WIRE-ALERT")
-        webhook_ok = await webhook_dispatcher.dispatch_event(finding)
+        syslog_task = syslog_forwarder.forward_message(cef_line, severity=2, msg_id="WIRE-ALERT")
+        webhook_task = webhook_dispatcher.dispatch_event(finding)
+        syslog_ok, webhook_ok = await asyncio.gather(syslog_task, webhook_task)
 
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -67,8 +69,9 @@ class SiemAlertDispatcher:
                 continue
 
             cef_line = format_finding_cef(v, context={"case_id": case_id})
-            syslog_ok = await syslog_forwarder.forward_message(cef_line, severity=3, msg_id="CASE-FINDING")
-            webhook_ok = await webhook_dispatcher.dispatch_event(v)
+            syslog_task = syslog_forwarder.forward_message(cef_line, severity=3, msg_id="CASE-FINDING")
+            webhook_task = webhook_dispatcher.dispatch_event(v)
+            syslog_ok, webhook_ok = await asyncio.gather(syslog_task, webhook_task)
 
             record = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),

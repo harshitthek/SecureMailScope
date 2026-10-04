@@ -136,4 +136,17 @@ async def snapshot_buffer(req: SnapshotRequest, _auth: None = Depends(_verify_op
     result = await asyncio.to_thread(live_tap_daemon.snapshot, label=req.label)
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Snapshot failed."))
+
+    run_id = result.get("run_id")
+    if run_id:
+        try:
+            from app.api.routes import _results
+            from app.db.repository import CaseRepository
+
+            analysis = _results.get(run_id)
+            if analysis:
+                await CaseRepository.save_case(analysis, source="tap_snapshot")
+        except Exception as db_err:
+            logger.warning("Failed to persist TAP snapshot to database: %s", db_err)
+
     return result

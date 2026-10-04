@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 
@@ -89,13 +90,20 @@ class WebhookDispatcher:
             ],
         }
 
-    async def dispatch_event(self, event: dict[str, Any], webhook_url: str | None = None) -> bool:
+    async def dispatch_event(
+        self, event: dict[str, Any], webhook_url: str | None = None, webhook_format: str | None = None
+    ) -> bool:
         """Post structured alert payload to webhook endpoint with safety bounds."""
         target_url = webhook_url or settings.siem_webhook_url
         if not target_url:
             return False
 
-        fmt = settings.siem_webhook_format
+        parsed = urlparse(target_url)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            logger.warning("Invalid webhook URL scheme '%s'; must be http or https", parsed.scheme)
+            return False
+
+        fmt = webhook_format or settings.siem_webhook_format
         if fmt == "slack":
             payload = self.build_slack_payload(event)
         elif fmt == "teams":
@@ -114,7 +122,8 @@ class WebhookDispatcher:
 
         except Exception as exc:
             self.fail_count += 1
-            logger.warning("Webhook dispatch failed to %s: %s", target_url, exc)
+            safe_target = f"{parsed.scheme}://{parsed.netloc}"
+            logger.warning("Webhook dispatch failed to %s: %s", safe_target, exc)
             return False
 
     def get_stats(self) -> dict[str, object]:

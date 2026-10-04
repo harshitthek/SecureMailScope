@@ -140,6 +140,13 @@ class SpoolDaemon:
                     _results[analysis_id] = analysis_data
 
                     try:
+                        from app.db.repository import CaseRepository
+
+                        await CaseRepository.save_case(analysis_data, source="spool")
+                    except Exception as db_err:
+                        logger.warning("Failed to persist spool capture to database: %s", db_err)
+
+                    try:
                         from app.siem.dispatcher import alert_dispatcher
 
                         await alert_dispatcher.dispatch_case_findings(analysis_data)

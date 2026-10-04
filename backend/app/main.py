@@ -4,6 +4,7 @@ FastAPI application entry point for SecureMailScope.
 
 import asyncio
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,19 +18,29 @@ from app.api.websocket_feed import ws_manager, ws_router
 from app.config import settings
 from app.daemon.live_tap_daemon import live_tap_daemon
 from app.daemon.spool_daemon import spool_daemon
+from app.db import close_db, init_db, seed_reference_cases_if_needed
 from app.siem.dispatcher import alert_dispatcher
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifecycle event manager for background daemons and persistence."""
+    """Lifecycle event manager for database persistence, daemons, and WebSocket gateway."""
     settings.ensure_directories()
+    await init_db()
+    await seed_reference_cases_if_needed()
+
     loop = asyncio.get_running_loop()
     ws_manager.set_event_loop(loop)
+    dispatch_futures: set[Any] = set()
 
     def _siem_tap_listener(event_type: str, data: dict):
         if event_type == "SECURITY_ALERT" and loop and loop.is_running():
-            asyncio.run_coroutine_threadsafe(alert_dispatcher.dispatch_wire_alert(data), loop)
+            payload = dict(data)
+            if "mitre_id" in payload and "mitre_attack_id" not in payload:
+                payload["mitre_attack_id"] = payload["mitre_id"]
+            future = asyncio.run_coroutine_threadsafe(alert_dispatcher.dispatch_wire_alert(payload), loop)
+            dispatch_futures.add(future)
+            future.add_done_callback(dispatch_futures.discard)
 
     live_tap_daemon.register_listener(_siem_tap_listener)
 
@@ -39,6 +50,10 @@ async def lifespan(app: FastAPI):
     live_tap_daemon.unregister_listener(_siem_tap_listener)
     await asyncio.to_thread(live_tap_daemon.stop)
     spool_daemon.stop()
+    for fut in list(dispatch_futures):
+        if not fut.done():
+            fut.cancel()
+    await close_db()
 
 
 app = FastAPI(

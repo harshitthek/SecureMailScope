@@ -117,5 +117,15 @@ export async function sendSiemTestAlert(payload: { title?: string; severity?: st
   return res.json();
 }
 
+export async function listStoredCases(limit: number = 50, offset: number = 0) {
+  const res = await fetch(`${API_BASE}/api/cases?limit=${limit}&offset=${offset}`);
+  if (!res.ok) throw new Error("Failed to list stored cases");
+  return res.json();
+}
 
+export async function deleteStoredCase(caseId: string) {
+  const res = await fetch(`${API_BASE}/api/cases/${encodeURIComponent(caseId)}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete case");
+  return res.json();
+}
 

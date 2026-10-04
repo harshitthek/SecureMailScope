@@ -182,6 +182,16 @@ async def websocket_telemetry_endpoint(websocket: WebSocket, _auth: None = Depen
             elif action == "snapshot":
                 label = str(msg.get("label") or "Live TAP Capture")
                 result = await asyncio.to_thread(live_tap_daemon.snapshot, label=label)
+                if result.get("success") and result.get("run_id"):
+                    try:
+                        from app.api.routes import _results
+                        from app.db.repository import CaseRepository
+
+                        analysis = _results.get(result["run_id"])
+                        if analysis:
+                            await CaseRepository.save_case(analysis, source="tap_snapshot")
+                    except Exception as db_err:
+                        logger.warning("Failed to persist TAP snapshot to database: %s", db_err)
                 await websocket.send_json(
                     {
                         "type": "SNAPSHOT_RESULT",

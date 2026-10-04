@@ -60,24 +60,32 @@ def serialize_cef(
 def format_finding_cef(finding: dict[str, Any], context: dict[str, Any] | None = None) -> str:
     """Serialize a single security finding or wire alert into an ArcSight CEF event."""
     ctx = context or {}
-    mitre_id = str(finding.get("mitre_attack_id") or "")
+    mitre_id = str(finding.get("mitre_attack_id") or finding.get("mitre_id") or "")
     title = str(finding.get("title") or "")
     sev_raw = str(finding.get("severity") or "medium").lower()
 
-    # Determine event class ID
+    # Determine event class ID: prioritize MITRE taxonomy and specific cert issues
     event_class = "POSTURE_ASSESSMENT"
-    if "T1557.002" in mitre_id or "striptls" in title.lower():
+    if "T1557.002" in mitre_id:
         event_class = "STRIPTLS_DOWNGRADE"
-    elif "T1552.001" in mitre_id or "auth" in title.lower() or "credential" in title.lower():
+    elif "T1552.001" in mitre_id:
         event_class = "CLEARTEXT_AUTH"
-    elif "T1600.001" in mitre_id or any(p in title.lower() for p in ("ssl", "tls 1.0", "tls 1.1")):
+    elif "T1600.001" in mitre_id:
         event_class = "DEPRECATED_PROTOCOL"
-    elif "T1600.002" in mitre_id or any(c in title.lower() for c in ("3des", "rc4", "cbc", "cipher")):
+    elif "T1600.002" in mitre_id:
         event_class = "WEAK_CIPHER_SUITE"
     elif "expired" in title.lower():
         event_class = "EXPIRED_CERTIFICATE"
     elif "self-signed" in title.lower():
         event_class = "SELF_SIGNED_CERTIFICATE"
+    elif "striptls" in title.lower():
+        event_class = "STRIPTLS_DOWNGRADE"
+    elif any(k in title.lower() for k in ("cleartext auth", "auth plain", "auth login", "plaintext credential")):
+        event_class = "CLEARTEXT_AUTH"
+    elif any(p in title.lower() for p in ("ssl 2.0", "ssl 3.0", "tls 1.0", "tls 1.1")):
+        event_class = "DEPRECATED_PROTOCOL"
+    elif any(c in title.lower() for c in ("3des", "rc4", "sweet32", "weak cipher")):
+        event_class = "WEAK_CIPHER_SUITE"
 
     cls_id, default_name, def_sev = EVENT_CLASS_MAP.get(event_class, ("SECURITY_EVENT", title, 5))
     name = title or default_name
@@ -85,6 +93,7 @@ def format_finding_cef(finding: dict[str, Any], context: dict[str, Any] | None =
     sev_weights = {"critical": 10, "high": 8, "medium": 5, "low": 3, "secure": 1}
     severity = sev_weights.get(sev_raw, def_sev)
 
+    case_id_val = ctx.get("case_code") or ctx.get("case_id") or finding.get("case_code") or finding.get("case_id")
     exts: dict[str, Any] = {
         "src": ctx.get("src_ip") or finding.get("src_ip"),
         "spt": ctx.get("src_port") or finding.get("src_port"),
@@ -98,8 +107,8 @@ def format_finding_cef(finding: dict[str, Any], context: dict[str, Any] | None =
         "cs2Label": "mitre_d3fend_id" if finding.get("mitre_d3fend_id") else None,
         "cs3": finding.get("nist_ref"),
         "cs3Label": "nist_reference" if finding.get("nist_ref") else None,
-        "deviceCustomString1": ctx.get("case_code") or ctx.get("case_id"),
-        "deviceCustomString1Label": "case_id",
+        "cs4": case_id_val,
+        "cs4Label": "case_id" if case_id_val else None,
         "rt": int(time.time() * 1000),
     }
 

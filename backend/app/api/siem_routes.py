@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from app.api.spool_routes import _verify_operator_auth
+from app.config import settings
 from app.siem.dispatcher import alert_dispatcher
 
 siem_router = APIRouter(prefix="/api/siem", tags=["siem"])
@@ -35,7 +36,7 @@ async def get_siem_status() -> dict[str, Any]:
 
 
 @siem_router.get("/history")
-async def get_siem_history() -> list[dict[str, Any]]:
+async def get_siem_history(_auth: None = Depends(_verify_operator_auth)) -> list[dict[str, Any]]:
     """Return rolling audit log of recent security alert dispatches."""
     return alert_dispatcher.get_history()
 
@@ -58,7 +59,24 @@ async def send_test_alert(
         "protocol": "SMTP",
     }
     result = await alert_dispatcher.dispatch_wire_alert(synthetic_alert)
+    syslog_enabled = settings.siem_enabled
+    webhook_enabled = bool(settings.siem_webhook_url)
+
+    failed_channels: list[str] = []
+    if syslog_enabled and not result.get("syslog_forwarded"):
+        failed_channels.append("syslog")
+    if webhook_enabled and not result.get("webhook_dispatched"):
+        failed_channels.append("webhook")
+
+    if failed_channels:
+        success_count = (1 if syslog_enabled and result.get("syslog_forwarded") else 0) + (
+            1 if webhook_enabled and result.get("webhook_dispatched") else 0
+        )
+        status = "partial_failure" if success_count > 0 else "delivery_failed"
+    else:
+        status = "dispatched"
+
     return {
-        "status": "dispatched",
+        "status": status,
         "alert": result,
     }
