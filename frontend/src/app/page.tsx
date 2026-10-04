@@ -16,12 +16,15 @@ import { FindingsView } from "@/components/views/findings-view";
 import { CertificatesView } from "@/components/views/certificates-view";
 import { DissectorView } from "@/components/views/dissector-view";
 import { StandardsView } from "@/components/views/standards-view";
+import { RemediationView } from "@/components/views/remediation/remediation-view";
 import { ReportView } from "@/components/views/report-view";
 import { ApplicationFooter } from "@/components/shell/footer";
 import { getReportUrl, getAnalysis } from "@/lib/api";
 import { useLiveTap } from "@/hooks/useLiveTap";
 import { TapStatusBar } from "@/components/telemetry/tap-status-bar";
 import { LiveAlertToast } from "@/components/telemetry/live-alert-toast";
+import { SiemTelemetryModal } from "@/components/telemetry/siem-telemetry-modal";
+import { WireThreatFeedDrawer } from "@/components/telemetry/wire-threat-feed-drawer";
 
 function ForensicWorkstationInner() {
   const searchParams = useSearchParams();
@@ -45,17 +48,19 @@ function ForensicWorkstationInner() {
 
   const [activeCase, setActiveCase] = useState<EvidenceCase>(resolvedCase);
   const [activeTab, setActiveTab] = useState<ShellNavTab>(
-    (tabParam && ["OVERVIEW", "FLOWS", "FINDINGS", "CERTIFICATES", "DISSECTOR", "STANDARDS", "REPORT"].includes(tabParam))
+    (tabParam && ["OVERVIEW", "FLOWS", "FINDINGS", "CERTIFICATES", "DISSECTOR", "STANDARDS", "REMEDIATION", "REPORT"].includes(tabParam))
       ? (tabParam as ShellNavTab)
       : "OVERVIEW"
   );
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isHudOpen, setIsHudOpen] = useState(false);
+  const [isSiemOpen, setIsSiemOpen] = useState(false);
+  const [isThreatsOpen, setIsThreatsOpen] = useState(false);
   const [selectedStreamId, setSelectedStreamId] = useState<number>(
     resolvedCase.data.sessions[0]?.session_id || 1
   );
   const [selectedFlowIdForFlows, setSelectedFlowIdForFlows] = useState<number | null>(null);
-  const { tapState, activeAlert, isConnected, dismissAlert } = useLiveTap();
+  const { tapState, activeAlert, alertHistory, isConnected, dismissAlert, clearAlerts } = useLiveTap();
 
   // Synchronize state, fetch live backend analysis data, and guarantee URL consistency
   useEffect(() => {
@@ -149,7 +154,8 @@ function ForensicWorkstationInner() {
         "4": "CERTIFICATES",
         "5": "DISSECTOR",
         "6": "STANDARDS",
-        "7": "REPORT",
+        "7": "REMEDIATION",
+        "8": "REPORT",
       };
 
       if (tabMap[e.key]) {
@@ -289,6 +295,9 @@ function ForensicWorkstationInner() {
       <TapStatusBar
         tapState={tapState}
         isConnected={isConnected}
+        threatCount={alertHistory.length}
+        onOpenSiem={() => setIsSiemOpen(true)}
+        onOpenThreats={() => setIsThreatsOpen(true)}
         onSnapshotSuccess={handleSnapshotSuccess}
         onToast={showToast}
       />
@@ -354,6 +363,10 @@ function ForensicWorkstationInner() {
         <StandardsView activeCase={activeCase} />
       )}
 
+      {activeTab === "REMEDIATION" && (
+        <RemediationView activeCase={activeCase} />
+      )}
+
       {activeTab === "REPORT" && (
         <ReportView activeCase={activeCase} />
       )}
@@ -377,6 +390,20 @@ function ForensicWorkstationInner() {
         onExportPdf={() => handleExport("pdf")}
         onExportHtml={() => handleExport("html")}
         onExportJson={() => handleExport("json")}
+      />
+
+      {/* Enterprise SIEM & SOC Telemetry Modal */}
+      <SiemTelemetryModal
+        isOpen={isSiemOpen}
+        onClose={() => setIsSiemOpen(false)}
+      />
+
+      {/* In-Flight Wire Threat Event Drawer */}
+      <WireThreatFeedDrawer
+        isOpen={isThreatsOpen}
+        onClose={() => setIsThreatsOpen(false)}
+        alerts={alertHistory}
+        onClear={clearAlerts}
       />
     </div>
   );

@@ -1,4 +1,11 @@
-import { AnalysisResult } from "./types";
+import {
+  AnalysisResult,
+  RemediationSummary,
+  SiemStatusResponse,
+  SiemAlertRecord,
+  SpoolStatusResponse,
+  SpoolHistoryItem,
+} from "./types";
 import { MOCK_RESULT } from "./mock-data";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -92,13 +99,13 @@ export async function snapshotTapBuffer(label: string = "Live Wire Capture") {
   return res.json();
 }
 
-export async function getSiemStatus() {
+export async function getSiemStatus(): Promise<SiemStatusResponse> {
   const res = await fetch(`${API_BASE}/api/siem/status`);
   if (!res.ok) throw new Error("Failed to fetch SIEM status");
   return res.json();
 }
 
-export async function getSiemHistory() {
+export async function getSiemHistory(): Promise<SiemAlertRecord[]> {
   const res = await fetch(`${API_BASE}/api/siem/history`);
   if (!res.ok) throw new Error("Failed to fetch SIEM history");
   return res.json();
@@ -126,6 +133,30 @@ export async function listStoredCases(limit: number = 50, offset: number = 0) {
 export async function deleteStoredCase(caseId: string) {
   const res = await fetch(`${API_BASE}/api/cases/${encodeURIComponent(caseId)}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Failed to delete case");
+  return res.json();
+}
+
+export async function getRemediationSummary(id: string): Promise<RemediationSummary> {
+  const res = await fetch(`${API_BASE}/api/remediation/${encodeURIComponent(id)}/summary`);
+  if (!res.ok) throw new Error("Failed to fetch remediation summary");
+  return res.json();
+}
+
+export async function getSpoolStatus(): Promise<SpoolStatusResponse> {
+  const res = await fetch(`${API_BASE}/api/spool/status`);
+  if (!res.ok) throw new Error("Failed to fetch spool status");
+  return res.json();
+}
+
+export async function triggerSpoolScan(): Promise<SpoolStatusResponse> {
+  const res = await fetch(`${API_BASE}/api/spool/scan`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to trigger spool scan");
+  return res.json();
+}
+
+export async function getSpoolHistory(): Promise<SpoolHistoryItem[]> {
+  const res = await fetch(`${API_BASE}/api/spool/history`);
+  if (!res.ok) throw new Error("Failed to fetch spool history");
   return res.json();
 }
 

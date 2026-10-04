@@ -9,7 +9,8 @@ import {
   Award, 
   Binary, 
   CheckSquare, 
-  FileSpreadsheet 
+  FileSpreadsheet,
+  ShieldCheck
 } from "lucide-react";
 
 export type ShellNavTab =
@@ -19,6 +20,7 @@ export type ShellNavTab =
   | "CERTIFICATES"
   | "DISSECTOR"
   | "STANDARDS"
+  | "REMEDIATION"
   | "REPORT";
 
 interface NavStripProps {
@@ -40,6 +42,7 @@ const TABS: {
   { id: "CERTIFICATES", label: "Certificates", icon: Award },
   { id: "DISSECTOR", label: "Dissector", icon: Binary },
   { id: "STANDARDS", label: "Standards", icon: CheckSquare },
+  { id: "REMEDIATION", label: "Remediation", icon: ShieldCheck },
   { id: "REPORT", label: "Dossier", icon: FileSpreadsheet },
 ];
 
