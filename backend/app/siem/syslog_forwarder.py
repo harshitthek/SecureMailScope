@@ -66,12 +66,16 @@ class SyslogForwarder:
             return False
 
     async def _send_udp(self, host: str, port: int, payload: str) -> None:
-        """Dispatch syslog packet via non-blocking UDP."""
+        """Dispatch syslog packet via non-blocking UDP (IPv4/IPv6 compatible)."""
 
         def _sync_udp() -> None:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            addr_info = socket.getaddrinfo(host, port, proto=socket.IPPROTO_UDP, type=socket.SOCK_DGRAM)
+            if not addr_info:
+                raise OSError(f"Unable to resolve host: {host}")
+            family, socktype, proto_num, _, sockaddr = addr_info[0]
+            sock = socket.socket(family, socktype, proto_num)
             try:
-                sock.sendto(payload.encode("utf-8"), (host, port))
+                sock.sendto(payload.encode("utf-8"), sockaddr)
             finally:
                 sock.close()
 

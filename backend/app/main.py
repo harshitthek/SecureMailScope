@@ -4,6 +4,7 @@ FastAPI application entry point for SecureMailScope.
 
 import asyncio
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,10 +30,16 @@ async def lifespan(app: FastAPI):
 
     loop = asyncio.get_running_loop()
     ws_manager.set_event_loop(loop)
+    dispatch_futures: set[Any] = set()
 
     def _siem_tap_listener(event_type: str, data: dict):
         if event_type == "SECURITY_ALERT" and loop and loop.is_running():
-            asyncio.run_coroutine_threadsafe(alert_dispatcher.dispatch_wire_alert(data), loop)
+            payload = dict(data)
+            if "mitre_id" in payload and "mitre_attack_id" not in payload:
+                payload["mitre_attack_id"] = payload["mitre_id"]
+            future = asyncio.run_coroutine_threadsafe(alert_dispatcher.dispatch_wire_alert(payload), loop)
+            dispatch_futures.add(future)
+            future.add_done_callback(dispatch_futures.discard)
 
     live_tap_daemon.register_listener(_siem_tap_listener)
 
@@ -42,6 +49,9 @@ async def lifespan(app: FastAPI):
     live_tap_daemon.unregister_listener(_siem_tap_listener)
     await asyncio.to_thread(live_tap_daemon.stop)
     spool_daemon.stop()
+    for fut in list(dispatch_futures):
+        if not fut.done():
+            fut.cancel()
     await close_db()
 
 

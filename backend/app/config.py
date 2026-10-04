@@ -43,8 +43,15 @@ class AppSettings:
         self.siem_enabled: bool = os.getenv("SIEM_ENABLED", "false").lower() in ("1", "true", "yes")
         self.siem_syslog_host: str = os.getenv("SIEM_SYSLOG_HOST", "127.0.0.1")
         self.siem_syslog_port: int = int(os.getenv("SIEM_SYSLOG_PORT", "514"))
-        self.siem_syslog_protocol: str = os.getenv("SIEM_SYSLOG_PROTOCOL", "udp").lower()
-        self.siem_syslog_facility: int = int(os.getenv("SIEM_SYSLOG_FACILITY", "16"))  # local0
+        proto = os.getenv("SIEM_SYSLOG_PROTOCOL", "udp").lower()
+        if proto not in ("udp", "tcp"):
+            raise ValueError(f"Invalid SIEM_SYSLOG_PROTOCOL '{proto}'. Must be 'udp' or 'tcp'.")
+        self.siem_syslog_protocol: str = proto
+
+        facility = int(os.getenv("SIEM_SYSLOG_FACILITY", "16"))  # local0
+        if not (0 <= facility <= 23):
+            raise ValueError(f"Invalid SIEM_SYSLOG_FACILITY '{facility}'. Must be between 0 and 23.")
+        self.siem_syslog_facility: int = facility
         self.siem_webhook_url: str | None = os.getenv("SIEM_WEBHOOK_URL")
         self.siem_webhook_format: str = os.getenv("SIEM_WEBHOOK_FORMAT", "generic").lower()
 
