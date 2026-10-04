@@ -69,15 +69,20 @@ function ForensicWorkstationInner() {
     getAnalysis(resolvedCase.case_code, controller.signal)
       .then((liveData: AnalysisResult | null) => {
         if (liveData) {
-          setActiveCase((prev) => ({
-            ...prev,
-            data: {
-              ...prev.data,
-              ...liveData,
-              sessions: liveData.sessions && liveData.sessions.length > 0 ? liveData.sessions : prev.data.sessions,
-              vulnerabilities: liveData.vulnerabilities && liveData.vulnerabilities.length > 0 ? liveData.vulnerabilities : prev.data.vulnerabilities,
-            },
-          }));
+          setActiveCase((prev) => {
+            if (prev.case_code !== resolvedCase.case_code) {
+              return prev;
+            }
+            return {
+              ...prev,
+              data: {
+                ...prev.data,
+                ...liveData,
+                sessions: liveData.sessions && liveData.sessions.length > 0 ? liveData.sessions : prev.data.sessions,
+                vulnerabilities: liveData.vulnerabilities && liveData.vulnerabilities.length > 0 ? liveData.vulnerabilities : prev.data.vulnerabilities,
+              },
+            };
+          });
         }
       })
       .catch((err) => {

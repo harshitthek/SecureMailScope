@@ -3,7 +3,7 @@ import sys
 import time
 import urllib.request
 import json
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 
 ARTIFACT_DIR = os.environ.get(
     "ARTIFACT_DIR",
@@ -67,57 +67,51 @@ def test_pqc_and_whatif():
         # 1. Overview Tab & What-If Simulator
         print("[*] Testing What-If Simulator in Overview...")
         what_if_header = page.locator("text=Real-Time Posture Elevation").first
-        assert what_if_header.is_visible(), "What-If Simulator not visible on Overview"
+        expect(what_if_header).to_be_visible(timeout=5000)
         
         # Scroll to What-If simulator
         what_if_header.scroll_into_view_if_needed()
-        page.wait_for_timeout(500)
         page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_what_if_simulator_initial.png"), full_page=False)
         print("  [+] Captured test_what_if_simulator_initial.png")
 
         # Click Max Hardening to simulate enterprise policy hardening
         max_btn = page.locator("button:has-text('Max Hardening')")
-        assert max_btn.is_visible(), "Max Hardening button not found"
+        expect(max_btn).to_be_visible(timeout=5000)
         max_btn.click()
-        page.wait_for_timeout(600)
         page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_what_if_simulator_hardened.png"), full_page=False)
         print("  [+] Clicked 'Max Hardening' and captured test_what_if_simulator_hardened.png")
 
         # 2. Flows View - PQC Column
         print("[*] Testing Flows View PQC Column...")
         page.keyboard.press("2") # Tab 2 = Flows
-        page.wait_for_timeout(600)
         pqc_col_header = page.locator("th:has-text('PQC Risk')")
-        assert pqc_col_header.is_visible(), "PQC Risk column header not found in Flows table"
+        expect(pqc_col_header).to_be_visible(timeout=5000)
         page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_flows_pqc_column.png"), full_page=False)
         print("  [+] Captured test_flows_pqc_column.png")
 
         # 3. Findings View - MITRE ATT&CK & D3FEND
         print("[*] Testing Findings View MITRE Badges...")
         page.keyboard.press("3") # Tab 3 = Findings
-        page.wait_for_timeout(600)
         mitre_badge = page.locator("text=MITRE ATT&CK:").first
-        assert mitre_badge.is_visible(), "MITRE ATT&CK badge not found in Findings view"
+        expect(mitre_badge).to_be_visible(timeout=5000)
         page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_findings_mitre_badges.png"), full_page=False)
         print("  [+] Captured test_findings_mitre_badges.png")
 
         # 4. Certificates View - Download PEM / DER Actions
         print("[*] Testing Certificates View Raw Exports...")
         page.keyboard.press("4") # Tab 4 = Certificates
-        page.wait_for_timeout(600)
         pem_btn = page.locator("a:has-text('.PEM')").first
         der_btn = page.locator("a:has-text('.DER')").first
-        assert pem_btn.is_visible(), "Download .PEM button not visible"
-        assert der_btn.is_visible(), "Download .DER button not visible"
+        expect(pem_btn).to_be_visible(timeout=5000)
+        expect(der_btn).to_be_visible(timeout=5000)
         page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_certificates_pem_actions.png"), full_page=False)
         print("  [+] Captured test_certificates_pem_actions.png")
 
         # 5. Dissector View - PQC & HNDL Card
         print("[*] Testing Dissector View PQC Card...")
         page.keyboard.press("5") # Tab 5 = Dissector
-        page.wait_for_timeout(600)
         pqc_audit_card = page.locator("text=Post-Quantum Cryptography").first
-        assert pqc_audit_card.is_visible(), "PQC card not visible in Dissector Audit mode"
+        expect(pqc_audit_card).to_be_visible(timeout=5000)
         page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_dissector_pqc_card.png"), full_page=False)
         print("  [+] Captured test_dissector_pqc_card.png")
 

@@ -95,6 +95,12 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
     setSpeed((s) => (s === 1 ? 2 : 1));
   };
 
+  const hasRemediation = useMemo(() => {
+    return Boolean(enforceTls13 || enforcePfs || enforceAead || renewCerts || activeCase.id === "CASE-01");
+  }, [enforceTls13, enforcePfs, enforceAead, renewCerts, activeCase.id]);
+
+  const effectiveStage = hasRemediation ? currentStage : 0;
+
   const simulatedResults = useMemo(() => {
     const sessions = activeCase.data.sessions;
     if (!sessions || sessions.length === 0) {
@@ -183,6 +189,7 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
     }
 
     if (enforcePfs || enforceAead) {
+      lines.push("smtpd_tls_ciphers = high");
       lines.push("smtpd_tls_mandatory_ciphers = high");
       lines.push("tls_high_cipherlist = ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM");
       lines.push("tls_preempt_cipherlist = yes");
@@ -611,7 +618,7 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
               )}
 
               <span className="text-[10px] text-[#777a88] hidden sm:inline">
-                STAGE: {currentStage} / 4 ACTIVE
+                STAGE: {effectiveStage} / 4 ACTIVE
               </span>
             </div>
           </div>
@@ -620,7 +627,7 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
           {simVisualTab === "PIPELINE" && (
             pipelineMode === "3D" ? (
               <Simulation3DPipeline
-                currentStage={currentStage}
+                currentStage={effectiveStage}
                 activeCase={activeCase}
                 enforceTls13={enforceTls13}
                 enforcePfs={enforcePfs}
@@ -632,7 +639,7 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
               />
             ) : (
               <SimulationWirePipeline
-                currentStage={currentStage}
+                currentStage={effectiveStage}
                 activeCase={activeCase}
                 enforceTls13={enforceTls13}
                 enforcePfs={enforcePfs}
@@ -644,21 +651,21 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
 
           {simVisualTab === "TERMINAL" && (
             <SimulationCrtTicker
-              currentStage={currentStage}
+              currentStage={effectiveStage}
               activeCase={activeCase}
             />
           )}
 
           {simVisualTab === "THREATS" && (
             <SimulationThreatMatrix
-              currentStage={currentStage}
+              currentStage={effectiveStage}
               activeCase={activeCase}
             />
           )}
 
           {simVisualTab === "LEDGER" && (
             <SimulationStreamLedger
-              currentStage={currentStage}
+              currentStage={effectiveStage}
               activeCase={activeCase}
             />
           )}

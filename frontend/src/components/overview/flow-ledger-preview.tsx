@@ -60,7 +60,7 @@ export function FlowLedgerPreview({
             {sessions.map((s, idx) => {
               const isSelected = s.session_id === selectedFlowId;
               const isSecure = s.session_score >= 80;
-              const isCrit = s.session_score < 50;
+              const isCrit = s.session_score < 50 || Boolean(s.starttls_stripped);
               const cipherShort = s.cipher_suite_name
                 ? s.cipher_suite_name.replace("TLS_", "").replace("_WITH_", " ")
                 : "None (Cleartext)";

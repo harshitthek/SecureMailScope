@@ -2,7 +2,7 @@ import os
 import sys
 import time
 import urllib.request
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 
 ARTIFACT_DIR = os.environ.get(
     "ARTIFACT_DIR",
@@ -80,11 +80,10 @@ def test_elevation():
         
         # Click on Flow #03 badge in findings
         flow_badge = page.locator("button:has-text('Flow #03')").first
-        assert flow_badge.is_visible(), "Expected Flow #03 button to be visible in findings table"
         flow_badge.click()
-        page.wait_for_timeout(600)
+        open_dissector_btn = page.locator("button:has-text('Open in Full Dissector')").first
+        expect(open_dissector_btn).to_be_visible(timeout=5000)
         page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_findings_deep_link_drawer.png"), full_page=False)
-        assert page.locator("text=Open in Full Dissector").is_visible()
         print("  [+] Successfully auto-expanded drawer for Flow #03 from Findings!")
 
         # Test Open in Full Dissector button inside drawer
