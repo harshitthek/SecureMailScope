@@ -1091,6 +1091,13 @@ async def upload_pcap(file: UploadFile = File(...)):
         result["analysis_id"] = analysis_id
         _results[analysis_id] = result
 
+        try:
+            from app.db.repository import CaseRepository
+
+            await CaseRepository.save_case(result, source="manual_upload")
+        except Exception:
+            pass
+
         return {"analysis_id": analysis_id}
 
     except HTTPException:
@@ -1108,22 +1115,58 @@ def _safe_export_token(aid: str) -> str:
     return cleaned[:16] if cleaned else "evidence"
 
 
+async def _resolve_analysis(analysis_id: str) -> dict[str, Any]:
+    """Retrieve analysis results with in-memory L1 cache and database fallback."""
+    if analysis_id in _results:
+        return _results[analysis_id]
+
+    try:
+        from app.db.repository import CaseRepository
+
+        case_data = await CaseRepository.get_case_by_id(analysis_id)
+        if case_data:
+            _results[analysis_id] = case_data
+            return case_data
+    except Exception:
+        pass
+
+    raise HTTPException(status_code=404, detail="Analysis not found")
+
+
+@router.get("/cases")
+async def list_cases(limit: int = 50, offset: int = 0):
+    """List persisted capture cases with metadata and cryptographic ratings."""
+    from app.db.repository import CaseRepository
+
+    cases = await CaseRepository.list_cases(limit=limit, offset=offset)
+    total = await CaseRepository.count_cases()
+    return {"total": total, "cases": cases}
+
+
+@router.delete("/cases/{case_id}")
+async def delete_case(case_id: str):
+    """Delete a capture case dossier and its associated evidence."""
+    from app.db.repository import CaseRepository
+
+    _results.pop(case_id, None)
+    deleted = await CaseRepository.delete_case(case_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return {"status": "deleted", "case_id": case_id}
+
+
 @router.get("/analysis/{analysis_id}")
 async def get_analysis(analysis_id: str):
     """Get complete analysis results."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-    return _results[analysis_id]
+    return await _resolve_analysis(analysis_id)
 
 
 @router.get("/report/{analysis_id}/json")
 async def get_json_report(analysis_id: str):
     """Download JSON forensic report."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
+    analysis = await _resolve_analysis(analysis_id)
     safe_id = _safe_export_token(analysis_id)
-    json_bytes = format_json_report(_results[analysis_id])
+    json_bytes = format_json_report(analysis)
     return StreamingResponse(
         iter([json_bytes]),
         media_type="application/json",
@@ -1134,11 +1177,9 @@ async def get_json_report(analysis_id: str):
 @router.get("/report/{analysis_id}/pdf")
 async def get_pdf_report(analysis_id: str):
     """Download PDF forensic report."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
+    analysis = await _resolve_analysis(analysis_id)
     safe_id = _safe_export_token(analysis_id)
-    pdf_bytes = generate_pdf_report(_results[analysis_id])
+    pdf_bytes = generate_pdf_report(analysis)
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
@@ -1149,11 +1190,9 @@ async def get_pdf_report(analysis_id: str):
 @router.get("/report/{analysis_id}/html")
 async def get_html_report(analysis_id: str):
     """Download standalone self-contained HTML forensic dossier."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
+    analysis = await _resolve_analysis(analysis_id)
     safe_id = _safe_export_token(analysis_id)
-    html_content = generate_html_report(_results[analysis_id])
+    html_content = generate_html_report(analysis)
     return Response(
         content=html_content,
         media_type="text/html; charset=utf-8",
@@ -1164,10 +1203,7 @@ async def get_html_report(analysis_id: str):
 @router.get("/certificate/{analysis_id}/{session_id}/pem")
 async def export_certificate_pem(analysis_id: str, session_id: int):
     """Export raw X.509 certificate in PEM format for forensic tooling."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
-    analysis = _results[analysis_id]
+    analysis = await _resolve_analysis(analysis_id)
     target_session = None
     for s in analysis.get("sessions", []):
         if s.get("session_id") == session_id:
@@ -1199,10 +1235,7 @@ async def export_certificate_pem(analysis_id: str, session_id: int):
 @router.get("/certificate/{analysis_id}/{session_id}/der")
 async def export_certificate_der(analysis_id: str, session_id: int):
     """Export raw X.509 certificate in binary DER format for forensic tooling."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
-    analysis = _results[analysis_id]
+    analysis = await _resolve_analysis(analysis_id)
     target_session = None
     for s in analysis.get("sessions", []):
         if s.get("session_id") == session_id:

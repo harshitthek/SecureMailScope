@@ -15,12 +15,16 @@ from app.api.websocket_feed import ws_manager, ws_router
 from app.config import settings
 from app.daemon.live_tap_daemon import live_tap_daemon
 from app.daemon.spool_daemon import spool_daemon
+from app.db import close_db, init_db, seed_reference_cases_if_needed
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifecycle event manager for background daemons and persistence."""
+    """Lifecycle event manager for database persistence, daemons, and WebSocket gateway."""
     settings.ensure_directories()
+    await init_db()
+    await seed_reference_cases_if_needed()
+
     loop = asyncio.get_running_loop()
     ws_manager.set_event_loop(loop)
 
@@ -29,6 +33,7 @@ async def lifespan(app: FastAPI):
     yield
     await asyncio.to_thread(live_tap_daemon.stop)
     spool_daemon.stop()
+    await close_db()
 
 
 app = FastAPI(
