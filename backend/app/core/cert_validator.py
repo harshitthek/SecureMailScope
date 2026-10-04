@@ -1,33 +1,35 @@
 import datetime
 from dataclasses import dataclass
-from typing import Optional
+
 from cryptography import x509
-from cryptography.x509 import load_der_x509_certificate
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, ec, dsa, ed25519, ed448
-from cryptography.x509.oid import NameOID, ExtensionOID
+from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed448, ed25519, rsa
+from cryptography.x509 import load_der_x509_certificate
+from cryptography.x509.oid import ExtensionOID, NameOID
+
 
 @dataclass
 class CertificateInfo:
     subject_cn: str
     issuer_cn: str
     serial_number: str
-    not_before: str        # ISO 8601
-    not_after: str         # ISO 8601
+    not_before: str  # ISO 8601
+    not_after: str  # ISO 8601
     is_expired: bool
     is_not_yet_valid: bool
     is_self_signed: bool
     validity_days: int
     days_remaining: int
     signature_algorithm: str
-    signature_hash: str    # 'SHA-256', 'SHA-1', 'MD5'
+    signature_hash: str  # 'SHA-256', 'SHA-1', 'MD5'
     is_weak_signature: bool
-    public_key_type: str   # 'RSA', 'EC', 'DSA'
+    public_key_type: str  # 'RSA', 'EC', 'DSA'
     public_key_bits: int
     is_weak_key: bool
     san_entries: list[str]
     pem_data: str = ""
     raw_der_hex: str = ""
+
 
 def validate_certificate(der_bytes: bytes) -> CertificateInfo | None:
     """Parse X.509 DER certificates and validate cryptographic properties."""
@@ -57,17 +59,19 @@ def validate_certificate(der_bytes: bytes) -> CertificateInfo | None:
 
         is_expired = now > not_after
         is_not_yet_valid = now < not_before
-        
+
         validity_days = max(0, (not_after - not_before).days)
         days_remaining = (not_after - now).days
 
-        is_self_signed = (cert.subject == cert.issuer)
+        is_self_signed = cert.subject == cert.issuer
 
-        signature_algorithm = getattr(cert.signature_algorithm_oid, "_name", str(cert.signature_algorithm_oid.dotted_string))
+        signature_algorithm = getattr(
+            cert.signature_algorithm_oid, "_name", str(cert.signature_algorithm_oid.dotted_string)
+        )
         signature_hash = ""
         if cert.signature_hash_algorithm:
             signature_hash = cert.signature_hash_algorithm.name.upper()
-        
+
         is_weak_signature = signature_hash in ["MD5", "SHA-1", "SHA1"]
 
         public_key = cert.public_key()

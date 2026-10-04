@@ -1,15 +1,18 @@
 """
 Anomaly detection engine using Isolation Forest on TLS session feature vectors.
 """
+
 from __future__ import annotations
 
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
 
 
 @dataclass
 class AnomalyResult:
     """Result of anomaly detection for a single session."""
+
     is_anomaly: bool
     anomaly_score: float  # -1 (most anomalous) to +1 (most normal)
 
@@ -47,7 +50,7 @@ def build_feature_vector(
 ) -> list[float]:
     """
     Build a numeric feature vector from session TLS metadata.
-    
+
     Features:
     [0] tls_version_int      (0-6)
     [1] cipher_severity_int  (0-5)
@@ -69,10 +72,10 @@ def build_feature_vector(
 def detect_anomalies(feature_vectors: list[list[float]]) -> list[AnomalyResult]:
     """
     Run Isolation Forest anomaly detection on a batch of session feature vectors.
-    
+
     Args:
         feature_vectors: List of feature vectors, one per session.
-        
+
     Returns:
         List of AnomalyResult, one per session.
     """
@@ -95,15 +98,17 @@ def detect_anomalies(feature_vectors: list[list[float]]) -> list[AnomalyResult]:
         )
         model.fit(X)
 
-        predictions = model.predict(X)         # +1 = normal, -1 = anomaly
-        scores = model.decision_function(X)    # higher = more normal
+        predictions = model.predict(X)  # +1 = normal, -1 = anomaly
+        scores = model.decision_function(X)  # higher = more normal
 
         results = []
         for pred, score in zip(predictions, scores):
-            results.append(AnomalyResult(
-                is_anomaly=bool(pred == -1),
-                anomaly_score=float(score),
-            ))
+            results.append(
+                AnomalyResult(
+                    is_anomaly=bool(pred == -1),
+                    anomaly_score=float(score),
+                )
+            )
         return results
 
     except Exception:

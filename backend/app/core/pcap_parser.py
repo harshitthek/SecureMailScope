@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import List, Dict, Tuple
-from scapy.all import PcapReader, rdpcap, TCP, IP, IPv6
 from datetime import datetime, timezone
+from typing import Dict, List, Tuple
+
+from scapy.all import IP, TCP, IPv6, PcapReader, rdpcap
 
 
 @dataclass
@@ -18,6 +19,7 @@ class StreamData:
     timestamp: str
     packet_count: int
 
+
 def _get_ips(pkt) -> tuple[str, str] | None:
     """Extract src and dst IP handling dual-stack IPv4 and IPv6."""
     if IP in pkt:
@@ -26,13 +28,14 @@ def _get_ips(pkt) -> tuple[str, str] | None:
         return pkt[IPv6].src, pkt[IPv6].dst
     return None
 
+
 def reassemble_tcp_payload(packets: list) -> bytes:
     """
     Reassemble TCP segment payloads handling retransmissions and segment overlaps.
     """
     if not packets:
         return b""
-    
+
     segments = []
     for pkt in packets:
         if TCP in pkt and pkt[TCP].payload:
@@ -41,17 +44,17 @@ def reassemble_tcp_payload(packets: list) -> bytes:
                 seq = int(pkt[TCP].seq)
                 time_val = float(pkt.time) if hasattr(pkt, "time") else 0.0
                 segments.append((seq, time_val, payload))
-    
+
     if not segments:
         return b""
-        
+
     # Sort with respect to initial packet sequence number modulo 2^32 to handle arbitrary initial sequence numbers
     base_seq = segments[0][0]
     segments.sort(key=lambda s: ((s[0] - base_seq) % (1 << 32), s[1]))
-    
+
     reassembled = bytearray()
     last_rel_end = 0
-    
+
     for seq, _, payload in segments:
         rel_start = (seq - base_seq) % (1 << 32)
         rel_end = rel_start + len(payload)
@@ -66,21 +69,14 @@ def reassemble_tcp_payload(packets: list) -> bytes:
         else:
             # Full duplicate / retransmission: ignore
             pass
-                
+
     return bytes(reassembled)
+
 
 def parse_pcap(file_path: str) -> list[StreamData]:
     """Reads a PCAP file, filters email protocols, and reassembles TCP streams."""
     email_ports = {25, 110, 143, 465, 587, 993, 995}
-    port_to_proto = {
-        25: 'SMTP',
-        587: 'SMTP',
-        465: 'SMTPS',
-        143: 'IMAP',
-        993: 'IMAPS',
-        110: 'POP3',
-        995: 'POP3S'
-    }
+    port_to_proto = {25: "SMTP", 587: "SMTP", 465: "SMTPS", 143: "IMAP", 993: "IMAPS", 110: "POP3", 995: "POP3S"}
     implicit_tls_ports = {465, 993, 995}
 
     # Group packets into conversation streams lazily using streaming PcapReader
@@ -100,7 +96,7 @@ def parse_pcap(file_path: str) -> list[StreamData]:
             if src_port in email_ports or dst_port in email_ports:
                 pair1 = (src_ip, src_port, dst_ip, dst_port)
                 pair2 = (dst_ip, dst_port, src_ip, src_port)
-                
+
                 if pair1 in streams_raw:
                     if len(streams_raw[pair1]) < MAX_STREAM_PACKETS:
                         streams_raw[pair1].append(pkt)
@@ -141,13 +137,13 @@ def parse_pcap(file_path: str) -> list[StreamData]:
     for key, pkt_list in streams_raw.items():
         if not pkt_list:
             continue
-            
+
         ip_a, port_a, ip_b, port_b = key
-        
+
         # Determine actual client and server roles from the stream's packets
         client_ip, client_port = ip_a, port_a
         server_ip, server_port = ip_b, port_b
-        
+
         # Role refinement: check for SYN flag initiation in packet history
         client_identified = False
         for p in pkt_list:
@@ -161,7 +157,7 @@ def parse_pcap(file_path: str) -> list[StreamData]:
                         server_port = int(p[TCP].dport)
                         client_identified = True
                         break
-        
+
         if not client_identified:
             # Fall back to well-known service port convention
             if port_a in email_ports and port_b not in email_ports:
@@ -172,19 +168,21 @@ def parse_pcap(file_path: str) -> list[StreamData]:
                 server_ip, server_port = ip_b, port_b
 
         # Determine protocol & TLS mode
-        proto = port_to_proto.get(server_port, 'UNKNOWN')
-        if proto == 'UNKNOWN':
+        proto = port_to_proto.get(server_port, "UNKNOWN")
+        if proto == "UNKNOWN":
             # Check client port if server port was non-standard
-            proto = port_to_proto.get(client_port, 'UNKNOWN')
-            
+            proto = port_to_proto.get(client_port, "UNKNOWN")
+
         is_implicit = server_port in implicit_tls_ports or client_port in implicit_tls_ports
 
         client_pkts = [
-            p for p in pkt_list
+            p
+            for p in pkt_list
             if TCP in p and _get_ips(p) and _get_ips(p)[0] == client_ip and int(p[TCP].sport) == client_port
         ]
         server_pkts = [
-            p for p in pkt_list
+            p
+            for p in pkt_list
             if TCP in p and _get_ips(p) and _get_ips(p)[0] == server_ip and int(p[TCP].sport) == server_port
         ]
         if not client_pkts and not server_pkts:
@@ -200,7 +198,6 @@ def parse_pcap(file_path: str) -> list[StreamData]:
         except Exception:
             ts = ""
 
-
         sd = StreamData(
             stream_id=stream_id,
             src_ip=client_ip,
@@ -212,7 +209,7 @@ def parse_pcap(file_path: str) -> list[StreamData]:
             client_payload=client_payload,
             server_payload=server_payload,
             timestamp=ts,
-            packet_count=len(pkt_list)
+            packet_count=len(pkt_list),
         )
         streams_result.append(sd)
         stream_id += 1

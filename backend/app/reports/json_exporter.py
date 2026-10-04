@@ -1,6 +1,7 @@
 """
 JSON forensic report formatter.
 """
+
 from __future__ import annotations
 
 import json
@@ -10,10 +11,10 @@ from typing import Any
 def format_json_report(analysis: dict[str, Any]) -> bytes:
     """
     Format analysis results as a pretty-printed JSON forensic report.
-    
+
     Args:
         analysis: Complete analysis result dict.
-        
+
     Returns:
         UTF-8 encoded JSON bytes.
     """
@@ -34,8 +35,12 @@ def format_json_report(analysis: dict[str, Any]) -> bytes:
             "total_sessions_analyzed": analysis.get("total_sessions", 0),
             "total_packets_processed": analysis.get("total_packets", 0),
             "protocols_detected": analysis.get("protocols_detected", []),
-            "critical_vulnerabilities": len([v for v in analysis.get("vulnerabilities", []) if v.get("severity") == "critical"]),
-            "high_vulnerabilities": len([v for v in analysis.get("vulnerabilities", []) if v.get("severity") == "high"]),
+            "critical_vulnerabilities": len(
+                [v for v in analysis.get("vulnerabilities", []) if v.get("severity") == "critical"]
+            ),
+            "high_vulnerabilities": len(
+                [v for v in analysis.get("vulnerabilities", []) if v.get("severity") == "high"]
+            ),
             "compliance_failures": len([c for c in analysis.get("compliance", []) if c.get("status") == "fail"]),
         },
         "sessions": analysis.get("sessions", []),
