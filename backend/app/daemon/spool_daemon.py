@@ -139,6 +139,13 @@ class SpoolDaemon:
                     # Publish results only after successful archive
                     _results[analysis_id] = analysis_data
 
+                    try:
+                        from app.db.repository import CaseRepository
+
+                        await CaseRepository.save_case(analysis_data, source="spool")
+                    except Exception as db_err:
+                        logger.warning("Failed to persist spool capture to database: %s", db_err)
+
                     summary = {
                         "analysis_id": analysis_id,
                         "case_code": case_code,
