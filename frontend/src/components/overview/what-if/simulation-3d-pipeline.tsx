@@ -109,6 +109,10 @@ export function Simulation3DPipeline({
         serverIp={serverIp}
         selectedStation={selectedStation}
         onSelectStation={handleSelectStation}
+        enforceTls13={enforceTls13}
+        enforcePfs={enforcePfs}
+        enforceAead={enforceAead}
+        renewCerts={renewCerts}
       />
 
       {/* Real-Time In-Flight Transaction Packet & Interception Impact Overlay */}
@@ -179,6 +183,10 @@ export function Simulation3DPipeline({
         clientIp={clientIp}
         serverIp={serverIp}
         port={port}
+        enforceTls13={enforceTls13}
+        enforcePfs={enforcePfs}
+        enforceAead={enforceAead}
+        renewCerts={renewCerts}
       />
 
       {/* Unified Low-Profile Bottom Simulation Dock with Real-Time Progress & Event Ticker */}

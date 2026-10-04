@@ -10,6 +10,10 @@ interface Simulation3DPacketInspectorProps {
   clientIp: string;
   serverIp: string;
   port: number;
+  enforceTls13?: boolean;
+  enforcePfs?: boolean;
+  enforceAead?: boolean;
+  renewCerts?: boolean;
 }
 
 export function Simulation3DPacketInspector({
@@ -19,10 +23,15 @@ export function Simulation3DPacketInspector({
   clientIp,
   serverIp,
   port,
+  enforceTls13 = false,
+  enforcePfs = false,
+  enforceAead = false,
+  renewCerts = false,
 }: Simulation3DPacketInspectorProps) {
   if (!isOpen) return null;
 
-  const isHardened = currentStage >= 3;
+  const anyPolicyActive = enforceTls13 || enforcePfs || enforceAead || renewCerts;
+  const isHardened = anyPolicyActive && currentStage >= 3;
   const isAttackStage = currentStage === 2;
 
   return (
@@ -44,7 +53,13 @@ export function Simulation3DPacketInspector({
                   : "bg-[#cc9166]/20 text-[#cc9166] border border-[#cc9166]/40"
               }`}
             >
-              {isHardened ? "POST-QUANTUM AEAD" : isAttackStage ? "STRIPTLS INTERCEPTED" : "UNENCRYPTED VULNERABLE"}
+              {isHardened
+                ? enforceTls13
+                  ? "POST-QUANTUM AEAD"
+                  : "REMEDIATED TLS"
+                : isAttackStage
+                ? "STRIPTLS INTERCEPTED"
+                : "UNENCRYPTED VULNERABLE"}
             </span>
           </div>
           <button
@@ -70,7 +85,13 @@ export function Simulation3DPacketInspector({
             </div>
             <div>
               <div className="text-[9px] text-[#777a88]">INSPECTED WIRE LAYER</div>
-              <div className="text-[#38bdf8] font-semibold">{isHardened ? "TLS 1.3 Record" : "Plaintext TCP"}</div>
+              <div className="text-[#38bdf8] font-semibold">
+                {isHardened
+                  ? enforceTls13
+                    ? "TLS 1.3 Record"
+                    : "TLS 1.2 Record"
+                  : "Plaintext TCP"}
+              </div>
             </div>
             <div>
               <div className="text-[9px] text-[#777a88]">DEFENSE SENSOR</div>
@@ -89,24 +110,38 @@ export function Simulation3DPacketInspector({
               <div className="space-y-1 text-[10px]">
                 <div className="flex justify-between">
                   <span className="text-[#777a88]">Protocol Version:</span>
-                  <span className="text-white font-semibold">{isHardened ? "TLSv1.3 (0x0304)" : "SSLv3.0 / None"}</span>
+                  <span className="text-white font-semibold">
+                    {enforceTls13 && currentStage >= 3
+                      ? "TLSv1.3 (0x0304)"
+                      : isHardened
+                      ? "TLSv1.2 (0x0303)"
+                      : "SSLv3.0 / None"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#777a88]">Negotiated Cipher:</span>
                   <span className={isHardened ? "text-[#34d399] font-semibold" : "text-[#ef4444] font-semibold"}>
-                    {isHardened ? "TLS_AES_256_GCM_SHA384" : "TLS_RSA_WITH_3DES_EDE_CBC_SHA"}
+                    {enforceAead && currentStage >= 3
+                      ? "TLS_AES_256_GCM_SHA384"
+                      : isHardened
+                      ? "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA"
+                      : "TLS_RSA_WITH_3DES_EDE_CBC_SHA"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#777a88]">Key Exchange (PFS):</span>
                   <span className={isHardened ? "text-[#34d399] font-semibold" : "text-[#ef4444] font-semibold"}>
-                    {isHardened ? "ECDHE + ML-KEM-768 (Lattice)" : "Static RSA (Zero PFS)"}
+                    {enforcePfs && enforceTls13 && currentStage >= 3
+                      ? "ECDHE + ML-KEM-768 (Lattice)"
+                      : enforcePfs && currentStage >= 3
+                      ? "ECDHE (SecP256r1)"
+                      : "Static RSA (Zero PFS)"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#777a88]">Post-Quantum Group:</span>
-                  <span className={isHardened ? "text-[#a855f7] font-semibold" : "text-[#777a88]"}>
-                    {isHardened ? "0x11ec (X25519MLKEM768)" : "None (Vulnerable)"}
+                  <span className={enforceTls13 && currentStage >= 3 ? "text-[#a855f7] font-semibold" : "text-[#777a88]"}>
+                    {enforceTls13 && currentStage >= 3 ? "0x11ec (X25519MLKEM768)" : "None (Vulnerable)"}
                   </span>
                 </div>
               </div>
@@ -125,8 +160,8 @@ export function Simulation3DPacketInspector({
               <div className="space-y-1 text-[10px]">
                 <div className="flex justify-between">
                   <span className="text-[#777a88]">STRIPTLS Downgrade:</span>
-                  <span className={currentStage >= 2 ? "text-[#34d399] font-semibold" : "text-[#ef4444] font-semibold"}>
-                    {currentStage >= 2 ? "DEFLECTED (Alert 70)" : "SUSCEPTIBLE"}
+                  <span className={anyPolicyActive && currentStage >= 2 ? "text-[#34d399] font-semibold" : "text-[#ef4444] font-semibold"}>
+                    {anyPolicyActive && currentStage >= 2 ? "DEFLECTED (Alert 70)" : "SUSCEPTIBLE"}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -138,13 +173,17 @@ export function Simulation3DPacketInspector({
                 <div className="flex justify-between">
                   <span className="text-[#777a88]">NIST SP 800-52r2:</span>
                   <span className={isHardened ? "text-[#34d399] font-semibold" : "text-[#ef4444] font-semibold"}>
-                    {isHardened ? "FULL COMPLIANCE (Pass)" : "NON-COMPLIANT (Fail)"}
+                    {enforceTls13 && enforcePfs && enforceAead && renewCerts && currentStage >= 3
+                      ? "FULL COMPLIANCE (Pass)"
+                      : isHardened
+                      ? "PARTIAL COMPLIANCE"
+                      : "NON-COMPLIANT (Fail)"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#777a88]">Harvest Now, Decrypt Later:</span>
-                  <span className={isHardened ? "text-[#34d399] font-semibold" : "text-[#ef4444] font-semibold"}>
-                    {isHardened ? "IMMUNIZED (FIPS 203)" : "AT RISK"}
+                  <span className={enforceTls13 && currentStage >= 3 ? "text-[#34d399] font-semibold" : "text-[#ef4444] font-semibold"}>
+                    {enforceTls13 && currentStage >= 3 ? "IMMUNIZED (FIPS 203)" : "AT RISK"}
                   </span>
                 </div>
               </div>
@@ -161,7 +200,7 @@ export function Simulation3DPacketInspector({
               <span className="text-[9px] text-[#34d399]">OFFSET: 0x0000 - 0x0040</span>
             </div>
             <pre className="p-2.5 rounded bg-[#030305] border border-[#14161f] text-[10px] text-[#9194a1] overflow-x-auto leading-relaxed">
-              {isHardened ? (
+              {enforceTls13 && currentStage >= 3 ? (
                 <>
                   <span className="text-[#38bdf8] font-bold">16 03 04 00 c8</span>{" "}
                   <span className="text-[#777a88]">01 00 00 c4 03 03</span>{" "}
@@ -175,6 +214,17 @@ export function Simulation3DPacketInspector({
                   {"\n"}
                   <span className="text-[#777a88]">
                     ASCII: ...TLSv1.3...AES_256_GCM...X25519MLKEM768...mail.gov.in
+                  </span>
+                </>
+              ) : isHardened ? (
+                <>
+                  <span className="text-[#38bdf8] font-bold">16 03 03 00 9a</span>{" "}
+                  <span className="text-[#777a88]">01 00 00 96 03 03</span>{" "}
+                  <span className="text-[#34d399] font-bold">c0 2f c0 30 c0 14</span>{" "}
+                  <span className="text-[#777a88]">00 00 23 00 00 00 0f</span>
+                  {"\n"}
+                  <span className="text-[#38bdf8]">
+                    ASCII: ...TLSv1.2...ECDHE_RSA_AES_GCM_SHA256...
                   </span>
                 </>
               ) : isAttackStage ? (

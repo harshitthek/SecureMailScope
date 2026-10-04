@@ -660,6 +660,10 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
             <SimulationThreatMatrix
               currentStage={effectiveStage}
               activeCase={activeCase}
+              enforceTls13={enforceTls13}
+              enforcePfs={enforcePfs}
+              enforceAead={enforceAead}
+              renewCerts={renewCerts}
             />
           )}
 
@@ -667,6 +671,10 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
             <SimulationStreamLedger
               currentStage={effectiveStage}
               activeCase={activeCase}
+              enforceTls13={enforceTls13}
+              enforcePfs={enforcePfs}
+              enforceAead={enforceAead}
+              renewCerts={renewCerts}
             />
           )}
         </div>

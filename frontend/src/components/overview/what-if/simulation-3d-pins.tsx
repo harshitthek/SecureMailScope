@@ -18,6 +18,10 @@ interface Simulation3DPinsProps {
   serverIp: string;
   selectedStation: "NONE" | "CLIENT" | "ADVERSARY" | "GATEWAY" | "VAULT";
   onSelectStation: (station: "CLIENT" | "ADVERSARY" | "GATEWAY" | "VAULT") => void;
+  enforceTls13?: boolean;
+  enforcePfs?: boolean;
+  enforceAead?: boolean;
+  renewCerts?: boolean;
 }
 
 export function Simulation3DPins({
@@ -30,15 +34,51 @@ export function Simulation3DPins({
   serverIp,
   selectedStation,
   onSelectStation,
+  enforceTls13 = false,
+  enforcePfs = false,
+  enforceAead = false,
+  renewCerts = false,
 }: Simulation3DPinsProps) {
+  const anyPolicyActive = enforceTls13 || enforcePfs || enforceAead || renewCerts;
+
+  const clientStatus =
+    enforceTls13 && currentStage >= 3
+      ? "PQC TLS 1.3"
+      : anyPolicyActive && currentStage >= 3
+      ? "REMEDIATED"
+      : "VULNERABLE";
+
+  const adversaryStatus =
+    anyPolicyActive && currentStage >= 3
+      ? "QUARANTINED"
+      : anyPolicyActive && currentStage === 2
+      ? "DEFLECTED"
+      : "ACTIVE TAP";
+
+  const gatewayStatus =
+    enforceTls13 && currentStage >= 3
+      ? "LATTICE ENFORCED"
+      : anyPolicyActive && currentStage >= 3
+      ? "POLICY ENFORCED"
+      : "INSPECTING";
+
+  const vaultStatus =
+    (enforceAead || enforceTls13) && currentStage >= 3
+      ? "ZERO LEAK"
+      : anyPolicyActive && currentStage >= 3
+      ? "PROTECTED SPOOL"
+      : "INSECURE SPOOL";
+
+  const isHardened = anyPolicyActive && currentStage >= 3;
+
   const stations = [
     {
       id: "CLIENT" as const,
       pos: clientPos,
       label: "CLIENT",
       ip: clientIp,
-      status: currentStage >= 3 ? "PQC TLS 1.3" : "VULNERABLE",
-      dotClass: currentStage >= 3 ? "bg-emerald-400" : "bg-sky-400",
+      status: clientStatus,
+      dotClass: isHardened ? "bg-emerald-400" : "bg-sky-400",
       activeRing: "ring-sky-400 border-sky-400",
     },
     {
@@ -46,8 +86,8 @@ export function Simulation3DPins({
       pos: adversaryPos,
       label: "MITM TAP",
       ip: "10.0.0.99",
-      status: currentStage >= 3 ? "QUARANTINED" : currentStage === 2 ? "DEFLECTED" : "ACTIVE TAP",
-      dotClass: currentStage >= 3 ? "bg-emerald-400" : "bg-red-400 animate-ping",
+      status: adversaryStatus,
+      dotClass: isHardened ? "bg-emerald-400" : "bg-red-400 animate-ping",
       activeRing: "ring-red-500 border-red-500",
     },
     {
@@ -55,7 +95,7 @@ export function Simulation3DPins({
       pos: gatewayPos,
       label: "QUANTUM MTA",
       ip: "TAP-01 SENSOR",
-      status: currentStage >= 3 ? "LATTICE ENFORCED" : "INSPECTING",
+      status: gatewayStatus,
       dotClass: "bg-emerald-400",
       activeRing: "ring-emerald-400 border-emerald-400",
     },
@@ -64,8 +104,8 @@ export function Simulation3DPins({
       pos: vaultPos,
       label: "MAIL VAULT",
       ip: serverIp,
-      status: currentStage >= 3 ? "ZERO LEAK" : "INSECURE SPOOL",
-      dotClass: currentStage >= 3 ? "bg-emerald-400" : "bg-sky-400",
+      status: vaultStatus,
+      dotClass: isHardened ? "bg-emerald-400" : "bg-sky-400",
       activeRing: "ring-sky-400 border-sky-400",
     },
   ];

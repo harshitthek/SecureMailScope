@@ -69,18 +69,18 @@ export function Simulation3DStationDrawer({
               <div className="text-[10px] text-muted-foreground font-semibold">CLIENT HELLO NEGOTIATION</div>
               <div className="flex justify-between py-0.5 border-b border-border/40">
                 <span className="text-muted-foreground">Protocol:</span>
-                <span className="text-foreground font-semibold">{currentStage >= 3 ? "TLSv1.3 (RFC 8446)" : "SSLv3.0 / TLS 1.0"}</span>
+                <span className="text-foreground font-semibold">{enforceTls13 && currentStage >= 1 ? "TLSv1.3 (RFC 8446)" : "SSLv3.0 / TLS 1.0"}</span>
               </div>
               <div className="flex justify-between py-0.5 border-b border-border/40">
                 <span className="text-muted-foreground">PQC Extension:</span>
-                <span className={currentStage >= 3 ? "text-purple-400 font-semibold" : "text-muted-foreground"}>
-                  {currentStage >= 3 ? "0x11ec (ML-KEM-768)" : "None"}
+                <span className={enforcePfs && currentStage >= 1 ? "text-purple-400 font-semibold" : "text-muted-foreground"}>
+                  {enforcePfs && currentStage >= 1 ? "0x11ec (ML-KEM-768)" : "None"}
                 </span>
               </div>
               <div className="flex justify-between py-0.5 border-b border-border/40">
                 <span className="text-muted-foreground">Posture State:</span>
-                <span className={currentStage >= 3 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
-                  {currentStage >= 3 ? "IMMUNIZED" : "CLEAR-TEXT EXPOSURE"}
+                <span className={(enforceTls13 || enforcePfs || enforceAead || renewCerts) && currentStage >= 1 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
+                  {(enforceTls13 || enforcePfs || enforceAead || renewCerts) && currentStage >= 1 ? "IMMUNIZED" : "CLEAR-TEXT EXPOSURE"}
                 </span>
               </div>
             </div>
@@ -98,20 +98,20 @@ export function Simulation3DStationDrawer({
               <div className="text-[10px] text-muted-foreground font-semibold">ATTACK MITIGATION STATUS</div>
               <div className="flex justify-between py-0.5 border-b border-border/40">
                 <span className="text-muted-foreground">Eavesdropping:</span>
-                <span className={currentStage >= 2 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
-                  {currentStage >= 2 ? "DEFLECTED" : "UNENCRYPTED STREAM"}
+                <span className={(enforceTls13 || enforceAead) && currentStage >= 1 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
+                  {(enforceTls13 || enforceAead) && currentStage >= 1 ? "DEFLECTED" : "UNENCRYPTED STREAM"}
                 </span>
               </div>
               <div className="flex justify-between py-0.5 border-b border-border/40">
                 <span className="text-muted-foreground">Downgrade Injection:</span>
-                <span className={currentStage >= 2 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
-                  {currentStage >= 2 ? "BLOCKED (SSL ALERT 70)" : "SUCCESSFUL INJECTION"}
+                <span className={enforceTls13 && currentStage >= 1 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
+                  {enforceTls13 && currentStage >= 1 ? "BLOCKED (SSL ALERT 70)" : "SUCCESSFUL INJECTION"}
                 </span>
               </div>
               <div className="flex justify-between py-0.5 border-b border-border/40">
                 <span className="text-muted-foreground">Quarantine Cage:</span>
-                <span className={currentStage >= 3 ? "text-emerald-400 font-semibold" : "text-muted-foreground"}>
-                  {currentStage >= 3 ? "ENCLOSED & ISOLATED" : "INACTIVE"}
+                <span className={(enforceTls13 || enforceAead) && currentStage >= 1 ? "text-emerald-400 font-semibold" : "text-muted-foreground"}>
+                  {(enforceTls13 || enforceAead) && currentStage >= 1 ? "ENCLOSED & ISOLATED" : "INACTIVE"}
                 </span>
               </div>
             </div>
@@ -128,16 +128,16 @@ export function Simulation3DStationDrawer({
             <div className="space-y-1.5">
               <div className="text-[10px] text-muted-foreground font-semibold">ACTIVE DEFENSE POLICIES</div>
               <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                <div className={`p-1.5 rounded border ${enforceTls13 || currentStage >= 3 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-border/60 text-muted-foreground"}`}>
+                <div className={`p-1.5 rounded border ${enforceTls13 && currentStage >= 1 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-border/60 text-muted-foreground"}`}>
                   TLS 1.3 §3.1
                 </div>
-                <div className={`p-1.5 rounded border ${enforcePfs || currentStage >= 3 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-border/60 text-muted-foreground"}`}>
+                <div className={`p-1.5 rounded border ${enforcePfs && currentStage >= 1 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-border/60 text-muted-foreground"}`}>
                   ECDHE PFS §3.3
                 </div>
-                <div className={`p-1.5 rounded border ${enforceAead || currentStage >= 3 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-border/60 text-muted-foreground"}`}>
+                <div className={`p-1.5 rounded border ${enforceAead && currentStage >= 1 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-border/60 text-muted-foreground"}`}>
                   AEAD Ciphers
                 </div>
-                <div className={`p-1.5 rounded border ${renewCerts || currentStage >= 3 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-border/60 text-muted-foreground"}`}>
+                <div className={`p-1.5 rounded border ${renewCerts && currentStage >= 1 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-border/60 text-muted-foreground"}`}>
                   3072b Root CA
                 </div>
               </div>
@@ -156,14 +156,14 @@ export function Simulation3DStationDrawer({
               <div className="text-[10px] text-muted-foreground font-semibold">CRYPTOGRAPHIC INTEGRITY</div>
               <div className="flex justify-between py-0.5 border-b border-border/40">
                 <span className="text-muted-foreground">At-Rest Protection:</span>
-                <span className={currentStage >= 3 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
-                  {currentStage >= 3 ? "AES-256-GCM SEALED" : "UNENCRYPTED PLAINTEXT"}
+                <span className={enforceAead && currentStage >= 1 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
+                  {enforceAead && currentStage >= 1 ? "AES-256-GCM SEALED" : "UNENCRYPTED PLAINTEXT"}
                 </span>
               </div>
               <div className="flex justify-between py-0.5 border-b border-border/40">
                 <span className="text-muted-foreground">Residual Leakage:</span>
-                <span className={currentStage >= 3 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
-                  {currentStage >= 3 ? "0.0% (ZERO LEAK)" : "CREDENTIAL LEAK OBSERVED"}
+                <span className={enforceTls13 && enforceAead && currentStage >= 1 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
+                  {enforceTls13 && enforceAead && currentStage >= 1 ? "0.0% (ZERO LEAK)" : "CREDENTIAL LEAK OBSERVED"}
                 </span>
               </div>
             </div>

@@ -74,8 +74,12 @@ export function SimulationWirePipeline({
           </div>
           <div className="text-[10px] pt-1 border-t border-[#1c1d22] flex items-center justify-between">
             <span className="text-[#777a88]">Offered:</span>
-            <span className={isUpgraded ? "text-[#34d399]" : "text-[#ef4444]"}>
-              {isUpgraded ? "TLS 1.3 / ML-KEM" : "SSLv3 / RC4 / Clear"}
+            <span className={isUpgraded && (enforceTls13 || activeCase.id === "CASE-01") ? "text-[#34d399]" : isUpgraded ? "text-[#cc9166]" : "text-[#ef4444]"}>
+              {isUpgraded && (enforceTls13 || activeCase.id === "CASE-01")
+                ? "TLS 1.3 / ML-KEM"
+                : isUpgraded
+                ? (renewCerts ? "CA Validated Trust" : "Policy Hardened")
+                : "SSLv3 / RC4 / Clear"}
             </span>
           </div>
         </div>
@@ -143,7 +147,13 @@ export function SimulationWirePipeline({
             {currentStage >= 3 && (
               <div className="text-[#34d399] flex items-center gap-1">
                 <Lock className="w-3 h-3" />
-                <span>Hybrid Post-Quantum TLS 1.3 Active</span>
+                <span>
+                  {activeCase.id === "CASE-01" || enforceTls13
+                    ? "Hybrid Post-Quantum TLS 1.3 Active"
+                    : renewCerts
+                    ? "CA Trust Anchor Validated"
+                    : "Remediated Crypto Policy Active"}
+                </span>
               </div>
             )}
           </div>

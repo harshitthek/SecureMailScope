@@ -7,11 +7,19 @@ import { EvidenceCase } from "@/lib/types";
 interface SimulationThreatMatrixProps {
   currentStage: number;
   activeCase: EvidenceCase;
+  enforceTls13: boolean;
+  enforcePfs: boolean;
+  enforceAead: boolean;
+  renewCerts: boolean;
 }
 
 export function SimulationThreatMatrix({
   currentStage,
   activeCase,
+  enforceTls13,
+  enforcePfs,
+  enforceAead,
+  renewCerts,
 }: SimulationThreatMatrixProps) {
   const vulns = activeCase.data.vulnerabilities || [];
 
@@ -33,15 +41,38 @@ export function SimulationThreatMatrix({
     },
   ];
 
-  // Helper to determine whether an individual threat is neutralized in the current stage
-  const isNeutralized = (_t: unknown, index: number) => {
+  // Derive neutralization status from policies that address each specific threat
+  const isNeutralized = (t: { title?: string; mitre_attack_id?: string; mitre_attack_technique?: string; description?: string }) => {
     if (activeCase.id === "CASE-01") return true; // Already secure
-    if (currentStage >= 3) return true;
-    if (currentStage === 2 && index % 2 === 0) return true;
-    return false;
+    if (currentStage < 1) return false;
+
+    const text = `${t.title || ""} ${t.mitre_attack_technique || ""} ${t.mitre_attack_id || ""} ${t.description || ""}`.toLowerCase();
+
+    // 1. Certificate flaws (self-signed, expired, weak key)
+    if (text.includes("cert") || text.includes("self-signed") || text.includes("expired") || text.includes("t1587.003")) {
+      return renewCerts;
+    }
+
+    // 2. Forward secrecy / Static RSA / Retrospective decryption
+    if (text.includes("forward secrecy") || text.includes("pfs") || text.includes("static rsa") || text.includes("re-key")) {
+      return enforcePfs;
+    }
+
+    // 3. Weak ciphers (3DES Sweet32, CBC mode, RC4, Non-AEAD)
+    if (text.includes("cipher") || text.includes("3des") || text.includes("sweet32") || text.includes("cbc") || text.includes("rc4") || text.includes("aead")) {
+      return enforceAead;
+    }
+
+    // 4. Protocol downgrade / Cleartext exposure / STRIPTLS / Unsecured Credentials
+    if (text.includes("downgrade") || text.includes("striptls") || text.includes("cleartext") || text.includes("credential") || text.includes("t1557.002") || text.includes("t1552.001") || text.includes("tls 1.0") || text.includes("tls 1.1") || text.includes("obsolete")) {
+      return enforceTls13;
+    }
+
+    // Default fallback: requires at least one hardening policy active
+    return enforceTls13 || enforcePfs || enforceAead || renewCerts;
   };
 
-  const neutralizedCount = threats.filter((t, i) => isNeutralized(t, i)).length;
+  const neutralizedCount = threats.filter((t) => isNeutralized(t)).length;
 
   return (
     <div className="bg-[#08080a] border border-[#1c1d22] rounded-[10px] p-4 flex flex-col gap-3 font-mono text-xs select-none">
@@ -66,7 +97,7 @@ export function SimulationThreatMatrix({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {threats.map((t, idx) => {
-          const neutralized = isNeutralized(t, idx);
+          const neutralized = isNeutralized(t);
 
           return (
             <div
