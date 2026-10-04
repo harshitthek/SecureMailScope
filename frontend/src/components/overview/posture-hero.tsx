@@ -324,10 +324,11 @@ export function PostureHero({ activeCase, onInspectFlow }: PostureHeroProps) {
               const sIsCrit = s.session_score < 50 || s.starttls_stripped;
               const hostLabel = s.server_name || s.dst_ip;
               return (
-                <div
+                <button
+                  type="button"
                   key={s.session_id}
                   onClick={() => onInspectFlow(s.session_id)}
-                  className="py-1.5 flex items-center justify-between text-xs cursor-pointer hover:bg-[#121317] px-2 rounded-[6px] transition-colors"
+                  className="w-full py-1.5 flex items-center justify-between text-xs cursor-pointer hover:bg-[#121317] px-2 rounded-[6px] transition-colors text-left"
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full bg-[#121317] border border-[#2e3038] flex items-center justify-center shrink-0">
@@ -363,7 +364,7 @@ export function PostureHero({ activeCase, onInspectFlow }: PostureHeroProps) {
                       {sIsSec ? "PASS" : sIsCrit ? "DOWNGRADE" : "WARN"}
                     </span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

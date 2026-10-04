@@ -12,7 +12,11 @@ import time
 import os
 from playwright.sync_api import sync_playwright
 
-SCREENSHOT_DIR = r"C:\Users\user\.gemini\antigravity\brain\3b2907a4-36d5-4db1-a876-bbe86a182082"
+SCREENSHOT_DIR = os.environ.get(
+    "ARTIFACT_DIR",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "artifacts"))
+)
+os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
 def main():
     print("[*] Launching Playwright to verify /usemax expanded 3D Simulation Engine...")

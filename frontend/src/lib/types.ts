@@ -108,7 +108,7 @@ export interface Session {
   session_severity: Severity;
   scoring_breakdown: ScoringBreakdown;
   forensic_inspection?: StreamForensicInspection;
-  pqc_status?: "PQC_RESISTANT" | "CLASSICAL_TRANSITIONAL" | "CRQC_HARVEST_CRITICAL" | "UNENCRYPTED_EXPOSED";
+  pqc_status?: "PQC_RESISTANT" | "CLASSICAL_TRANSITIONAL" | "CRQC_HARVEST_CRITICAL" | "UNENCRYPTED_EXPOSED" | "UNKNOWN";
   pqc_group_name?: string;
   pqc_hndl_risk?: "NONE" | "MODERATE" | "CRITICAL";
   pqc_negotiated_group_hex?: string | null;

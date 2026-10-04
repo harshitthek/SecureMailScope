@@ -18,7 +18,7 @@ import { DissectorView } from "@/components/views/dissector-view";
 import { StandardsView } from "@/components/views/standards-view";
 import { ReportView } from "@/components/views/report-view";
 import { ApplicationFooter } from "@/components/shell/footer";
-import { getReportUrl } from "@/lib/api";
+import { getReportUrl, getAnalysis } from "@/lib/api";
 
 function ForensicWorkstationInner() {
   const searchParams = useSearchParams();
@@ -66,8 +66,7 @@ function ForensicWorkstationInner() {
 
     // Sync live forensic data from backend if available
     const controller = new AbortController();
-    fetch(`http://127.0.0.1:8000/api/analysis/${resolvedCase.case_code}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : null))
+    getAnalysis(resolvedCase.case_code, controller.signal)
       .then((liveData: AnalysisResult | null) => {
         if (liveData) {
           setActiveCase((prev) => ({
@@ -81,7 +80,8 @@ function ForensicWorkstationInner() {
           }));
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err && err.name === "AbortError") return;
         // Fallback safely to pre-bundled local data
       });
 
@@ -101,6 +101,9 @@ function ForensicWorkstationInner() {
 
   const handleSelectTab = useCallback((tab: ShellNavTab) => {
     setActiveTab(tab);
+    if (tab !== "FLOWS") {
+      setSelectedFlowIdForFlows(null);
+    }
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set("tab", tab);
     window.history.pushState(null, "", newUrl.toString());
@@ -115,6 +118,14 @@ function ForensicWorkstationInner() {
   // SOC Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcut triggers when modifier keys are held or when modals/drawers are open
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+      if (isUploadOpen || isHudOpen || (activeTab === "FLOWS" && selectedFlowIdForFlows !== null)) {
+        return;
+      }
+
       // Ignore shortcut triggers when user is focused inside an input or textarea
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
@@ -192,7 +203,7 @@ function ForensicWorkstationInner() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, handleExport, handleSelectTab, showToast]);
+  }, [activeTab, handleExport, handleSelectTab, showToast, isUploadOpen, isHudOpen, selectedFlowIdForFlows]);
 
   const handleUploadSuccess = (analysis: AnalysisResult) => {
     const customCase: EvidenceCase = {
@@ -263,6 +274,7 @@ function ForensicWorkstationInner() {
           initialFlowId={selectedFlowIdForFlows}
           onInspectFlowInDissector={(flowId: number) => {
             setSelectedStreamId(flowId);
+            setSelectedFlowIdForFlows(null);
             handleSelectTab("DISSECTOR");
           }}
         />

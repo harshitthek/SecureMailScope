@@ -45,28 +45,27 @@ def reassemble_tcp_payload(packets: list) -> bytes:
     if not segments:
         return b""
         
-    # Sort primarily by sequence number, secondarily by packet timestamp
-    segments.sort(key=lambda s: (s[0], s[1]))
+    # Sort with respect to initial packet sequence number modulo 2^32 to handle arbitrary initial sequence numbers
+    base_seq = segments[0][0]
+    segments.sort(key=lambda s: ((s[0] - base_seq) % (1 << 32), s[1]))
     
     reassembled = bytearray()
-    last_seq = None
+    last_rel_end = 0
     
     for seq, _, payload in segments:
-        if last_seq is None:
+        rel_start = (seq - base_seq) % (1 << 32)
+        rel_end = rel_start + len(payload)
+        if rel_start >= last_rel_end:
             reassembled.extend(payload)
-            last_seq = seq + len(payload)
+            last_rel_end = rel_end
+        elif rel_end > last_rel_end:
+            # Partial overlap from retransmitted slice
+            overlap = last_rel_end - rel_start
+            reassembled.extend(payload[overlap:])
+            last_rel_end = rel_end
         else:
-            if seq >= last_seq:
-                reassembled.extend(payload)
-                last_seq = seq + len(payload)
-            elif seq + len(payload) > last_seq:
-                # Partial overlap from retransmitted slice
-                overlap = last_seq - seq
-                reassembled.extend(payload[overlap:])
-                last_seq = seq + len(payload)
-            else:
-                # Full duplicate / retransmission: ignore
-                pass
+            # Full duplicate / retransmission: ignore
+            pass
                 
     return bytes(reassembled)
 
@@ -87,6 +86,8 @@ def parse_pcap(file_path: str) -> list[StreamData]:
     # Group packets into conversation streams lazily using streaming PcapReader
     streams_raw: Dict[Tuple[str, int, str, int], List] = {}
 
+    MAX_STREAM_PACKETS = 5000
+
     def _process_packet(pkt):
         if (IP in pkt or IPv6 in pkt) and TCP in pkt:
             ips = _get_ips(pkt)
@@ -101,9 +102,11 @@ def parse_pcap(file_path: str) -> list[StreamData]:
                 pair2 = (dst_ip, dst_port, src_ip, src_port)
                 
                 if pair1 in streams_raw:
-                    streams_raw[pair1].append(pkt)
+                    if len(streams_raw[pair1]) < MAX_STREAM_PACKETS:
+                        streams_raw[pair1].append(pkt)
                 elif pair2 in streams_raw:
-                    streams_raw[pair2].append(pkt)
+                    if len(streams_raw[pair2]) < MAX_STREAM_PACKETS:
+                        streams_raw[pair2].append(pkt)
                 else:
                     tcp_flags = pkt[TCP].flags
                     is_syn_init = bool(tcp_flags & 0x02) and not bool(tcp_flags & 0x10)
@@ -123,6 +126,7 @@ def parse_pcap(file_path: str) -> list[StreamData]:
                 _process_packet(pkt)
     except Exception:
         # Fallback to rdpcap if PcapReader encounters non-standard capture headers
+        streams_raw.clear()
         try:
             packets = rdpcap(file_path)
             for pkt in packets:

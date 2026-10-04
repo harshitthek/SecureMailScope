@@ -61,9 +61,20 @@ export function useSimulation3D({
     intensity: 0,
   });
   const [liveCycleProgress, setLiveCycleProgress] = useState<number>(0);
-  const [liveEventLog, setLiveEventLog] = useState<string>("INGRESS: Client establishing wire connection...");
-
+  const [liveEventLog, setLiveEventLog] = useState<string>("SIMULATION IDLE: Ready for attack injection cycle.");
   const setCameraTargetRef = useRef<(node: "OVERVIEW" | "CLIENT" | "ADVERSARY" | "GATEWAY" | "VAULT") => void>(() => {});
+
+  const stageRef = useRef(currentStage);
+  const tls13Ref = useRef(enforceTls13);
+  const pfsRef = useRef(enforcePfs);
+  const aeadRef = useRef(enforceAead);
+  const certsRef = useRef(renewCerts);
+
+  useEffect(() => { stageRef.current = currentStage; }, [currentStage]);
+  useEffect(() => { tls13Ref.current = enforceTls13; }, [enforceTls13]);
+  useEffect(() => { pfsRef.current = enforcePfs; }, [enforcePfs]);
+  useEffect(() => { aeadRef.current = enforceAead; }, [enforceAead]);
+  useEffect(() => { certsRef.current = renewCerts; }, [renewCerts]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -263,18 +274,18 @@ export function useSimulation3D({
       gatewayStation.shieldMesh.rotation.y += 0.006;
       gatewayStation.coreMesh.rotation.y -= 0.02;
 
-      const torusSpeed = currentStage >= 3 ? 0.05 : 0.015;
+      const torusSpeed = stageRef.current >= 3 ? 0.05 : 0.015;
       gatewayStation.torus1.rotation.x += torusSpeed;
       gatewayStation.torus2.rotation.y -= torusSpeed;
-      vaultStation.lock.rotation.z += currentStage >= 4 ? 0.002 : 0.025;
+      vaultStation.lock.rotation.z += stageRef.current >= 4 ? 0.002 : 0.025;
 
       vaultStation.leds.forEach((led, idx) => {
         (led.material as THREE.MeshBasicMaterial).color.setHex(Math.sin(now * 0.008 + idx * 2) > 0 ? 0x34d399 : 0x09261a);
       });
 
-      const policiesActive = [enforceTls13, enforcePfs, enforceAead, renewCerts];
+      const policiesActive = [tls13Ref.current, pfsRef.current, aeadRef.current, certsRef.current];
       gatewayStation.obelisks.forEach((ob, idx) => {
-        const isActive = policiesActive[idx] || currentStage >= 3;
+        const isActive = policiesActive[idx] || stageRef.current >= 3;
         const mat = ob.material as THREE.MeshStandardMaterial;
         mat.color.setHex(isActive ? 0x34d399 : 0x14161f);
         mat.emissive.setHex(isActive ? 0x34d399 : 0x000000);
@@ -303,9 +314,11 @@ export function useSimulation3D({
       let complianceNotice = "NIST SP 800-52r2 §3.1 IN PROGRESS";
       let impactVisible = false;
       let impactIntensity = 0;
+      let currentPhaseIdx = 0;
 
       if (cycleTime < 1.8) {
         // Phase 1: Client Ingress (0.0s - 1.8s)
+        currentPhaseIdx = 0;
         const p = cycleTime / 1.8;
         heroPos = ingressCurve.getPoint(p * 0.5);
         heroPacketSprite.material.map = cyanGlowTex;
@@ -321,6 +334,7 @@ export function useSimulation3D({
         setLiveEventLog("INGRESS: Client 192.168.1.100 initiating TLS handshake on port 587");
       } else if (cycleTime < 3.8) {
         // Phase 2: Vulnerability Emergence - MitM Attack Injection (1.8s - 3.8s)
+        currentPhaseIdx = 1;
         const p = (cycleTime - 1.8) / 2.0;
         if (p < 0.45) {
           heroPos = tapCurve.getPoint(p / 0.45);
@@ -341,6 +355,7 @@ export function useSimulation3D({
         setLiveEventLog("THREAT: Rogue proxy injecting stripped capability into wire!");
       } else if (cycleTime < 4.8) {
         // Phase 3: Active Interception & Shield Deflection (3.8s - 4.8s)
+        currentPhaseIdx = 2;
         heroPos.copy(impactPointWorld);
         heroPacketSprite.material.map = amberGlowTex;
         activeType = "DEFLECTION";
@@ -371,6 +386,7 @@ export function useSimulation3D({
         gatewayStation.sparkGeom.attributes.position.needsUpdate = true;
       } else if (cycleTime < 6.2) {
         // Phase 4: Post-Quantum Lattice Key Exchange (4.8s - 6.2s)
+        currentPhaseIdx = 3;
         const p = (cycleTime - 4.8) / 1.4;
         heroPos = ingressCurve.getPoint(0.7 - p * 0.5);
         heroPacketSprite.material.map = purpleGlowTex;
@@ -386,6 +402,7 @@ export function useSimulation3D({
         setLiveEventLog("PQC UPGRADE: Quantum-safe hybrid lattice key exchange established.");
       } else {
         // Phase 5: Hardened Mail Delivery into Vault (6.2s - 7.5s)
+        currentPhaseIdx = 4;
         const p = (cycleTime - 6.2) / 1.3;
         heroPos = egressCurve.getPoint(p);
         heroPacketSprite.material.map = emeraldGlowTex;
@@ -401,11 +418,29 @@ export function useSimulation3D({
         setLiveEventLog("VAULT INGEST: Encrypted mail payload delivered to Dovecot spool.");
       }
 
+      // Reset sparks and shockwave when outside phase 3
+      if (cycleTime < 3.8 || cycleTime >= 4.8) {
+        const sparkArr = gatewayStation.sparkGeom.attributes.position.array as Float32Array;
+        let needsReset = false;
+        for (let i = 0; i < 75 * 3; i++) {
+          if (sparkArr[i] !== 0) {
+            sparkArr[i] = 0;
+            needsReset = true;
+          }
+        }
+        if (needsReset) {
+          gatewayStation.sparkGeom.attributes.position.needsUpdate = true;
+        }
+        (gatewayStation.sparkPoints.material as THREE.PointsMaterial).opacity = 0;
+        (gatewayStation.shockwaveMesh.material as THREE.MeshBasicMaterial).opacity = 0;
+      }
+
       heroPacketSprite.position.copy(heroPos);
       heroPacketSprite.visible = heroVisible;
 
-      // Stage-specific scene aesthetics
-      if (currentStage === 0) {
+      // Stage-specific scene aesthetics — ensure every stage resets all altered properties
+      const activeStage = stageRef.current;
+      if (activeStage === 0) {
         (clientStation.mesh.material as THREE.MeshStandardMaterial).color.setHex(0xef4444);
         (gatewayStation.shieldMesh.material as THREE.MeshStandardMaterial).color.setHex(0x6b7280);
         (gatewayStation.glassMesh.material as THREE.MeshStandardMaterial).color.setHex(0xef4444);
@@ -413,20 +448,26 @@ export function useSimulation3D({
         (tapTube.material as THREE.MeshBasicMaterial).color.setHex(0xef4444);
         (egressTube.material as THREE.MeshBasicMaterial).color.setHex(0x232634);
         (adversaryStation.cage.material as THREE.MeshBasicMaterial).opacity = 0;
-      } else if (currentStage === 1) {
+      } else if (activeStage === 1) {
+        (clientStation.mesh.material as THREE.MeshStandardMaterial).color.setHex(0xcc9166);
         (gatewayStation.shieldMesh.material as THREE.MeshStandardMaterial).color.setHex(0xcc9166);
+        (gatewayStation.glassMesh.material as THREE.MeshStandardMaterial).color.setHex(0xcc9166);
         (ingressTube.material as THREE.MeshBasicMaterial).color.setHex(0xcc9166);
         (tapTube.material as THREE.MeshBasicMaterial).color.setHex(0xef4444);
         (egressTube.material as THREE.MeshBasicMaterial).color.setHex(0xcc9166);
         (adversaryStation.cage.material as THREE.MeshBasicMaterial).opacity = 0;
-      } else if (currentStage === 2) {
+      } else if (activeStage === 2) {
+        (clientStation.mesh.material as THREE.MeshStandardMaterial).color.setHex(0xef4444);
         (gatewayStation.shieldMesh.material as THREE.MeshStandardMaterial).color.setHex(0xef4444);
+        (gatewayStation.glassMesh.material as THREE.MeshStandardMaterial).color.setHex(0xef4444);
         (ingressTube.material as THREE.MeshBasicMaterial).color.setHex(0xef4444);
         (tapTube.material as THREE.MeshBasicMaterial).color.setHex(0xef4444);
         (egressTube.material as THREE.MeshBasicMaterial).color.setHex(0x181a24);
+        (adversaryStation.cage.material as THREE.MeshBasicMaterial).opacity = 0;
       } else {
         (clientStation.mesh.material as THREE.MeshStandardMaterial).color.setHex(0x34d399);
         (gatewayStation.shieldMesh.material as THREE.MeshStandardMaterial).color.setHex(0x34d399);
+        (gatewayStation.glassMesh.material as THREE.MeshStandardMaterial).color.setHex(0x34d399);
         (ingressTube.material as THREE.MeshBasicMaterial).color.setHex(0x38bdf8);
         (tapTube.material as THREE.MeshBasicMaterial).color.setHex(0x232634);
         (egressTube.material as THREE.MeshBasicMaterial).color.setHex(0x34d399);
@@ -435,7 +476,7 @@ export function useSimulation3D({
 
       // Animate ambient background stream
       for (const pkt of packets) {
-        pkt.progress += pkt.speed * (currentStage >= 3 ? 1.5 : 1.0);
+        pkt.progress += pkt.speed * (activeStage >= 3 ? 1.5 : 1.0);
         if (pkt.progress > 1.0) pkt.progress = 0.0;
         if (pkt.type === "INGRESS") {
           pkt.sprite.position.copy(ingressCurve.getPoint(pkt.progress));
@@ -457,7 +498,7 @@ export function useSimulation3D({
         x: heroScreen.x,
         y: heroScreen.y,
         visible: heroScreen.visible,
-        phase: Math.floor((cycleTime / CYCLE_DURATION) * 5),
+        phase: currentPhaseIdx,
         label: activeLabel,
         sublabel: activeSublabel,
         type: activeType,
@@ -489,6 +530,19 @@ export function useSimulation3D({
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
       domElement.removeEventListener("wheel", onWheel);
+      scene.traverse((object) => {
+        if ((object as THREE.Mesh).geometry) {
+          (object as THREE.Mesh).geometry.dispose();
+        }
+        if ((object as THREE.Mesh).material) {
+          const mat = (object as THREE.Mesh).material;
+          if (Array.isArray(mat)) {
+            mat.forEach((m) => m.dispose());
+          } else {
+            mat.dispose();
+          }
+        }
+      });
       renderer.dispose();
       cyanGlowTex.dispose();
       emeraldGlowTex.dispose();
@@ -497,7 +551,7 @@ export function useSimulation3D({
       purpleGlowTex.dispose();
       if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
     };
-  }, [containerRef, currentStage, enforceTls13, enforcePfs, enforceAead, renewCerts]);
+  }, [containerRef]);
 
   const setCameraTarget = useCallback((node: "OVERVIEW" | "CLIENT" | "ADVERSARY" | "GATEWAY" | "VAULT") => {
     setCameraTargetRef.current(node);

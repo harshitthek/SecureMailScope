@@ -34,7 +34,8 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
     } else if (activeCase.data.sessions[0]) {
       setSelectedStreamId(activeCase.data.sessions[0].session_id);
     }
-  }, [initialStreamId, activeCase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialStreamId, activeCase.id]);
 
   const session = activeCase.data.sessions.find((s) => s.session_id === selectedStreamId) || activeCase.data.sessions[0];
 
@@ -215,7 +216,7 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
                 <div className="space-y-1.5 text-[#acafb9]">
                   <div>• Key Exchange Group: <span className="font-medium text-white">{session.pqc_group_name || session.key_exchange || "Classical ECDHE"}</span></div>
                   <div>• Quantum Threat Vector: <span className="font-medium text-white">{session.pqc_hndl_risk === "NONE" ? "Resistant to Shor's Algorithm (Lattice/ML-KEM)" : session.pqc_hndl_risk === "CRITICAL" ? "Vulnerable to Harvest Now, Decrypt Later" : "Classical Ephemeral (Transitional Forward Secrecy)"}</span></div>
-                  <div>• Group Hex Identifier: <span className="font-medium text-[#cc9166]">{session.pqc_negotiated_group_hex || (session.tls_version === "TLS 1.3" ? "0x11EC (ML-KEM-768)" : "0x0017 (secp256r1)")}</span></div>
+                  <div>• Group Hex Identifier: <span className="font-medium text-[#cc9166]">{session.pqc_negotiated_group_hex || "N/A (Unconfirmed)"}</span></div>
                 </div>
               </div>
 
@@ -228,7 +229,7 @@ export function DissectorView({ activeCase, initialStreamId }: DissectorViewProp
                   MD5 signature generated from TLS Client Hello attributes.
                 </p>
                 <div className="p-2.5 rounded-full bg-[#040406] border border-[#2e3038] break-all font-medium text-[#cc9166] px-4 text-center">
-                  {session.ja3_hash || "e7d705a3286e19ea42f587b344ee6865"}
+                  {session.ja3_hash || "N/A (No TLS ClientHello)"}
                 </div>
                 {session.ja3_client_name && (
                   <div className="mt-2 text-xs font-medium text-[#34d399] text-center">

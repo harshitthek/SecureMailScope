@@ -42,14 +42,12 @@ class TlsAnalysis:
 
 # Named Groups / Curves (Classical vs Post-Quantum Hybrid)
 _NAMED_GROUPS: dict[int, tuple[str, bool]] = {
-    # Post-Quantum Hybrid & Pure Groups (NIST FIPS 203 / ML-KEM / Kyber)
+    # Post-Quantum Hybrid & Pure Groups (NIST FIPS 203 / ML-KEM / Kyber / RFC 10024)
     0x6399: ("X25519Kyber768Draft00", True),
     0x639A: ("SecP256r1Kyber768Draft00", True),
-    0x11EA: ("MLKEM512", True),
-    0x11EB: ("MLKEM768", True),
+    0x11EB: ("SecP256r1MLKEM768", True),
     0x11EC: ("X25519MLKEM768", True),
-    0x11ED: ("SecP256r1MLKEM768", True),
-    0x11EE: ("SecP384r1MLKEM1024", True),
+    0x11ED: ("SecP384r1MLKEM1024", True),
     # Classical Ephemeral Groups
     0x001D: ("x25519", False),
     0x0017: ("secp256r1", False),
@@ -65,7 +63,7 @@ _NAMED_GROUPS: dict[int, tuple[str, bool]] = {
 _DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "cipher_db.json")
 _CIPHER_DB: dict = {}
 if os.path.exists(_DB_PATH):
-    with open(_DB_PATH, "r") as _f:
+    with open(_DB_PATH, "r", encoding="utf-8") as _f:
         _CIPHER_DB = json.load(_f)
 
 
@@ -347,7 +345,9 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
         pfs = cipher_entry.get("pfs", False)
 
         # Determine key exchange from cipher name and version
-        if "ECDHE" in sel_name or negotiated_version == "TLS 1.3" or pfs:
+        if sh_key_share_group in (0x0100, 0x0101, 0x0102):
+            kx = "DHE"
+        elif "ECDHE" in sel_name or negotiated_version == "TLS 1.3" or pfs:
             kx = "ECDHE"
         elif "DHE" in sel_name:
             kx = "DHE"
@@ -377,12 +377,12 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                 pqc_status = "CLASSICAL_TRANSITIONAL"
                 pqc_hndl_risk = "MODERATE"
         else:
-            # Fallback based on client curves, key shares, and key exchange
-            has_client_pqc = any(c in _NAMED_GROUPS and _NAMED_GROUPS[c][1] for c in (ja3_curves + ch_key_share_groups))
-            if negotiated_version == "TLS 1.3" and has_client_pqc:
-                pqc_status = "PQC_RESISTANT"
-                pqc_group_name = "X25519MLKEM768 (Hybrid Post-Quantum)"
-                pqc_hndl_risk = "NONE"
+            # Fallback based on client curves, key shares, and key exchange.
+            # Client-offered groups alone never establish PQC resistance without ServerHello selection confirmation.
+            if negotiated_version == "TLS 1.3":
+                pqc_status = "UNKNOWN"
+                pqc_group_name = "Unknown (Key Share Unconfirmed)"
+                pqc_hndl_risk = "MODERATE"
             elif kx in ("ECDHE", "DHE") or pfs:
                 pqc_status = "CLASSICAL_TRANSITIONAL"
                 pqc_group_name = "Classical ECDHE (x25519 / secp256r1)"

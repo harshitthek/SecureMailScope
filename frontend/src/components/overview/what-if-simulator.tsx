@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   Sliders, 
   Sparkles, 
@@ -33,6 +33,15 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
   const [enforceAead, setEnforceAead] = useState(false);
   const [renewCerts, setRenewCerts] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
   const [viewTab, setViewTab] = useState<"SIMULATION" | "CONFIG">("SIMULATION");
   const [simVisualTab, setSimVisualTab] = useState<"PIPELINE" | "TERMINAL" | "THREATS" | "LEDGER">("PIPELINE");
   const [pipelineMode, setPipelineMode] = useState<"3D" | "2D">("3D");
@@ -157,8 +166,9 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
       `# Case Reference: ${activeCase.id} | Target Posture: Grade A+ (NIST SP 800-52r2)`,
       "# ===========================================================================",
       "",
-      "# --- Postfix MTA Configuration (/etc/postfix/main.cf) ---",
-      "smtpd_tls_security_level = encrypt",
+      "# --- Postfix MTA Main Configuration (/etc/postfix/main.cf) ---",
+      "# Opportunistic TLS on public MX port 25 to receive peer mail without dropping connections",
+      "smtpd_tls_security_level = may",
       "smtp_tls_security_level = dane",
       "smtp_dns_support_level = dnssec",
     ];
@@ -172,15 +182,12 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
       lines.push("smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1");
     }
 
-    if (enforcePfs) {
+    if (enforcePfs || enforceAead) {
+      lines.push("smtpd_tls_mandatory_ciphers = high");
       lines.push("tls_high_cipherlist = ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM");
       lines.push("tls_preempt_cipherlist = yes");
       lines.push("smtpd_tls_eecdh_grade = ultra");
-    }
-
-    if (enforceAead) {
-      lines.push("smtpd_tls_ciphers = high");
-      lines.push("smtpd_tls_exclude_ciphers = aNULL, eNULL, EXPORT, DES, RC4, MD5, PSK, aECDH, 3DES, CBC");
+      lines.push("smtpd_tls_exclude_ciphers = aNULL, eNULL, EXPORT, DES, RC4, MD5, PSK, aECDH, 3DES");
     }
 
     if (renewCerts) {
@@ -188,6 +195,17 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
       lines.push("smtpd_tls_key_file = /etc/letsencrypt/live/mail.defense.gov.in/privkey.pem");
       lines.push("smtpd_tls_CAfile = /etc/ssl/certs/ca-certificates.crt");
     }
+
+    lines.push("");
+    lines.push("# --- Postfix Submission Listeners (/etc/postfix/master.cf) ---");
+    lines.push("# Enforce mandatory TLS encryption on non-MX submission ports (587 / 465)");
+    lines.push("submission inet n       -       y       -       -       smtpd");
+    lines.push("  -o smtpd_tls_security_level=encrypt");
+    lines.push("  -o smtpd_sasl_auth_enable=yes");
+    lines.push("smtps     inet  n       -       y       -       -       smtpd");
+    lines.push("  -o smtpd_tls_security_level=encrypt");
+    lines.push("  -o smtpd_tls_wrappermode=yes");
+    lines.push("  -o smtpd_sasl_auth_enable=yes");
 
     lines.push("");
     lines.push("# --- Dovecot IMAP/POP3 Configuration (/etc/dovecot/conf.d/10-ssl.conf) ---");
@@ -205,10 +223,20 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
     return lines.join("\n");
   }, [activeCase, enforceTls13, enforcePfs, enforceAead, renewCerts]);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(generatedConfig);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedConfig);
+      setCopied(true);
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = setTimeout(() => {
+        setCopied(false);
+        copyTimeoutRef.current = null;
+      }, 2000);
+    } catch {
+      setCopied(false);
+    }
   };
 
   const handleDownloadConfig = () => {
@@ -413,7 +441,7 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
                   </span>
                   <span className="text-xs font-mono text-[#cc9166] flex items-center gap-1 font-semibold">
                     <TrendingUp className="w-3.5 h-3.5" />
-                    <span>+{simulatedResults.delta} PTS</span>
+                    <span>{simulatedResults.delta > 0 ? `+${simulatedResults.delta}` : simulatedResults.delta} PTS</span>
                   </span>
                 </div>
 
@@ -600,7 +628,7 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
                 renewCerts={renewCerts}
                 onSetStage={setCurrentStage}
                 isPlaying={isPlaying}
-                onTogglePlay={() => setIsPlaying(!isPlaying)}
+                onTogglePlay={togglePlay}
               />
             ) : (
               <SimulationWirePipeline

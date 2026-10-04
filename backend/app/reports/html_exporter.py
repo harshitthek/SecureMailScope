@@ -82,7 +82,12 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
         v_remed = html.escape(str(v.get("remediation", "")))
         v_sev = v.get("severity", "medium")
         v_proto = html.escape(str(v.get("protocol", "TLS")))
-        v_flow = html.escape(str(v.get("affected_session_id", "GLOBAL")))
+        aff_sessions = v.get("affected_sessions")
+        if aff_sessions and isinstance(aff_sessions, list):
+            v_flow = ", ".join(f"#{sid}" for sid in aff_sessions)
+        else:
+            v_flow = str(v.get("affected_session_id", "GLOBAL"))
+        v_flow = html.escape(v_flow)
         
         mitre_html = ""
         if v.get("mitre_attack_id"):
@@ -118,13 +123,16 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
                 stls_status = '<span class="badge badge-critical">STRIPPED (MITM)</span>'
             elif s.get("starttls_accepted"):
                 stls_status = '<span class="badge badge-secure">ACCEPTED</span>'
+            elif s.get("starttls_detected"):
+                stls_status = '<span class="badge badge-secure">DETECTED</span>'
             elif s.get("is_cleartext_only"):
                 stls_status = '<span class="badge badge-fail">CLEARTEXT FALLBACK</span>'
             else:
                 stls_status = '<span class="badge badge-low">UNKNOWN</span>'
                 
-        tls_ver = html.escape(str(s.get("tls_version", "None (Cleartext)")))
-        cipher = html.escape(str(s.get("cipher_name", "None (Plaintext)")))
+        tls_ver = html.escape(str(s.get("tls_version") or ("None (Cleartext)" if not s.get("is_encrypted") else "Unknown")))
+        cipher_val = s.get("cipher_suite_name") or s.get("cipher_name") or ("None (Plaintext)" if not s.get("is_encrypted") else "Unknown")
+        cipher = html.escape(str(cipher_val))
         pfs = "YES (PFS)" if s.get("has_forward_secrecy") else '<span class="text-hazard">NO (STATIC)</span>'
         ja3_client = html.escape(str(s.get("client_fingerprint") or s.get("ja3_hash", "Unknown")))
         s_score = s.get("session_score", 0)
@@ -179,14 +187,18 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
 
     # Build Certificate Rows
     cert_rows = []
-    for cert in certs:
+    session_certs = [s.get("certificate") for s in sessions if s.get("certificate")]
+    cert_source = session_certs if session_certs else certs
+    for cert in cert_source:
         sub = html.escape(str(cert.get("subject_cn", "Unknown")))
         iss = html.escape(str(cert.get("issuer_cn", "Unknown")))
         exp = '<span class="badge badge-fail">EXPIRED</span>' if cert.get("is_expired") else '<span class="badge badge-pass">VALID</span>'
         self_s = '<span class="badge badge-fail">SELF-SIGNED</span>' if cert.get("is_self_signed") else '<span class="badge badge-pass">CA-SIGNED</span>'
         days = cert.get("days_remaining", 0)
-        key_info = f"{html.escape(str(cert.get('public_key_type', 'RSA')))} {cert.get('public_key_bits', 0)} bit"
-        sig_hash = html.escape(str(cert.get("signature_hash", "SHA-256")))
+        pk_type = cert.get("public_key_type", "Unknown")
+        pk_bits = cert.get("public_key_bits", 0)
+        key_info = f"{html.escape(str(pk_type))} {pk_bits} bit" if pk_bits else html.escape(str(pk_type))
+        sig_hash = html.escape(str(cert.get("signature_hash", "Unknown")))
         
         cert_rows.append(f"""
         <tr>

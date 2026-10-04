@@ -19,7 +19,8 @@ export function ReportView({ activeCase }: ReportViewProps) {
   const isFail = activeCase.posture_grade === "F" || activeCase.posture_score < 50;
 
   const handleDownload = (format: "pdf" | "json" | "html") => {
-    const url = getReportUrl(activeCase.data.analysis_id, format);
+    const analysisId = activeCase.data.analysis_id || activeCase.case_code || activeCase.id;
+    const url = getReportUrl(analysisId, format);
     window.open(url, "_blank");
   };
 
@@ -98,7 +99,11 @@ export function ReportView({ activeCase }: ReportViewProps) {
           <div className="p-3 rounded-[8px] bg-[#08080a] border border-[#1c1d22]">
             <span className="text-[10px] text-[#9194a1] uppercase block font-medium">Assessment Date</span>
             <span className="font-semibold text-white block mt-0.5">
-              {new Date(activeCase.data.analyzed_at).toLocaleDateString()}
+              {(() => {
+                if (!activeCase.data.analyzed_at) return "N/A";
+                const d = new Date(activeCase.data.analyzed_at);
+                return !isNaN(d.getTime()) ? d.toLocaleDateString() : "N/A";
+              })()}
             </span>
           </div>
           <div className="p-3 rounded-[8px] bg-[#08080a] border border-[#1c1d22]">

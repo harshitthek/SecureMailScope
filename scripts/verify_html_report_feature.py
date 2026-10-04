@@ -4,7 +4,11 @@ import time
 import urllib.request
 from playwright.sync_api import sync_playwright
 
-ARTIFACT_DIR = r"C:\Users\user\.gemini\antigravity\brain\3b2907a4-36d5-4db1-a876-bbe86a182082"
+ARTIFACT_DIR = os.environ.get(
+    "ARTIFACT_DIR",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "artifacts"))
+)
+os.makedirs(ARTIFACT_DIR, exist_ok=True)
 BASE_URL = "http://localhost:3000"
 
 def test_html_feature():

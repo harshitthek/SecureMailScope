@@ -19,12 +19,17 @@ interface CertificatesViewProps {
 
 export function CertificatesView({ activeCase }: CertificatesViewProps) {
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const analysisId = activeCase.data.analysis_id || activeCase.case_code || activeCase.id;
 
-  const handleCopyPem = (sessionId: number, pemText?: string) => {
+  const handleCopyPem = async (sessionId: number, pemText?: string) => {
     if (!pemText) return;
-    navigator.clipboard.writeText(pemText);
-    setCopiedId(sessionId);
-    setTimeout(() => setCopiedId(null), 2000);
+    try {
+      await navigator.clipboard.writeText(pemText);
+      setCopiedId(sessionId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      setCopiedId(null);
+    }
   };
 
   const handleDownloadPem = (sessionId: number, pemText?: string) => {
@@ -33,13 +38,13 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `cert_${activeCase.id}_flow_${sessionId}.pem`;
+      a.download = `cert_${analysisId}_flow_${sessionId}.pem`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } else {
-      window.open(getCertificateUrl(activeCase.id, sessionId, "pem"), "_blank");
+      window.open(getCertificateUrl(analysisId, sessionId, "pem"), "_blank");
     }
   };
 
@@ -51,7 +56,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `cert_${activeCase.id}_flow_${sessionId}.der`;
+        a.download = `cert_${analysisId}_flow_${sessionId}.der`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -61,7 +66,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
         // Fallback to backend route
       }
     }
-    window.open(getCertificateUrl(activeCase.id, sessionId, "der"), "_blank");
+    window.open(getCertificateUrl(analysisId, sessionId, "der"), "_blank");
   };
 
   const sessionsWithCerts = activeCase.data.sessions.filter((s) => s.certificate !== null);
@@ -186,7 +191,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                         </span>
                       </div>
                       <span className="text-xs font-mono text-[#9194a1]">
-                        Serial: {cert.serial_number || "0x4F8A92BC10"}
+                        Serial: {cert.serial_number || "N/A"}
                       </span>
                     </div>
                   </div>
@@ -206,8 +211,8 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                     </span>
 
                     <a
-                      href={getCertificateUrl(activeCase.id, s.session_id, "pem")}
-                      download={`cert_${activeCase.id}_flow_${s.session_id}.pem`}
+                      href={getCertificateUrl(analysisId, s.session_id, "pem")}
+                      download={`cert_${analysisId}_flow_${s.session_id}.pem`}
                       onClick={(e) => {
                         if (cert.pem_data) {
                           e.preventDefault();
@@ -222,8 +227,8 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                     </a>
 
                     <a
-                      href={getCertificateUrl(activeCase.id, s.session_id, "der")}
-                      download={`cert_${activeCase.id}_flow_${s.session_id}.der`}
+                      href={getCertificateUrl(analysisId, s.session_id, "der")}
+                      download={`cert_${analysisId}_flow_${s.session_id}.der`}
                       onClick={(e) => {
                         if (cert.raw_der_hex) {
                           e.preventDefault();
@@ -258,7 +263,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                       Issuer Authority
                     </span>
                     <span className="font-semibold text-white truncate block" title={cert.issuer_cn ?? undefined}>
-                      {cert.issuer_cn || "DigiCert Global Root G2"}
+                      {cert.issuer_cn || "Unknown Issuer Authority"}
                     </span>
                   </div>
 
@@ -276,7 +281,7 @@ export function CertificatesView({ activeCase }: CertificatesViewProps) {
                       Signature Algorithm
                     </span>
                     <span className="font-semibold text-white block">
-                      {cert.signature_algorithm || "SHA256withRSA"}
+                      {cert.signature_algorithm || "Unknown Signature Algorithm"}
                     </span>
                   </div>
 

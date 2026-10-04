@@ -4,7 +4,11 @@ import time
 import urllib.request
 from playwright.sync_api import sync_playwright
 
-ARTIFACT_DIR = r"C:\Users\user\.gemini\antigravity\brain\3b2907a4-36d5-4db1-a876-bbe86a182082"
+ARTIFACT_DIR = os.environ.get(
+    "ARTIFACT_DIR",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "artifacts"))
+)
+os.makedirs(ARTIFACT_DIR, exist_ok=True)
 BASE_URL = "http://localhost:3000"
 
 def test_elevation():
@@ -76,20 +80,20 @@ def test_elevation():
         
         # Click on Flow #03 badge in findings
         flow_badge = page.locator("button:has-text('Flow #03')").first
-        if flow_badge.is_visible():
-            flow_badge.click()
-            page.wait_for_timeout(600)
-            page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_findings_deep_link_drawer.png"), full_page=False)
-            assert page.locator("text=Open in Full Dissector").is_visible()
-            print("  [+] Successfully auto-expanded drawer for Flow #03 from Findings!")
+        assert flow_badge.is_visible(), "Expected Flow #03 button to be visible in findings table"
+        flow_badge.click()
+        page.wait_for_timeout(600)
+        page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_findings_deep_link_drawer.png"), full_page=False)
+        assert page.locator("text=Open in Full Dissector").is_visible()
+        print("  [+] Successfully auto-expanded drawer for Flow #03 from Findings!")
 
-            # Test Open in Full Dissector button inside drawer
-            print("[*] Testing Open in Full Dissector button...")
-            page.locator("button:has-text('Open in Full Dissector')").click()
-            page.wait_for_timeout(600)
-            page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_dissector_deep_linked_stream.png"), full_page=False)
-            assert "DISSECTOR" in page.url or page.locator("text=Deep Packet Protocol Dissector").is_visible()
-            print("  [+] Successfully transitioned to Dissector with target stream preserved!")
+        # Test Open in Full Dissector button inside drawer
+        print("[*] Testing Open in Full Dissector button...")
+        page.locator("button:has-text('Open in Full Dissector')").click()
+        page.wait_for_timeout(600)
+        page.screenshot(path=os.path.join(ARTIFACT_DIR, "test_dissector_deep_linked_stream.png"), full_page=False)
+        assert "DISSECTOR" in page.url or page.locator("text=Deep Packet Protocol Dissector").is_visible()
+        print("  [+] Successfully transitioned to Dissector with target stream preserved!")
 
         # Test Sample Attack Ingestion in UploadModal
         print("[*] Testing UploadModal One-Click Sample Ingestion...")

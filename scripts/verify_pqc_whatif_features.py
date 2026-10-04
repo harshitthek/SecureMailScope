@@ -5,7 +5,11 @@ import urllib.request
 import json
 from playwright.sync_api import sync_playwright
 
-ARTIFACT_DIR = r"C:\Users\user\.gemini\antigravity\brain\3b2907a4-36d5-4db1-a876-bbe86a182082"
+ARTIFACT_DIR = os.environ.get(
+    "ARTIFACT_DIR",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "artifacts"))
+)
+os.makedirs(ARTIFACT_DIR, exist_ok=True)
 BASE_URL = "http://localhost:3000"
 
 def test_pqc_and_whatif():
@@ -62,7 +66,7 @@ def test_pqc_and_whatif():
 
         # 1. Overview Tab & What-If Simulator
         print("[*] Testing What-If Simulator in Overview...")
-        what_if_header = page.locator("text=Real-Time Posture Elevation Simulator").first
+        what_if_header = page.locator("text=Real-Time Posture Elevation").first
         assert what_if_header.is_visible(), "What-If Simulator not visible on Overview"
         
         # Scroll to What-If simulator

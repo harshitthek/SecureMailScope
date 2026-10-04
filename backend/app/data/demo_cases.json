@@ -55,7 +55,9 @@
           "san_entries": [
             "smtp-in.defense.gov.in",
             "mail.defense.gov.in"
-          ]
+          ],
+          "pem_data": "-----BEGIN CERTIFICATE-----\nMIIBvzCCAUWgAwIBAgIGICYJobLDMAoGCCqGSM49BAMDMDMxMTAvBgNVBAMMKE5h\ndGlvbmFsIFB1YmxpYyBLZXkgSW5mcmFzdHJ1Y3R1cmUgQ0EgRzMwHhcNMjYwMTAx\nMDAwMDAwWhcNMjcwMTAxMDAwMDAwWjAhMR8wHQYDVQQDDBZzbXRwLWluLmRlZmVu\nc2UuZ292LmluMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAElQ+KpmJZ7YHh6/jZoQ2x\nzeXCTYBe9G3QADpapoMHP1pvPm5EVg3svfcVhO+ni5Io17LBgRI5EC3oMREiADsI\nD2ojykvVahN5tVSmGDVZtHLVin/MzzS71nGzfQomddTLozowODA2BgNVHREELzAt\nghZzbXRwLWluLmRlZmVuc2UuZ292LmlughNtYWlsLmRlZmVuc2UuZ292LmluMAoG\nCCqGSM49BAMDA2gAMGUCMBcXO+dn939JZVBIaBJ2hWQwdxWx/T2pclCVy4RZp0eb\nOE/vMB+lnbdqX4T//gbdrgIxAMTP5T2Iy8HjWXruX4XyG+dVCFRlu0wVUOC0yR6a\n3kknt8wXIBRboOdI3lruJEVcFg==\n-----END CERTIFICATE-----\n",
+          "raw_der_hex": "308201bf30820145a0030201020206202609a1b2c3300a06082a8648ce3d04030330333131302f06035504030c284e6174696f6e616c205075626c6963204b657920496e667261737472756374757265204341204733301e170d3236303130313030303030305a170d3237303130313030303030305a3021311f301d06035504030c16736d74702d696e2e646566656e73652e676f762e696e3076301006072a8648ce3d020106052b8104002203620004950f8aa66259ed81e1ebf8d9a10db1cde5c24d805ef46dd0003a5aa683073f5a6f3e6e44560decbdf71584efa78b9228d7b2c1811239102de8311122003b080f6a23ca4bd56a1379b554a6183559b472d58a7fcccf34bbd671b37d0a2675d4cba33a303830360603551d11042f302d8216736d74702d696e2e646566656e73652e676f762e696e82136d61696c2e646566656e73652e676f762e696e300a06082a8648ce3d0403030368003065023017173be767f77f496550486812768564307715b1fd3da9725095cb8459a7479b384fef301fa59db76a5f84fffe06ddae023100c4cfe53d88cbc1e3597aee5f85f21be755085465bb4c1550e0b4c91e9ade4927b7cc1720145ba0e748de5aee24455c16"
         },
         "session_score": 100,
         "session_grade": "A+",
@@ -310,7 +312,7 @@
       {
         "id": "NIST-3.1",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.1",
+        "section": "\u00a73.1",
         "requirement": "TLS 1.2 or higher enforced",
         "status": "pass",
         "details": "All flows enforce TLS 1.3"
@@ -318,7 +320,7 @@
       {
         "id": "NIST-3.3.1",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.3.1",
+        "section": "\u00a73.3.1",
         "requirement": "Forward secrecy (ECDHE/DHE)",
         "status": "pass",
         "details": "ECDHE X25519 enforced"
@@ -326,7 +328,7 @@
       {
         "id": "NIST-3.3.2",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.3.2",
+        "section": "\u00a73.3.2",
         "requirement": "AEAD cipher modes required",
         "status": "pass",
         "details": "AES-256-GCM / Poly1305"
@@ -334,7 +336,7 @@
       {
         "id": "RFC-8314",
         "standard": "RFC 8314",
-        "section": "§3",
+        "section": "\u00a73",
         "requirement": "Implicit TLS preferred",
         "status": "pass",
         "details": "Direct SMTPS (465) & IMAPS (993)"
@@ -565,7 +567,7 @@
           "CVE-2014-3566",
           "CVE-2015-4000"
         ],
-        "nist_reference": "NIST SP 800-52r2 §3.1",
+        "nist_reference": "NIST SP 800-52r2 \u00a73.1",
         "remediation": "Deploy MTA-STS (RFC 8461) and enforce TLS-required policy on submission port 587."
       },
       {
@@ -577,7 +579,7 @@
           1
         ],
         "cve_references": [],
-        "nist_reference": "NIST SP 800-52r2 §3.1",
+        "nist_reference": "NIST SP 800-52r2 \u00a73.1",
         "remediation": "Terminate cleartext authentication handlers and enforce strict SMTPS (Port 465)."
       }
     ],
@@ -585,7 +587,7 @@
       {
         "id": "NIST-3.1",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.1",
+        "section": "\u00a73.1",
         "requirement": "TLS 1.2 or higher enforced",
         "status": "fail",
         "details": "Cleartext transmission on submission port 587"
@@ -593,7 +595,7 @@
       {
         "id": "RFC-8314",
         "standard": "RFC 8314",
-        "section": "§3",
+        "section": "\u00a73",
         "requirement": "Implicit TLS preferred",
         "status": "fail",
         "details": "Opportunistic STARTTLS tampered, cleartext fallback"
@@ -779,7 +781,7 @@
           "CVE-2016-2183",
           "CVE-2011-3389"
         ],
-        "nist_reference": "NIST SP 800-52r2 §3.2.1",
+        "nist_reference": "NIST SP 800-52r2 \u00a73.2.1",
         "remediation": "Deprecate TLS 1.0/1.1; enable TLS 1.2+ with AES-GCM suites."
       },
       {
@@ -793,7 +795,7 @@
         "cve_references": [
           "CVE-2017-13099"
         ],
-        "nist_reference": "NIST SP 800-52r2 §3.4",
+        "nist_reference": "NIST SP 800-52r2 \u00a73.4",
         "remediation": "Re-issue certificate under valid CA with minimum RSA 2048-bit or ECDSA P-256."
       }
     ],
@@ -801,7 +803,7 @@
       {
         "id": "NIST-3.1",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.1",
+        "section": "\u00a73.1",
         "requirement": "TLS 1.2 or higher enforced",
         "status": "fail",
         "details": "TLS 1.0 prohibited"
@@ -809,7 +811,7 @@
       {
         "id": "NIST-3.3.1",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.3.1",
+        "section": "\u00a73.3.1",
         "requirement": "Forward secrecy (ECDHE/DHE)",
         "status": "fail",
         "details": "Static RSA key exchange"
@@ -1474,7 +1476,7 @@
           3
         ],
         "cve_references": [],
-        "nist_reference": "NIST SP 800-52r2 §3.1",
+        "nist_reference": "NIST SP 800-52r2 \u00a73.1",
         "remediation": "Deploy MTA-STS (RFC 8461) and DANE/TLSA DNS records. Reject plaintext fallback on submission ports."
       },
       {
@@ -1486,7 +1488,7 @@
           2
         ],
         "cve_references": [],
-        "nist_reference": "NIST SP 800-52r2 §3.4",
+        "nist_reference": "NIST SP 800-52r2 \u00a73.4",
         "remediation": "Replace with CA-signed certificate using SHA-256 and minimum 2048-bit RSA key."
       },
       {
@@ -1501,7 +1503,7 @@
           "CVE-2016-2183",
           "CVE-2011-3389"
         ],
-        "nist_reference": "NIST SP 800-52r2 §3.2.1",
+        "nist_reference": "NIST SP 800-52r2 \u00a73.2.1",
         "remediation": "Upgrade to TLS 1.2+ with AES-GCM cipher suites. Disable TLS 1.0 and 3DES."
       },
       {
@@ -1515,7 +1517,7 @@
         "cve_references": [
           "CVE-2017-13099"
         ],
-        "nist_reference": "NIST SP 800-52r2 §3.3.1",
+        "nist_reference": "NIST SP 800-52r2 \u00a73.3.1",
         "remediation": "Configure server to prefer ECDHE key exchange. Disable static RSA cipher suites."
       }
     ],
@@ -1523,7 +1525,7 @@
       {
         "id": "NIST-3.1",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.1",
+        "section": "\u00a73.1",
         "requirement": "TLS 1.2 or higher enforced",
         "status": "fail",
         "details": "TLS 1.0 in session #2"
@@ -1531,7 +1533,7 @@
       {
         "id": "NIST-3.2.1",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.2.1",
+        "section": "\u00a73.2.1",
         "requirement": "No deprecated protocols",
         "status": "fail",
         "details": "TLS 1.0 detected"
@@ -1539,7 +1541,7 @@
       {
         "id": "NIST-3.3.1",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.3.1",
+        "section": "\u00a73.3.1",
         "requirement": "Forward secrecy (ECDHE/DHE)",
         "status": "fail",
         "details": "Static RSA in session #2"
@@ -1547,7 +1549,7 @@
       {
         "id": "NIST-3.3.2",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.3.2",
+        "section": "\u00a73.3.2",
         "requirement": "AEAD cipher modes required",
         "status": "fail",
         "details": "3DES-CBC in session #2"
@@ -1555,7 +1557,7 @@
       {
         "id": "NIST-3.4",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.4",
+        "section": "\u00a73.4",
         "requirement": "Valid CA-signed certificates",
         "status": "fail",
         "details": "Self-signed expired cert"
@@ -1563,15 +1565,15 @@
       {
         "id": "NIST-3.5",
         "standard": "NIST SP 800-52r2",
-        "section": "§3.5",
-        "requirement": "RSA keys ≥ 2048 bits",
+        "section": "\u00a73.5",
+        "requirement": "RSA keys \u2265 2048 bits",
         "status": "fail",
         "details": "1024-bit key in session #2"
       },
       {
         "id": "RFC-8314",
         "standard": "RFC 8314",
-        "section": "§3",
+        "section": "\u00a73",
         "requirement": "Implicit TLS preferred",
         "status": "pass",
         "details": "SMTPS and IMAPS detected"

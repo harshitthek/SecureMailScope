@@ -29,9 +29,15 @@ export function CaseContextStrip({ activeCase }: CaseContextStripProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const shortHash = CASE_HASHES[activeCase.case_code] || "7f8a9e4b...d5b4";
-  const dateObj = new Date(activeCase.data.analyzed_at);
-  const formattedTime = `${dateObj.toISOString().slice(0, 10)} ${dateObj.toISOString().slice(11, 19)} UTC`;
+  const shortHash = CASE_HASHES[activeCase.case_code] || "N/A";
+  let formattedTime = "N/A";
+  if (activeCase.data.analyzed_at) {
+    const dateObj = new Date(activeCase.data.analyzed_at);
+    if (!isNaN(dateObj.getTime())) {
+      const iso = dateObj.toISOString();
+      formattedTime = `${iso.slice(0, 10)} ${iso.slice(11, 19)} UTC`;
+    }
+  }
 
   return (
     <div className="w-full max-w-[1216px] mx-auto px-6 py-2.5 relative z-30">

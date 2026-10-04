@@ -3,7 +3,11 @@ import sys
 import time
 from playwright.sync_api import sync_playwright
 
-ARTIFACT_DIR = r"C:\Users\user\.gemini\antigravity\brain\3b2907a4-36d5-4db1-a876-bbe86a182082"
+ARTIFACT_DIR = os.environ.get(
+    "ARTIFACT_DIR",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "artifacts"))
+)
+os.makedirs(ARTIFACT_DIR, exist_ok=True)
 BASE_URL = "http://localhost:3000"
 
 def run_verification():
@@ -39,6 +43,7 @@ def run_verification():
         # Verify html does NOT have dark class
         has_dark = page.evaluate("() => document.documentElement.classList.contains('dark')")
         print(f"[*] html has dark class after toggle: {has_dark} (expected: False)")
+        assert not has_dark, "Expected html to not contain 'dark' class in light theme"
 
         # Capture Tab 1: Overview in Light Theme
         print("[*] Capturing Overview in Light Theme...")
@@ -120,6 +125,7 @@ def run_verification():
         page.wait_for_timeout(500)
         has_dark_after = page.evaluate("() => document.documentElement.classList.contains('dark')")
         print(f"[*] html has dark class after toggle back: {has_dark_after} (expected: True)")
+        assert has_dark_after, "Expected html to contain 'dark' class after restoring dark theme"
         page.screenshot(path=os.path.join(ARTIFACT_DIR, "dark_tab_report_restored.png"), full_page=False)
 
         browser.close()

@@ -56,7 +56,7 @@ def score_session(tls_version: str | None, cipher_category: str | None, cipher_i
             v_cipher = 30
         elif cipher_category == 'CBC':
             v_cipher = 15
-        elif cipher_category in ['AEAD', 'TLS13']:
+        elif cipher_is_aead or cipher_category in ['AEAD', 'TLS13']:
             v_cipher = 0
 
         # V_pfs — tls_analyzer outputs 'RSA', 'ECDHE', or 'DHE'
@@ -107,20 +107,7 @@ def score_enterprise(session_scores: list[int]) -> tuple[int, str]:
     if not session_scores:
         return 0, 'F'
         
-    avg_score = sum(session_scores) // len(session_scores)
+    avg_score = round(sum(session_scores) / len(session_scores))
     avg_score = max(0, min(100, avg_score))
-
-    if avg_score >= 90:
-        grade = 'A+'
-    elif avg_score >= 80:
-        grade = 'A'
-    elif avg_score >= 70:
-        grade = 'B'
-    elif avg_score >= 60:
-        grade = 'C'
-    elif avg_score >= 50:
-        grade = 'D'
-    else:
-        grade = 'F'
-
+    grade, _ = calculate_grade_and_severity(avg_score)
     return avg_score, grade

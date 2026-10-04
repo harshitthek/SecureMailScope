@@ -41,7 +41,8 @@ export function FlowsView({ activeCase, initialFlowId, onInspectFlowInDissector 
         setSelectedSession(match);
       }
     }
-  }, [initialFlowId, activeCase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFlowId, activeCase.id]);
 
   const filteredSessions = useMemo(() => {
     return activeCase.data.sessions.filter((s) => {
@@ -301,6 +302,10 @@ export function FlowsView({ activeCase, initialFlowId, onInspectFlowInDissector 
                       ) : s.pqc_status === "UNENCRYPTED_EXPOSED" ? (
                         <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#f87171]/15 text-[#f87171] border border-[#f87171]/30 font-medium">
                           CLEARTEXT
+                        </span>
+                      ) : s.pqc_status === "UNKNOWN" ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#9194a1]/15 text-[#9194a1] border border-[#9194a1]/30 font-medium">
+                          UNKNOWN
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#eab308]/15 text-[#facc15] border border-[#eab308]/30 font-medium">

@@ -211,7 +211,7 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
                   <Layers className="w-3.5 h-3.5 text-[#777a88]" />
                   <span>Affected Flows:</span>
                 </div>
-                {vuln.affected_sessions.map((sid) => (
+                {(vuln.affected_sessions || []).map((sid) => (
                   <button
                     key={sid}
                     type="button"
@@ -241,9 +241,9 @@ export function FindingsView({ activeCase, onNavigateToFlow }: FindingsViewProps
                   </span>
                 )}
 
-                {vuln.cve_references && vuln.cve_references.map((cve) => (
+                {vuln.cve_references && vuln.cve_references.map((cve, idx) => (
                   <span
-                    key={cve}
+                    key={`${cve}-${idx}`}
                     className="px-3 py-0.5 rounded-full bg-[#f87171]/10 text-[#f87171] border border-[#f87171]/30 font-medium"
                   >
                     {cve}

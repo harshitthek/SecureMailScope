@@ -90,16 +90,10 @@ if os.path.exists(_demo_cases_path):
                 if "pqc_status" not in session:
                     tls_ver = session.get("tls_version")
                     if tls_ver == "TLS 1.3":
-                        if cid == "CASE-01":
-                            session["pqc_status"] = "PQC_RESISTANT"
-                            session["pqc_group_name"] = "X25519MLKEM768 (NIST FIPS 203 Hybrid)"
-                            session["pqc_hndl_risk"] = "NONE"
-                            session["pqc_negotiated_group_hex"] = "0x11EC"
-                        else:
-                            session["pqc_status"] = "CLASSICAL_TRANSITIONAL"
-                            session["pqc_group_name"] = "x25519 (Classical Ephemeral)"
-                            session["pqc_hndl_risk"] = "MODERATE"
-                            session["pqc_negotiated_group_hex"] = "0x001D"
+                        session["pqc_status"] = "CLASSICAL_TRANSITIONAL"
+                        session["pqc_group_name"] = "x25519 (Classical Ephemeral)"
+                        session["pqc_hndl_risk"] = "MODERATE"
+                        session["pqc_negotiated_group_hex"] = "0x001D"
                     elif session.get("is_encrypted"):
                         if session.get("has_forward_secrecy"):
                             session["pqc_status"] = "CLASSICAL_TRANSITIONAL"
@@ -117,15 +111,16 @@ if os.path.exists(_demo_cases_path):
                         session["pqc_hndl_risk"] = "CRITICAL"
                         session["pqc_negotiated_group_hex"] = None
 
-                # Certificate PEM & DER enrichment
+                # Certificate synthetic placeholder (kept separate from captured evidence)
                 cert = session.get("certificate")
                 if cert and (not cert.get("pem_data") or not cert.get("raw_der_hex") or len(cert.get("raw_der_hex", "")) < 50):
                     cn = cert.get("subject_cn", "mail.defense.gov.in")
                     serial = cert.get("serial_number", "1001")
                     pem_str, der_hex = _generate_synthetic_cert(cn, serial)
                     if pem_str and der_hex:
-                        cert["pem_data"] = pem_str
-                        cert["raw_der_hex"] = der_hex
+                        cert["synthetic_pem"] = pem_str
+                        cert["synthetic_der_hex"] = der_hex
+                        cert["is_synthetic"] = True
 
             # Vulnerability MITRE enrichment
             for v in case_dict.get("vulnerabilities", []):
@@ -152,8 +147,8 @@ if os.path.exists(_demo_cases_path):
                         v["mitre_attack_technique"] = "Weaken Encryption: Weak Cryptographic Algorithms"
                         v["mitre_d3fend_id"] = "D3-CSM"
                     elif "static rsa" in title or "forward secrecy" in title:
-                        v["mitre_attack_id"] = "T1557.002"
-                        v["mitre_attack_technique"] = "Cryptanalysis: Passive Interception & Retrospective Decryption"
+                        v["mitre_attack_id"] = "T1600.002"
+                        v["mitre_attack_technique"] = "Weaken Encryption: Weak Cryptographic Algorithms (Static RSA)"
                         v["mitre_d3fend_id"] = "D3-CSM"
                     elif "expired" in title or "self-signed" in title:
                         v["mitre_attack_id"] = "T1588.004"
@@ -456,7 +451,7 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
             "protocol": stream.protocol,
             "timestamp": stream.timestamp,
             "is_encrypted": not is_cleartext,
-            "starttls_detected": starttls.starttls_initiated,
+            "starttls_detected": bool(starttls.starttls_advertised or starttls.starttls_initiated),
             "starttls_stripped": starttls.starttls_stripped,
             "tls_version": tls_version,
             "cipher_suite_hex": tls.selected_cipher_hex if tls else None,
@@ -532,7 +527,7 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
             # Merge affected sessions
             for uv in unique_vulns:
                 if uv["title"] == v["title"]:
-                    uv["affected_sessions"].extend(v["affected_sessions"])
+                    uv["affected_sessions"] = sorted(list(set(uv["affected_sessions"] + v.get("affected_sessions", []))))
                     break
 
     # Sort vulns by severity
@@ -718,8 +713,8 @@ def _generate_vulns(
                 "affected_sessions": [session_id],
                 "cve_references": ["CVE-2017-13099"],
                 "nist_reference": "NIST SP 800-52r2 Section 3.3.1",
-                "mitre_attack_id": "T1557.002",
-                "mitre_attack_technique": "Cryptanalysis: Passive Interception & Retrospective Decryption",
+                "mitre_attack_id": "T1600.002",
+                "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms (Static RSA)",
                 "mitre_d3fend_id": "D3-CSM",
                 "remediation": "Configure server to prefer ECDHE key exchange. Disable static RSA cipher suites.",
             })
@@ -930,11 +925,17 @@ def _aggregate_cipher_distribution(sessions: list[dict]) -> list[dict]:
 
 
 def _aggregate_cert_summary(sessions: list[dict]) -> list[dict]:
-    """Aggregate certificate summaries."""
+    """Aggregate certificate summaries, deduplicating identical certificates."""
     summaries = []
+    seen_certs = set()
     for s in sessions:
         cert = s.get("certificate")
         if cert:
+            cert_key = (cert.get("subject_cn"), cert.get("serial_number"), cert.get("issuer_cn"))
+            if cert_key in seen_certs:
+                continue
+            seen_certs.add(cert_key)
+
             # Determine overall cert status
             if cert.get("is_weak_key") or cert.get("is_expired"):
                 overall = "critical"
@@ -945,12 +946,16 @@ def _aggregate_cert_summary(sessions: list[dict]) -> list[dict]:
 
             summaries.append({
                 "server_name": s.get("server_name", s["dst_ip"]),
-                "subject_cn": cert["subject_cn"],
-                "is_expired": cert["is_expired"],
-                "is_self_signed": cert["is_self_signed"],
-                "is_weak_signature": cert["is_weak_signature"],
-                "is_weak_key": cert["is_weak_key"],
-                "days_remaining": cert["days_remaining"],
+                "subject_cn": cert.get("subject_cn", "Unknown"),
+                "issuer_cn": cert.get("issuer_cn", "Unknown"),
+                "is_expired": cert.get("is_expired", False),
+                "is_self_signed": cert.get("is_self_signed", False),
+                "is_weak_signature": cert.get("is_weak_signature", False),
+                "is_weak_key": cert.get("is_weak_key", False),
+                "days_remaining": cert.get("days_remaining", 0),
+                "public_key_type": cert.get("public_key_type", "Unknown"),
+                "public_key_bits": cert.get("public_key_bits", 0),
+                "signature_hash": cert.get("signature_hash", "Unknown"),
                 "overall_status": overall,
             })
     return summaries
@@ -1083,7 +1088,11 @@ async def export_certificate_pem(analysis_id: str, session_id: int):
     if not target_session or not target_session.get("certificate"):
         raise HTTPException(status_code=404, detail="Certificate not found for this session")
 
-    pem_data = target_session["certificate"].get("pem_data")
+    cert = target_session["certificate"]
+    if cert.get("is_synthetic"):
+        raise HTTPException(status_code=404, detail="Synthetic placeholder certificate is not exportable as captured evidence")
+
+    pem_data = cert.get("pem_data")
     if not pem_data:
         raise HTTPException(status_code=404, detail="PEM serialization unavailable")
 
@@ -1113,6 +1122,9 @@ async def export_certificate_der(analysis_id: str, session_id: int):
         raise HTTPException(status_code=404, detail="Certificate not found for this session")
 
     cert = target_session["certificate"]
+    if cert.get("is_synthetic"):
+        raise HTTPException(status_code=404, detail="Synthetic placeholder certificate is not exportable as captured evidence")
+
     der_hex = cert.get("raw_der_hex")
     der_bytes = b""
     if der_hex:

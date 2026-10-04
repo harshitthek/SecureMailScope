@@ -8,6 +8,12 @@ interface EditorialQuoteBandProps {
 }
 
 export function EditorialQuoteBand({ activeCase }: EditorialQuoteBandProps) {
+  const totalComp = activeCase.data.compliance?.length || 0;
+  const passedComp = activeCase.data.compliance?.filter((c) => c.status === "pass").length || 0;
+  const conformanceRate = totalComp > 0 
+    ? Math.round((passedComp / totalComp) * 100) 
+    : (activeCase.data.enterprise_score ?? 100);
+
   return (
     <section className="w-full my-2 select-none font-sans">
       {/* 1. Large Didone Italic Pull Quote (Video Frame 00:12 Archetype) */}
@@ -45,7 +51,7 @@ export function EditorialQuoteBand({ activeCase }: EditorialQuoteBandProps) {
 
           <div>
             <span className="text-2xl sm:text-3xl lg:text-4xl font-serif font-normal text-[#cc9166] tracking-[0.01em] block">
-              100%
+              {conformanceRate}%
             </span>
             <span className="text-xs sm:text-[13px] text-[#9194a1] mt-1 block">
               Wire Baseline Conformance

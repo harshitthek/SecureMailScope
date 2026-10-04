@@ -69,8 +69,7 @@ export function FlowLedgerPreview({
               return (
                 <tr
                   key={s.session_id}
-                  onClick={() => onSelectFlow(s.session_id)}
-                  className={`cursor-pointer transition-colors ${
+                  className={`transition-colors ${
                     isSelected
                       ? "bg-[#121317]"
                       : "hover:bg-[#08080a]"

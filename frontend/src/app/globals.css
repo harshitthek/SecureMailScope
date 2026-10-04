@@ -650,19 +650,19 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
 }
 
 /* 10. Form Controls & Search Inputs */
-html:not(.dark) input,
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
 html:not(.dark) textarea {
   background-color: #ebe6dc !important;
   border-color: #bfb7a6 !important;
   color: #2b2721 !important;
 }
 
-html:not(.dark) input::placeholder,
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"])::placeholder,
 html:not(.dark) textarea::placeholder {
   color: #8a8274 !important;
 }
 
-html:not(.dark) input:focus,
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus,
 html:not(.dark) textarea:focus {
   border-color: #945323 !important;
   outline: none !important;

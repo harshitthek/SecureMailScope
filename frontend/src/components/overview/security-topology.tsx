@@ -127,10 +127,12 @@ export function SecurityTopology() {
           {PILLARS.map((p) => {
             const isSelected = activePillar === p.id;
             return (
-              <div
+              <button
+                type="button"
                 key={p.id}
                 onClick={() => setActivePillar(p.id)}
-                className={`p-4 rounded-[10px] border transition-all cursor-pointer ${
+                aria-pressed={isSelected}
+                className={`w-full text-left p-4 rounded-[10px] border transition-all cursor-pointer ${
                   isSelected
                     ? "bg-[#08080a] border-[#cc9166]/50"
                     : "bg-[#08080a]/50 border-[#1c1d22] hover:border-[#2e3038]"
@@ -148,7 +150,7 @@ export function SecurityTopology() {
                 <p className="text-xs text-[#9194a1] leading-relaxed mt-2 pl-3.5">
                   {p.desc}
                 </p>
-              </div>
+              </button>
             );
           })}
         </div>
