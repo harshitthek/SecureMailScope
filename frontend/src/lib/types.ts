@@ -54,6 +54,9 @@ export interface StreamForensicInspection {
 
 export interface AnalysisResult {
   analysis_id: string;
+  case_code?: string;
+  source?: string;
+  capture_label?: string;
   filename: string;
   file_size_bytes: number;
   analyzed_at: string;

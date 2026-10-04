@@ -37,4 +37,55 @@ export function getCertificateUrl(id: string, sessionId: number, format: "pem" |
   return `${API_BASE}/api/certificate/${id}/${sessionId}/${format}`;
 }
 
+export async function getTapStatus() {
+  const res = await fetch(`${API_BASE}/api/tap/status`);
+  if (!res.ok) throw new Error("Failed to fetch TAP status");
+  return res.json();
+}
+
+export async function startTapCapture(iface?: string) {
+  const res = await fetch(`${API_BASE}/api/tap/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ interface: iface }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to start TAP" }));
+    throw new Error(err.detail || "Failed to start TAP");
+  }
+  return res.json();
+}
+
+export async function stopTapCapture() {
+  const res = await fetch(`${API_BASE}/api/tap/stop`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to stop TAP");
+  return res.json();
+}
+
+export async function startTapReplay(pcapName: string = "02_striptls_mitm_attack.pcap", speedPps: number = 8.0) {
+  const res = await fetch(`${API_BASE}/api/tap/start-replay`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pcap_name: pcapName, speed_pps: speedPps }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to start replay" }));
+    throw new Error(err.detail || "Failed to start replay");
+  }
+  return res.json();
+}
+
+export async function snapshotTapBuffer(label: string = "Live Wire Capture") {
+  const res = await fetch(`${API_BASE}/api/tap/snapshot`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Snapshot failed" }));
+    throw new Error(err.detail || "Snapshot failed");
+  }
+  return res.json();
+}
+
 

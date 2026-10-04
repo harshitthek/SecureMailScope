@@ -28,6 +28,11 @@ class AppSettings:
         self.operator_api_key: str | None = os.getenv("OPERATOR_API_KEY")
         self.spool_max_history: int = int(os.getenv("SPOOL_MAX_HISTORY", "100"))
 
+        # Live TAP and real-time wire telemetry configuration
+        self.tap_bpf_filter: str = os.getenv("TAP_BPF_FILTER", "tcp and (port 25 or 587 or 465 or 993 or 110)")
+        self.tap_buffer_max_packets: int = int(os.getenv("TAP_BUFFER_MAX_PACKETS", "2000"))
+        self.test_pcaps_dir: Path = (PROJECT_ROOT / "backend" / "test_pcaps").resolve()
+
     def ensure_directories(self) -> None:
         """Ensure all required spool subdirectories exist with defensive permissions."""
         self.spool_incoming_dir.mkdir(parents=True, exist_ok=True)
