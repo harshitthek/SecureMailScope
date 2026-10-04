@@ -12,11 +12,13 @@ import {
   Download,
   Activity,
   ShieldAlert,
-  Table
+  Table,
+  Box
 } from "lucide-react";
 import { EvidenceCase, Grade } from "@/lib/types";
 import { SimulationPlaybackControls } from "./what-if/simulation-playback-controls";
 import { SimulationWirePipeline } from "./what-if/simulation-wire-pipeline";
+import { Simulation3DPipeline } from "./what-if/simulation-3d-pipeline";
 import { SimulationCrtTicker } from "./what-if/simulation-crt-ticker";
 import { SimulationThreatMatrix } from "./what-if/simulation-threat-matrix";
 import { SimulationStreamLedger } from "./what-if/simulation-stream-ledger";
@@ -33,6 +35,7 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
   const [copied, setCopied] = useState(false);
   const [viewTab, setViewTab] = useState<"SIMULATION" | "CONFIG">("SIMULATION");
   const [simVisualTab, setSimVisualTab] = useState<"PIPELINE" | "TERMINAL" | "THREATS" | "LEDGER">("PIPELINE");
+  const [pipelineMode, setPipelineMode] = useState<"3D" | "2D">("3D");
 
   // Live simulation playback states
   const [isPlaying, setIsPlaying] = useState(false);
@@ -550,21 +553,65 @@ export function WhatIfSimulator({ activeCase }: WhatIfSimulatorProps) {
               </button>
             </div>
 
-            <span className="text-[10px] text-[#777a88] hidden sm:inline">
-              STAGE: {currentStage} / 4 ACTIVE
-            </span>
+            <div className="flex items-center gap-3">
+              {simVisualTab === "PIPELINE" && (
+                <div className="flex items-center gap-1 bg-[#121317] p-0.5 rounded-full border border-[#2e3038] text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setPipelineMode("3D")}
+                    className={`px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+                      pipelineMode === "3D"
+                        ? "bg-[#34d399] text-black font-semibold"
+                        : "text-[#9194a1] hover:text-white"
+                    }`}
+                  >
+                    <Box className="w-2.5 h-2.5" />
+                    <span>3D HOLOGRAPHIC</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPipelineMode("2D")}
+                    className={`px-2 py-0.5 rounded-full transition-colors ${
+                      pipelineMode === "2D"
+                        ? "bg-white text-black font-semibold"
+                        : "text-[#9194a1] hover:text-white"
+                    }`}
+                  >
+                    <span>2D SCHEMATIC</span>
+                  </button>
+                </div>
+              )}
+
+              <span className="text-[10px] text-[#777a88] hidden sm:inline">
+                STAGE: {currentStage} / 4 ACTIVE
+              </span>
+            </div>
           </div>
 
           {/* Active Visual Subdeck Display */}
           {simVisualTab === "PIPELINE" && (
-            <SimulationWirePipeline
-              currentStage={currentStage}
-              activeCase={activeCase}
-              enforceTls13={enforceTls13}
-              enforcePfs={enforcePfs}
-              enforceAead={enforceAead}
-              renewCerts={renewCerts}
-            />
+            pipelineMode === "3D" ? (
+              <Simulation3DPipeline
+                currentStage={currentStage}
+                activeCase={activeCase}
+                enforceTls13={enforceTls13}
+                enforcePfs={enforcePfs}
+                enforceAead={enforceAead}
+                renewCerts={renewCerts}
+                onSetStage={setCurrentStage}
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying(!isPlaying)}
+              />
+            ) : (
+              <SimulationWirePipeline
+                currentStage={currentStage}
+                activeCase={activeCase}
+                enforceTls13={enforceTls13}
+                enforcePfs={enforcePfs}
+                enforceAead={enforceAead}
+                renewCerts={renewCerts}
+              />
+            )
           )}
 
           {simVisualTab === "TERMINAL" && (
