@@ -1091,6 +1091,13 @@ async def upload_pcap(file: UploadFile = File(...)):
         result["analysis_id"] = analysis_id
         _results[analysis_id] = result
 
+        try:
+            from app.siem.dispatcher import alert_dispatcher
+
+            await alert_dispatcher.dispatch_case_findings(result)
+        except Exception:
+            pass
+
         return {"analysis_id": analysis_id}
 
     except HTTPException:

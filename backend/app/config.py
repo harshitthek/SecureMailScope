@@ -33,6 +33,15 @@ class AppSettings:
         self.tap_buffer_max_packets: int = int(os.getenv("TAP_BUFFER_MAX_PACKETS", "2000"))
         self.test_pcaps_dir: Path = (PROJECT_ROOT / "backend" / "test_pcaps").resolve()
 
+        # SIEM Alerting (ArcSight CEF / RFC 5424 Syslog) and Webhook configuration
+        self.siem_enabled: bool = os.getenv("SIEM_ENABLED", "false").lower() in ("1", "true", "yes")
+        self.siem_syslog_host: str = os.getenv("SIEM_SYSLOG_HOST", "127.0.0.1")
+        self.siem_syslog_port: int = int(os.getenv("SIEM_SYSLOG_PORT", "514"))
+        self.siem_syslog_protocol: str = os.getenv("SIEM_SYSLOG_PROTOCOL", "udp").lower()
+        self.siem_syslog_facility: int = int(os.getenv("SIEM_SYSLOG_FACILITY", "16"))  # local0
+        self.siem_webhook_url: str | None = os.getenv("SIEM_WEBHOOK_URL")
+        self.siem_webhook_format: str = os.getenv("SIEM_WEBHOOK_FORMAT", "generic").lower()
+
     def ensure_directories(self) -> None:
         """Ensure all required spool subdirectories exist with defensive permissions."""
         self.spool_incoming_dir.mkdir(parents=True, exist_ok=True)

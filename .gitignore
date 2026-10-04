@@ -42,3 +42,10 @@ spool/incoming/*
 spool/processed/*
 spool/failed/*
 !spool/**/.gitkeep
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite3
