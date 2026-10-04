@@ -2,21 +2,25 @@
 PDF forensic report generator using ReportLab.
 Generates a multi-page professional report from analysis results.
 """
+
 import html
 import io
-import os
 from typing import Any
-from datetime import datetime
 
-from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import mm
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, HRFlowable, KeepTogether
-)
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.pdfgen import canvas
+from reportlab.platypus import (
+    HRFlowable,
+    KeepTogether,
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 # Colors
 C_NAVY = colors.HexColor("#0F172A")
@@ -47,25 +51,59 @@ def _make_styles():
     styles = getSampleStyleSheet()
 
     s = {
-        "title": ParagraphStyle("RPTitle", parent=styles["Normal"], fontName=f"{FONT}-Bold",
-                                fontSize=22, leading=28, textColor=C_BLUE, spaceAfter=6),
-        "h1": ParagraphStyle("RPH1", parent=styles["Normal"], fontName=f"{FONT}-Bold",
-                             fontSize=14, leading=18, textColor=C_BLUE, spaceBefore=12, spaceAfter=6),
-        "h2": ParagraphStyle("RPH2", parent=styles["Normal"], fontName=f"{FONT}-Bold",
-                             fontSize=11, leading=15, textColor=C_TEXT, spaceBefore=8, spaceAfter=4),
-        "body": ParagraphStyle("RPBody", parent=styles["Normal"], fontName=FONT,
-                               fontSize=9, leading=13, textColor=C_TEXT, spaceAfter=4),
-        "small": ParagraphStyle("RPSmall", parent=styles["Normal"], fontName=FONT,
-                                fontSize=8, leading=11, textColor=C_MUTED, spaceAfter=2),
-        "bullet": ParagraphStyle("RPBullet", parent=styles["Normal"], fontName=FONT,
-                                 fontSize=9, leading=13, textColor=C_TEXT,
-                                 leftIndent=12, firstLineIndent=-8, spaceAfter=3),
+        "title": ParagraphStyle(
+            "RPTitle",
+            parent=styles["Normal"],
+            fontName=f"{FONT}-Bold",
+            fontSize=22,
+            leading=28,
+            textColor=C_BLUE,
+            spaceAfter=6,
+        ),
+        "h1": ParagraphStyle(
+            "RPH1",
+            parent=styles["Normal"],
+            fontName=f"{FONT}-Bold",
+            fontSize=14,
+            leading=18,
+            textColor=C_BLUE,
+            spaceBefore=12,
+            spaceAfter=6,
+        ),
+        "h2": ParagraphStyle(
+            "RPH2",
+            parent=styles["Normal"],
+            fontName=f"{FONT}-Bold",
+            fontSize=11,
+            leading=15,
+            textColor=C_TEXT,
+            spaceBefore=8,
+            spaceAfter=4,
+        ),
+        "body": ParagraphStyle(
+            "RPBody", parent=styles["Normal"], fontName=FONT, fontSize=9, leading=13, textColor=C_TEXT, spaceAfter=4
+        ),
+        "small": ParagraphStyle(
+            "RPSmall", parent=styles["Normal"], fontName=FONT, fontSize=8, leading=11, textColor=C_MUTED, spaceAfter=2
+        ),
+        "bullet": ParagraphStyle(
+            "RPBullet",
+            parent=styles["Normal"],
+            fontName=FONT,
+            fontSize=9,
+            leading=13,
+            textColor=C_TEXT,
+            leftIndent=12,
+            firstLineIndent=-8,
+            spaceAfter=3,
+        ),
     }
     return s
 
 
 class _NumberedCanvas(canvas.Canvas):
     """Canvas subclass that adds page numbers and headers."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved = []
@@ -96,16 +134,15 @@ class _NumberedCanvas(canvas.Canvas):
 def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
     """
     Generate a multi-page PDF forensic report.
-    
+
     Args:
         analysis: Complete analysis result dict.
-    
+
     Returns:
         PDF file as bytes.
     """
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=30, rightMargin=30,
-                            topMargin=35, bottomMargin=35)
+    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=30, rightMargin=30, topMargin=35, bottomMargin=35)
     s = _make_styles()
     w = A4[0] - 60  # usable width
     story = []
@@ -118,7 +155,6 @@ def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
 
     grade = analysis.get("enterprise_grade", "F")
     score = analysis.get("enterprise_score", 0)
-    grade_color = C_GREEN if score >= 80 else (C_YELLOW if score >= 50 else C_RED)
 
     meta_data = [
         ["Source File:", analysis.get("filename", "N/A")],
@@ -131,15 +167,19 @@ def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
         ["Protocols Detected:", ", ".join(analysis.get("protocols_detected", []))],
     ]
     meta_table = Table(meta_data, colWidths=[120, w - 120])
-    meta_table.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (0, -1), f"{FONT}-Bold"),
-        ("FONTNAME", (1, 0), (1, -1), FONT),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("TEXTCOLOR", (0, 0), (0, -1), C_BLUE),
-        ("TEXTCOLOR", (1, 0), (1, -1), C_TEXT),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
+    meta_table.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), f"{FONT}-Bold"),
+                ("FONTNAME", (1, 0), (1, -1), FONT),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("TEXTCOLOR", (0, 0), (0, -1), C_BLUE),
+                ("TEXTCOLOR", (1, 0), (1, -1), C_TEXT),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
     story.append(meta_table)
     story.append(PageBreak())
 
@@ -147,22 +187,30 @@ def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
     story.append(Paragraph("1. Executive Summary", s["h1"]))
     story.append(HRFlowable(width="100%", thickness=0.5, color=C_BORDER, spaceAfter=8))
 
-    crit_count = len([v for v in analysis.get("vulnerabilities", []) if str(v.get("severity", "")).lower() == "critical"])
-    high_count = len([v for v in analysis.get("vulnerabilities", []) if str(v.get("severity", "")).lower() == "high"])
-    fail_count = len([c for c in analysis.get("compliance", []) if c.get("status") == "fail"])
+    crit_count = len(
+        [v for v in analysis.get("vulnerabilities", []) if str(v.get("severity", "")).lower() == "critical"]
+    )
+    len([v for v in analysis.get("vulnerabilities", []) if str(v.get("severity", "")).lower() == "high"])
+    len([c for c in analysis.get("compliance", []) if c.get("status") == "fail"])
 
     safe_filename = html.escape(str(analysis.get("filename", "N/A")))
-    story.append(Paragraph(
-        f"Analysis of <b>{safe_filename}</b> identified "
-        f"<b>{analysis.get('total_sessions', 0)}</b> email communication sessions across "
-        f"<b>{len(analysis.get('protocols_detected', []))}</b> protocol types. "
-        f"The overall cryptographic posture is rated <b>{grade}</b> ({score}/100).",
-        s["body"]))
+    story.append(
+        Paragraph(
+            f"Analysis of <b>{safe_filename}</b> identified "
+            f"<b>{analysis.get('total_sessions', 0)}</b> email communication sessions across "
+            f"<b>{len(analysis.get('protocols_detected', []))}</b> protocol types. "
+            f"The overall cryptographic posture is rated <b>{grade}</b> ({score}/100).",
+            s["body"],
+        )
+    )
 
     if crit_count > 0:
-        story.append(Paragraph(
-            f"<font color='red'><b>⚠ {crit_count} CRITICAL vulnerability(ies) detected requiring immediate remediation.</b></font>",
-            s["body"]))
+        story.append(
+            Paragraph(
+                f"<font color='red'><b>⚠ {crit_count} CRITICAL vulnerability(ies) detected requiring immediate remediation.</b></font>",
+                s["body"],
+            )
+        )
 
     story.append(Spacer(1, 8))
 
@@ -173,29 +221,35 @@ def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
     headers = ["#", "Server", "Protocol", "TLS", "Cipher", "PFS", "Score"]
     rows = [headers]
     for sess in analysis.get("sessions", []):
-        rows.append([
-            str(sess["session_id"]),
-            sess.get("server_name", "")[:25],
-            sess.get("protocol", ""),
-            sess.get("tls_version", "None")[:7] if sess.get("tls_version") else "Clear",
-            (sess.get("cipher_suite_name") or "None")[:20],
-            "Yes" if sess.get("has_forward_secrecy") else "No",
-            str(sess.get("session_score", 0)),
-        ])
+        rows.append(
+            [
+                str(sess["session_id"]),
+                sess.get("server_name", "")[:25],
+                sess.get("protocol", ""),
+                sess.get("tls_version", "None")[:7] if sess.get("tls_version") else "Clear",
+                (sess.get("cipher_suite_name") or "None")[:20],
+                "Yes" if sess.get("has_forward_secrecy") else "No",
+                str(sess.get("session_score", 0)),
+            ]
+        )
 
     col_widths = [25, 130, 55, 50, 140, 30, 40]
     t = Table(rows, colWidths=col_widths)
-    t.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, 0), f"{FONT}-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("BACKGROUND", (0, 0), (-1, 0), C_BLUE),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.5, C_BORDER),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, C_BG]),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-    ]))
+    t.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, 0), f"{FONT}-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("BACKGROUND", (0, 0), (-1, 0), C_BLUE),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.5, C_BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, C_BG]),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ]
+        )
+    )
     story.append(t)
     story.append(Spacer(1, 12))
 
@@ -214,12 +268,16 @@ def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
             v_title = html.escape(str(v.get("title", "")))
             v_desc = html.escape(str(v.get("description", "")))
             v_remed = html.escape(str(v.get("remediation", "")))
-            story.append(KeepTogether([
-                Paragraph(f"<font color='{sev_color.hexval()}'>[{sev}]</font> <b>{v_title}</b>", s["body"]),
-                Paragraph(v_desc, s["small"]),
-                Paragraph(f"<b>Remediation:</b> {v_remed}", s["small"]),
-                Spacer(1, 6),
-            ]))
+            story.append(
+                KeepTogether(
+                    [
+                        Paragraph(f"<font color='{sev_color.hexval()}'>[{sev}]</font> <b>{v_title}</b>", s["body"]),
+                        Paragraph(v_desc, s["small"]),
+                        Paragraph(f"<b>Remediation:</b> {v_remed}", s["small"]),
+                        Spacer(1, 6),
+                    ]
+                )
+            )
 
     story.append(Spacer(1, 8))
 
@@ -234,17 +292,21 @@ def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
         comp_rows.append([icon, c["standard"], c["section"], c["requirement"][:60]])
 
     ct = Table(comp_rows, colWidths=[55, 110, 60, w - 225])
-    ct.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, 0), f"{FONT}-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("BACKGROUND", (0, 0), (-1, 0), C_BLUE),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.5, C_BORDER),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, C_BG]),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-    ]))
+    ct.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, 0), f"{FONT}-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("BACKGROUND", (0, 0), (-1, 0), C_BLUE),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.5, C_BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, C_BG]),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ]
+        )
+    )
     story.append(ct)
 
     # Build PDF

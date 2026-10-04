@@ -36,3 +36,9 @@ Thumbs.db
 
 # Artifacts
 artifacts/
+
+# Spool captures
+spool/incoming/*
+spool/processed/*
+spool/failed/*
+!spool/**/.gitkeep

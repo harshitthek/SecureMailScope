@@ -2,6 +2,7 @@
 TLS Handshake Analyzer — Parses Client Hello, Server Hello, and Certificate
 messages from raw bytes to extract cryptographic metadata.
 """
+
 from __future__ import annotations
 
 import json
@@ -13,6 +14,7 @@ from dataclasses import dataclass, field
 @dataclass
 class TlsAnalysis:
     """Parsed TLS handshake metadata."""
+
     record_version: str
     negotiated_version: str
     client_cipher_suites: list[str]
@@ -145,25 +147,25 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
             content_type = payload[pos]
             if content_type != 0x16:  # Only parse Handshake records
                 # Try to find the next record
-                rec_len = struct.unpack("!H", payload[pos + 3:pos + 5])[0] if pos + 5 <= len(payload) else 0
+                rec_len = struct.unpack("!H", payload[pos + 3 : pos + 5])[0] if pos + 5 <= len(payload) else 0
                 pos = _find_tls_record(payload, pos + 5 + rec_len)
                 records_parsed += 1
                 continue
 
             v_maj, v_min = payload[pos + 1], payload[pos + 2]
-            rec_len = struct.unpack("!H", payload[pos + 3:pos + 5])[0]
+            rec_len = struct.unpack("!H", payload[pos + 3 : pos + 5])[0]
 
             if records_parsed == 0:
                 record_version = _ver_str(v_maj, v_min)
 
-            rec_data = payload[pos + 5:pos + 5 + rec_len]
+            rec_data = payload[pos + 5 : pos + 5 + rec_len]
             if len(rec_data) < 4:
                 break
 
             # Parse handshake message header
             hs_type = rec_data[0]
-            hs_len = struct.unpack("!I", b'\x00' + rec_data[1:4])[0]
-            hs_body = rec_data[4:4 + hs_len]
+            hs_len = struct.unpack("!I", b"\x00" + rec_data[1:4])[0]
+            hs_body = rec_data[4 : 4 + hs_len]
 
             if hs_type == 0x01 and not client_hello_parsed:
                 # === CLIENT HELLO ===
@@ -182,11 +184,11 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                 # Cipher suites
                 if idx + 2 > len(hs_body):
                     break
-                cs_len = struct.unpack("!H", hs_body[idx:idx + 2])[0]
+                cs_len = struct.unpack("!H", hs_body[idx : idx + 2])[0]
                 idx += 2
                 cs_end = idx + cs_len
                 while idx + 1 < cs_end and idx + 1 < len(hs_body):
-                    c = struct.unpack("!H", hs_body[idx:idx + 2])[0]
+                    c = struct.unpack("!H", hs_body[idx : idx + 2])[0]
                     ja3_ciphers.append(c)
                     client_ciphers_hex.append(_cipher_hex(c))
                     idx += 2
@@ -198,22 +200,22 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                 idx += 1 + comp_len
                 # Extensions
                 if idx + 2 <= len(hs_body):
-                    ext_total_len = struct.unpack("!H", hs_body[idx:idx + 2])[0]
+                    ext_total_len = struct.unpack("!H", hs_body[idx : idx + 2])[0]
                     idx += 2
                     ext_end = idx + ext_total_len
                     while idx + 4 <= ext_end and idx + 4 <= len(hs_body):
-                        ext_type = struct.unpack("!H", hs_body[idx:idx + 2])[0]
-                        ext_len = struct.unpack("!H", hs_body[idx + 2:idx + 4])[0]
-                        ext_data = hs_body[idx + 4:idx + 4 + ext_len]
+                        ext_type = struct.unpack("!H", hs_body[idx : idx + 2])[0]
+                        ext_len = struct.unpack("!H", hs_body[idx + 2 : idx + 4])[0]
+                        ext_data = hs_body[idx + 4 : idx + 4 + ext_len]
                         ja3_extensions.append(ext_type)
 
                         if ext_type == 0x0000 and len(ext_data) >= 5:
                             # SNI extension
-                            sni_list_len = struct.unpack("!H", ext_data[0:2])[0]
+                            struct.unpack("!H", ext_data[0:2])[0]
                             sni_type = ext_data[2]
                             sni_name_len = struct.unpack("!H", ext_data[3:5])[0]
                             if sni_type == 0 and 5 + sni_name_len <= len(ext_data):
-                                sni = ext_data[5:5 + sni_name_len].decode("ascii", errors="replace")
+                                sni = ext_data[5 : 5 + sni_name_len].decode("ascii", errors="replace")
 
                         elif ext_type == 0x0010 and len(ext_data) >= 2:
                             # ALPN (Application-Layer Protocol Negotiation)
@@ -223,7 +225,7 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                                 p_len = ext_data[ai]
                                 ai += 1
                                 if ai + p_len <= len(ext_data):
-                                    proto_str = ext_data[ai:ai + p_len].decode("ascii", errors="replace")
+                                    proto_str = ext_data[ai : ai + p_len].decode("ascii", errors="replace")
                                     alpn_protocols.append(proto_str)
                                 ai += p_len
 
@@ -232,7 +234,7 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                             curves_len = struct.unpack("!H", ext_data[0:2])[0]
                             ci = 2
                             while ci + 1 < 2 + curves_len and ci + 1 < len(ext_data):
-                                ja3_curves.append(struct.unpack("!H", ext_data[ci:ci + 2])[0])
+                                ja3_curves.append(struct.unpack("!H", ext_data[ci : ci + 2])[0])
                                 ci += 2
 
                         elif ext_type == 0x000B and len(ext_data) >= 1:
@@ -247,7 +249,7 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                             sv_list_len = ext_data[0]
                             si = 1
                             while si + 1 < 1 + sv_list_len and si + 1 < len(ext_data):
-                                v = struct.unpack("!H", ext_data[si:si + 2])[0]
+                                v = struct.unpack("!H", ext_data[si : si + 2])[0]
                                 if v == 0x0304:  # TLS 1.3
                                     sv_ext_version = 0x0304
                                 si += 2
@@ -257,8 +259,8 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                             ks_client_len = struct.unpack("!H", ext_data[0:2])[0]
                             ksi = 2
                             while ksi + 4 <= 2 + ks_client_len and ksi + 4 <= len(ext_data):
-                                g = struct.unpack("!H", ext_data[ksi:ksi + 2])[0]
-                                klen = struct.unpack("!H", ext_data[ksi + 2:ksi + 4])[0]
+                                g = struct.unpack("!H", ext_data[ksi : ksi + 2])[0]
+                                klen = struct.unpack("!H", ext_data[ksi + 2 : ksi + 4])[0]
                                 ch_key_share_groups.append(g)
                                 ksi += 4 + klen
 
@@ -282,20 +284,20 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                 # Selected cipher suite
                 if idx + 2 > len(hs_body):
                     break
-                selected_cipher_code = struct.unpack("!H", hs_body[idx:idx + 2])[0]
+                selected_cipher_code = struct.unpack("!H", hs_body[idx : idx + 2])[0]
                 ja3s_cipher = selected_cipher_code
                 idx += 2
                 # Compression method
                 idx += 1
                 # Extensions
                 if idx + 2 <= len(hs_body):
-                    sh_ext_len = struct.unpack("!H", hs_body[idx:idx + 2])[0]
+                    sh_ext_len = struct.unpack("!H", hs_body[idx : idx + 2])[0]
                     idx += 2
                     sh_ext_end = idx + sh_ext_len
                     while idx + 4 <= sh_ext_end and idx + 4 <= len(hs_body):
-                        ext_type = struct.unpack("!H", hs_body[idx:idx + 2])[0]
-                        ext_len = struct.unpack("!H", hs_body[idx + 2:idx + 4])[0]
-                        ext_data = hs_body[idx + 4:idx + 4 + ext_len]
+                        ext_type = struct.unpack("!H", hs_body[idx : idx + 2])[0]
+                        ext_len = struct.unpack("!H", hs_body[idx + 2 : idx + 4])[0]
+                        ext_data = hs_body[idx + 4 : idx + 4 + ext_len]
                         ja3s_extensions.append(ext_type)
 
                         if ext_type == 0x002B and len(ext_data) >= 2:
@@ -313,13 +315,13 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
             elif hs_type == 0x0B and not cert_chain_ders:
                 # === CERTIFICATE MESSAGE ===
                 if len(hs_body) >= 6:
-                    certs_total_len = struct.unpack("!I", b'\x00' + hs_body[0:3])[0]
+                    certs_total_len = struct.unpack("!I", b"\x00" + hs_body[0:3])[0]
                     c_idx = 3
                     while c_idx + 3 <= len(hs_body) and c_idx < 3 + certs_total_len:
-                        c_len = struct.unpack("!I", b'\x00' + hs_body[c_idx:c_idx + 3])[0]
+                        c_len = struct.unpack("!I", b"\x00" + hs_body[c_idx : c_idx + 3])[0]
                         c_idx += 3
                         if c_idx + c_len <= len(hs_body):
-                            c_bytes = bytes(hs_body[c_idx:c_idx + c_len])
+                            c_bytes = bytes(hs_body[c_idx : c_idx + c_len])
                             cert_chain_ders.append(c_bytes)
                             c_idx += c_len
                         else:

@@ -10,18 +10,18 @@ Generates realistic PCAP captures mapping to PRD test scenarios:
 6. 06_enterprise_multi_stream.pcap -> Composite PCAP containing all 5 concurrent email streams
 """
 
-import os
-import struct
 import datetime
 import hashlib
 import json
+import os
 import shutil
-from scapy.all import Ether, IP, TCP, Raw, wrpcap
+import struct
 
 from cryptography import x509
-from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
+from scapy.all import IP, TCP, Ether, Raw, wrpcap
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(OUTPUT_DIR, "..", "app", "data")
@@ -209,10 +209,20 @@ def build_hardened_tls13_packets(base_time: float = 1711800000.0) -> list:
 
     pkts = [
         Ether() / IP(src="192.168.10.45", dst="10.20.1.100") / TCP(sport=49152, dport=465, seq=1000, ack=0, flags="S"),
-        Ether() / IP(src="10.20.1.100", dst="192.168.10.45") / TCP(sport=465, dport=49152, seq=5000, ack=1001, flags="SA"),
-        Ether() / IP(src="192.168.10.45", dst="10.20.1.100") / TCP(sport=49152, dport=465, seq=1001, ack=5001, flags="A"),
-        Ether() / IP(src="192.168.10.45", dst="10.20.1.100") / TCP(sport=49152, dport=465, seq=1001, ack=5001, flags="PA") / Raw(load=ch_rec),
-        Ether() / IP(src="10.20.1.100", dst="192.168.10.45") / TCP(sport=465, dport=49152, seq=5001, ack=1001 + len(ch_rec), flags="PA") / Raw(load=sh_rec + cert_rec),
+        Ether()
+        / IP(src="10.20.1.100", dst="192.168.10.45")
+        / TCP(sport=465, dport=49152, seq=5000, ack=1001, flags="SA"),
+        Ether()
+        / IP(src="192.168.10.45", dst="10.20.1.100")
+        / TCP(sport=49152, dport=465, seq=1001, ack=5001, flags="A"),
+        Ether()
+        / IP(src="192.168.10.45", dst="10.20.1.100")
+        / TCP(sport=49152, dport=465, seq=1001, ack=5001, flags="PA")
+        / Raw(load=ch_rec),
+        Ether()
+        / IP(src="10.20.1.100", dst="192.168.10.45")
+        / TCP(sport=465, dport=49152, seq=5001, ack=1001 + len(ch_rec), flags="PA")
+        / Raw(load=sh_rec + cert_rec),
     ]
 
     for i, p in enumerate(pkts):
@@ -230,22 +240,35 @@ def build_striptls_mitm_packets(base_time: float = 1711800000.1) -> list:
         b"250 8BITMIME\r\n"  # STARTTLS deliberately omitted by MitM proxy
     )
     client_ehlo = b"EHLO workstation-42.secops.gov\r\n"
-    client_auth = (
-        b"AUTH LOGIN\r\n"
-        b"dXNlcm5hbWU=\r\n"
-        b"cGFzc3dvcmQxMjM0\r\n"
-        b"MAIL FROM:<commander@secops.gov>\r\n"
-    )
+    client_auth = b"AUTH LOGIN\r\ndXNlcm5hbWU=\r\ncGFzc3dvcmQxMjM0\r\nMAIL FROM:<commander@secops.gov>\r\n"
     server_auth_ok = b"235 2.7.0 Authentication successful\r\n250 2.1.0 Ok\r\n"
 
     pkts = [
         Ether() / IP(src="172.16.5.12", dst="10.0.8.25") / TCP(sport=51200, dport=587, seq=100, ack=0, flags="S"),
         Ether() / IP(src="10.0.8.25", dst="172.16.5.12") / TCP(sport=587, dport=51200, seq=500, ack=101, flags="SA"),
         Ether() / IP(src="172.16.5.12", dst="10.0.8.25") / TCP(sport=51200, dport=587, seq=101, ack=501, flags="A"),
-        Ether() / IP(src="10.0.8.25", dst="172.16.5.12") / TCP(sport=587, dport=51200, seq=501, ack=101, flags="PA") / Raw(load=server_banner),
-        Ether() / IP(src="172.16.5.12", dst="10.0.8.25") / TCP(sport=51200, dport=587, seq=101, ack=501 + len(server_banner), flags="PA") / Raw(load=client_ehlo),
-        Ether() / IP(src="172.16.5.12", dst="10.0.8.25") / TCP(sport=51200, dport=587, seq=101 + len(client_ehlo), ack=501 + len(server_banner), flags="PA") / Raw(load=client_auth),
-        Ether() / IP(src="10.0.8.25", dst="172.16.5.12") / TCP(sport=587, dport=51200, seq=501 + len(server_banner), ack=101 + len(client_ehlo) + len(client_auth), flags="PA") / Raw(load=server_auth_ok),
+        Ether()
+        / IP(src="10.0.8.25", dst="172.16.5.12")
+        / TCP(sport=587, dport=51200, seq=501, ack=101, flags="PA")
+        / Raw(load=server_banner),
+        Ether()
+        / IP(src="172.16.5.12", dst="10.0.8.25")
+        / TCP(sport=51200, dport=587, seq=101, ack=501 + len(server_banner), flags="PA")
+        / Raw(load=client_ehlo),
+        Ether()
+        / IP(src="172.16.5.12", dst="10.0.8.25")
+        / TCP(sport=51200, dport=587, seq=101 + len(client_ehlo), ack=501 + len(server_banner), flags="PA")
+        / Raw(load=client_auth),
+        Ether()
+        / IP(src="10.0.8.25", dst="172.16.5.12")
+        / TCP(
+            sport=587,
+            dport=51200,
+            seq=501 + len(server_banner),
+            ack=101 + len(client_ehlo) + len(client_auth),
+            flags="PA",
+        )
+        / Raw(load=server_auth_ok),
     ]
 
     for i, p in enumerate(pkts):
@@ -280,9 +303,18 @@ def build_legacy_tls10_packets(base_time: float = 1711800000.2) -> list:
         Ether() / IP(src="10.100.2.14", dst="10.100.1.5") / TCP(sport=38291, dport=25, seq=200, ack=0, flags="S"),
         Ether() / IP(src="10.100.1.5", dst="10.100.2.14") / TCP(sport=25, dport=38291, seq=800, ack=201, flags="SA"),
         Ether() / IP(src="10.100.2.14", dst="10.100.1.5") / TCP(sport=38291, dport=25, seq=201, ack=801, flags="A"),
-        Ether() / IP(src="10.100.1.5", dst="10.100.2.14") / TCP(sport=25, dport=38291, seq=801, ack=201, flags="PA") / Raw(load=server_greet),
-        Ether() / IP(src="10.100.2.14", dst="10.100.1.5") / TCP(sport=38291, dport=25, seq=201, ack=801 + len(server_greet), flags="PA") / Raw(load=client_data),
-        Ether() / IP(src="10.100.1.5", dst="10.100.2.14") / TCP(sport=25, dport=38291, seq=801 + len(server_greet), ack=201 + len(client_data), flags="PA") / Raw(load=server_starttls_ready + sh_rec + cert_rec),
+        Ether()
+        / IP(src="10.100.1.5", dst="10.100.2.14")
+        / TCP(sport=25, dport=38291, seq=801, ack=201, flags="PA")
+        / Raw(load=server_greet),
+        Ether()
+        / IP(src="10.100.2.14", dst="10.100.1.5")
+        / TCP(sport=38291, dport=25, seq=201, ack=801 + len(server_greet), flags="PA")
+        / Raw(load=client_data),
+        Ether()
+        / IP(src="10.100.1.5", dst="10.100.2.14")
+        / TCP(sport=25, dport=38291, seq=801 + len(server_greet), ack=201 + len(client_data), flags="PA")
+        / Raw(load=server_data),
     ]
 
     for i, p in enumerate(pkts):
@@ -309,10 +341,20 @@ def build_rogue_client_packets(base_time: float = 1711800000.3) -> list:
 
     pkts = [
         Ether() / IP(src="192.168.88.99", dst="10.50.0.143") / TCP(sport=61002, dport=993, seq=1000, ack=0, flags="S"),
-        Ether() / IP(src="10.50.0.143", dst="192.168.88.99") / TCP(sport=993, dport=61002, seq=7000, ack=1001, flags="SA"),
-        Ether() / IP(src="192.168.88.99", dst="10.50.0.143") / TCP(sport=61002, dport=993, seq=1001, ack=7001, flags="A"),
-        Ether() / IP(src="192.168.88.99", dst="10.50.0.143") / TCP(sport=61002, dport=993, seq=1001, ack=7001, flags="PA") / Raw(load=ch_rec),
-        Ether() / IP(src="10.50.0.143", dst="192.168.88.99") / TCP(sport=993, dport=61002, seq=7001, ack=1001 + len(ch_rec), flags="PA") / Raw(load=sh_rec + cert_rec),
+        Ether()
+        / IP(src="10.50.0.143", dst="192.168.88.99")
+        / TCP(sport=993, dport=61002, seq=7000, ack=1001, flags="SA"),
+        Ether()
+        / IP(src="192.168.88.99", dst="10.50.0.143")
+        / TCP(sport=61002, dport=993, seq=1001, ack=7001, flags="A"),
+        Ether()
+        / IP(src="192.168.88.99", dst="10.50.0.143")
+        / TCP(sport=61002, dport=993, seq=1001, ack=7001, flags="PA")
+        / Raw(load=ch_rec),
+        Ether()
+        / IP(src="10.50.0.143", dst="192.168.88.99")
+        / TCP(sport=993, dport=61002, seq=7001, ack=1001 + len(ch_rec), flags="PA")
+        / Raw(load=sh_rec + cert_rec),
     ]
 
     for i, p in enumerate(pkts):
@@ -345,22 +387,97 @@ def build_cleartext_pop3_packets(base_time: float = 1711800000.4) -> list:
         Ether() / IP(src=server_ip, dst=client_ip) / TCP(sport=dport, dport=sport, seq=900, ack=301, flags="SA"),
         Ether() / IP(src=client_ip, dst=server_ip) / TCP(sport=sport, dport=dport, seq=301, ack=901, flags="A"),
         # Banner
-        Ether() / IP(src=server_ip, dst=client_ip) / TCP(sport=dport, dport=sport, seq=901, ack=301, flags="PA") / Raw(load=server_greet),
+        Ether()
+        / IP(src=server_ip, dst=client_ip)
+        / TCP(sport=dport, dport=sport, seq=901, ack=301, flags="PA")
+        / Raw(load=server_greet),
         # USER
-        Ether() / IP(src=client_ip, dst=server_ip) / TCP(sport=sport, dport=dport, seq=301, ack=901 + len(server_greet), flags="PA") / Raw(load=c_user),
-        Ether() / IP(src=server_ip, dst=client_ip) / TCP(sport=dport, dport=sport, seq=901 + len(server_greet), ack=301 + len(c_user), flags="PA") / Raw(load=s_user_ok),
+        Ether()
+        / IP(src=client_ip, dst=server_ip)
+        / TCP(sport=sport, dport=dport, seq=301, ack=901 + len(server_greet), flags="PA")
+        / Raw(load=c_user),
+        Ether()
+        / IP(src=server_ip, dst=client_ip)
+        / TCP(sport=dport, dport=sport, seq=901 + len(server_greet), ack=301 + len(c_user), flags="PA")
+        / Raw(load=s_user_ok),
         # PASS
-        Ether() / IP(src=client_ip, dst=server_ip) / TCP(sport=sport, dport=dport, seq=301 + len(c_user), ack=901 + len(server_greet) + len(s_user_ok), flags="PA") / Raw(load=c_pass),
-        Ether() / IP(src=server_ip, dst=client_ip) / TCP(sport=dport, dport=sport, seq=901 + len(server_greet) + len(s_user_ok), ack=301 + len(c_user) + len(c_pass), flags="PA") / Raw(load=s_pass_ok),
+        Ether()
+        / IP(src=client_ip, dst=server_ip)
+        / TCP(sport=sport, dport=dport, seq=301 + len(c_user), ack=901 + len(server_greet) + len(s_user_ok), flags="PA")
+        / Raw(load=c_pass),
+        Ether()
+        / IP(src=server_ip, dst=client_ip)
+        / TCP(
+            sport=dport,
+            dport=sport,
+            seq=901 + len(server_greet) + len(s_user_ok),
+            ack=301 + len(c_user) + len(c_pass),
+            flags="PA",
+        )
+        / Raw(load=s_pass_ok),
         # STAT
-        Ether() / IP(src=client_ip, dst=server_ip) / TCP(sport=sport, dport=dport, seq=301 + len(c_user) + len(c_pass), ack=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok), flags="PA") / Raw(load=c_stat),
-        Ether() / IP(src=server_ip, dst=client_ip) / TCP(sport=dport, dport=sport, seq=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok), ack=301 + len(c_user) + len(c_pass) + len(c_stat), flags="PA") / Raw(load=s_stat_ok),
+        Ether()
+        / IP(src=client_ip, dst=server_ip)
+        / TCP(
+            sport=sport,
+            dport=dport,
+            seq=301 + len(c_user) + len(c_pass),
+            ack=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok),
+            flags="PA",
+        )
+        / Raw(load=c_stat),
+        Ether()
+        / IP(src=server_ip, dst=client_ip)
+        / TCP(
+            sport=dport,
+            dport=sport,
+            seq=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok),
+            ack=301 + len(c_user) + len(c_pass) + len(c_stat),
+            flags="PA",
+        )
+        / Raw(load=s_stat_ok),
         # RETR
-        Ether() / IP(src=client_ip, dst=server_ip) / TCP(sport=sport, dport=dport, seq=301 + len(c_user) + len(c_pass) + len(c_stat), ack=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok) + len(s_stat_ok), flags="PA") / Raw(load=c_retr),
-        Ether() / IP(src=server_ip, dst=client_ip) / TCP(sport=dport, dport=sport, seq=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok) + len(s_stat_ok), ack=301 + len(c_user) + len(c_pass) + len(c_stat) + len(c_retr), flags="PA") / Raw(load=s_retr_ok),
+        Ether()
+        / IP(src=client_ip, dst=server_ip)
+        / TCP(
+            sport=sport,
+            dport=dport,
+            seq=301 + len(c_user) + len(c_pass) + len(c_stat),
+            ack=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok) + len(s_stat_ok),
+            flags="PA",
+        )
+        / Raw(load=c_retr),
+        Ether()
+        / IP(src=server_ip, dst=client_ip)
+        / TCP(
+            sport=dport,
+            dport=sport,
+            seq=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok) + len(s_stat_ok),
+            ack=301 + len(c_user) + len(c_pass) + len(c_stat) + len(c_retr),
+            flags="PA",
+        )
+        / Raw(load=s_retr_ok),
         # QUIT
-        Ether() / IP(src=client_ip, dst=server_ip) / TCP(sport=sport, dport=dport, seq=301 + len(c_user) + len(c_pass) + len(c_stat) + len(c_retr), ack=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok) + len(s_stat_ok) + len(s_retr_ok), flags="PA") / Raw(load=c_quit),
-        Ether() / IP(src=server_ip, dst=client_ip) / TCP(sport=dport, dport=sport, seq=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok) + len(s_stat_ok) + len(s_retr_ok), ack=301 + len(c_user) + len(c_pass) + len(c_stat) + len(c_retr) + len(c_quit), flags="PA") / Raw(load=s_quit_ok),
+        Ether()
+        / IP(src=client_ip, dst=server_ip)
+        / TCP(
+            sport=sport,
+            dport=dport,
+            seq=301 + len(c_user) + len(c_pass) + len(c_stat) + len(c_retr),
+            ack=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok) + len(s_stat_ok) + len(s_retr_ok),
+            flags="PA",
+        )
+        / Raw(load=c_quit),
+        Ether()
+        / IP(src=server_ip, dst=client_ip)
+        / TCP(
+            sport=dport,
+            dport=sport,
+            seq=901 + len(server_greet) + len(s_user_ok) + len(s_pass_ok) + len(s_stat_ok) + len(s_retr_ok),
+            ack=301 + len(c_user) + len(c_pass) + len(c_stat) + len(c_retr) + len(c_quit),
+            flags="PA",
+        )
+        / Raw(load=s_quit_ok),
     ]
 
     for i, p in enumerate(pkts):

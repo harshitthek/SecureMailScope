@@ -1,7 +1,8 @@
 import re
 from dataclasses import dataclass
-from typing import Optional
+
 from .pcap_parser import StreamData
+
 
 @dataclass
 class StarttlsResult:
@@ -15,6 +16,7 @@ class StarttlsResult:
     cleartext_auth_detected: bool
     server_banner: str | None
 
+
 def _find_tls_offset(payload: bytes) -> int | None:
     """Find the byte offset where TLS Record Layer (Handshake 0x16 0x03 0x00..0x04) begins."""
     if not payload:
@@ -23,6 +25,7 @@ def _find_tls_offset(payload: bytes) -> int | None:
         if payload[i] == 0x16 and payload[i + 1] == 0x03 and payload[i + 2] in (0x00, 0x01, 0x02, 0x03, 0x04):
             return i
     return None
+
 
 def detect_starttls(stream: StreamData) -> StarttlsResult:
     """
@@ -40,7 +43,7 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
             is_cleartext_only=False,
             starttls_stripped=False,
             cleartext_auth_detected=False,
-            server_banner=None
+            server_banner=None,
         )
 
     server_pl = stream.server_payload or b""
@@ -56,19 +59,16 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
     if server_pl:
         first_line = server_pl.split(b"\r\n")[0] if b"\r\n" in server_pl else server_pl.split(b"\n")[0]
         if first_line:
-            server_banner = first_line.decode('utf-8', errors='ignore').strip()
+            server_banner = first_line.decode("utf-8", errors="ignore").strip()
 
     starttls_advertised = False
     starttls_initiated = False
     starttls_accepted = False
 
     # 1. Protocol-specific STARTTLS negotiation detection
-    if proto == 'SMTP':
+    if proto == "SMTP":
         # RFC 3207: Server advertises 250-STARTTLS or 250 STARTTLS
-        starttls_advertised = bool(
-            re.search(rb"250[- ]STARTTLS", server_pl_upper) or
-            b"STARTTLS" in server_pl_upper
-        )
+        starttls_advertised = bool(re.search(rb"250[- ]STARTTLS", server_pl_upper) or b"STARTTLS" in server_pl_upper)
         # Client initiates STARTTLS\r\n
         starttls_initiated = bool(re.search(rb"\bSTARTTLS\b", client_pl_upper))
         # Server accepts with 220
@@ -82,7 +82,7 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
         else:
             starttls_accepted = False
 
-    elif proto == 'IMAP':
+    elif proto == "IMAP":
         # RFC 2595 / RFC 9051: Capability list includes STARTTLS
         starttls_advertised = b"STARTTLS" in server_pl_upper
         # Client sends tagged STARTTLS: e.g. "a01 STARTTLS" or "STARTTLS"
@@ -93,7 +93,7 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
         else:
             starttls_accepted = False
 
-    elif proto == 'POP3':
+    elif proto == "POP3":
         # RFC 2595: Capability list response to CAPA includes STLS
         starttls_advertised = bool(b"STLS" in server_pl_upper)
         # Client sends STLS command
@@ -112,7 +112,7 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
 
     # 2. Precise TLS Handshake start offset in client stream
     tls_offset = _find_tls_offset(client_pl)
-    is_cleartext = (tls_offset is None)
+    is_cleartext = tls_offset is None
 
     # 3. Detect STRIPTLS downgrade attack
     # Submission port 587 RFC 6409 requires TLS; if STARTTLS is not offered or stripped, flag attack
@@ -129,9 +129,11 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
 
     cleartext_auth = bool(
         # SMTP AUTH PLAIN / LOGIN / CRAM-MD5 at line start
-        re.search(rb"(?:^|\r\n|\n)AUTH\s+(PLAIN|LOGIN|CRAM-MD5)", pre_tls_upper) or
+        re.search(rb"(?:^|\r\n|\n)AUTH\s+(PLAIN|LOGIN|CRAM-MD5)", pre_tls_upper)
+        or
         # IMAP LOGIN username password or tagged LOGIN
-        re.search(rb"(?:^|\r\n|\n)(?:[A-Z0-9]+\s+)?LOGIN\s+[^\r\n]+\s+[^\r\n]+", pre_tls_upper) or
+        re.search(rb"(?:^|\r\n|\n)(?:[A-Z0-9]+\s+)?LOGIN\s+[^\r\n]+\s+[^\r\n]+", pre_tls_upper)
+        or
         # POP3 USER / PASS sequence
         (re.search(rb"(?:^|\r\n|\n)USER\s+", pre_tls_upper) and re.search(rb"(?:^|\r\n|\n)PASS\s+", pre_tls_upper))
     )
@@ -145,5 +147,5 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
         is_cleartext_only=is_cleartext,
         starttls_stripped=starttls_stripped,
         cleartext_auth_detected=cleartext_auth,
-        server_banner=server_banner
+        server_banner=server_banner,
     )

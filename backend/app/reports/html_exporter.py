@@ -2,6 +2,7 @@
 HTML forensic dossier report exporter for SecureMailScope.
 Generates an air-gapped, self-contained, printable forensic audit report.
 """
+
 from __future__ import annotations
 
 import html
@@ -11,20 +12,24 @@ from typing import Any
 def generate_html_report(analysis: dict[str, Any]) -> str:
     """
     Generate a self-contained, air-gapped HTML forensic dossier.
-    
+
     Args:
         analysis: Analysis result dictionary containing sessions, vulnerabilities,
                   compliance checklists, scores, and metadata.
-                  
+
     Returns:
         Complete HTML5 string with embedded CSS and print styles.
     """
     analysis_id = html.escape(str(analysis.get("analysis_id", "N/A")))
     source_file = html.escape(str(analysis.get("filename", "capture.pcap")))
     generated_at = html.escape(str(analysis.get("analyzed_at", "")))
-    file_size_kb = f"{(analysis.get('file_size_bytes', 0) / 1024):.1f} KB" if analysis.get("file_size_bytes") else "Pre-seeded Capture"
+    file_size_kb = (
+        f"{(analysis.get('file_size_bytes', 0) / 1024):.1f} KB"
+        if analysis.get("file_size_bytes")
+        else "Pre-seeded Capture"
+    )
     processing_ms = analysis.get("processing_time_ms", 0)
-    
+
     score = analysis.get("enterprise_score", 0)
     grade = html.escape(str(analysis.get("enterprise_grade", "F")))
     sessions = analysis.get("sessions", [])
@@ -32,11 +37,11 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
     compliance = analysis.get("compliance", [])
     certs = analysis.get("certificate_summary", [])
     protocols = analysis.get("protocols_detected", [])
-    
+
     critical_vulns = [v for v in vulns if v.get("severity") == "critical"]
-    high_vulns = [v for v in vulns if v.get("severity") == "high"]
-    medium_vulns = [v for v in vulns if v.get("severity") == "medium"]
-    low_vulns = [v for v in vulns if v.get("severity") in ("low", "info")]
+    [v for v in vulns if v.get("severity") == "high"]
+    [v for v in vulns if v.get("severity") == "medium"]
+    [v for v in vulns if v.get("severity") in ("low", "info")]
 
     # Grade color
     if score >= 90:
@@ -88,7 +93,7 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
         else:
             v_flow = str(v.get("affected_session_id", "GLOBAL"))
         v_flow = html.escape(v_flow)
-        
+
         mitre_html = ""
         if v.get("mitre_attack_id"):
             m_id = html.escape(str(v.get("mitre_attack_id")))
@@ -98,7 +103,7 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
             if d_id:
                 mitre_pills += f' <span class="badge badge-d3fend">D3FEND {d_id}</span>'
             mitre_html = f'<div style="margin-top:5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">{mitre_pills}<span class="desc-text" style="margin-top:0;">{m_tech}</span></div>'
-        
+
         vuln_rows.append(f"""
         <tr>
           <td>{sev_badge(v_sev)}</td>
@@ -108,7 +113,11 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
           <td class="remed-cell"><code>{v_remed}</code></td>
         </tr>
         """)
-    vuln_rows_html = "".join(vuln_rows) if vuln_rows else "<tr><td colspan='5' class='text-center'>No cryptographic vulnerabilities detected. Infrastructure passes all security baselines.</td></tr>"
+    vuln_rows_html = (
+        "".join(vuln_rows)
+        if vuln_rows
+        else "<tr><td colspan='5' class='text-center'>No cryptographic vulnerabilities detected. Infrastructure passes all security baselines.</td></tr>"
+    )
 
     # Build Session Flow Rows
     flow_rows = []
@@ -116,7 +125,7 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
         s_id = html.escape(str(s.get("session_id", "")))
         s_proto = html.escape(str(s.get("protocol", "")))
         vector = f"{html.escape(str(s.get('src_ip', '')))}:{s.get('src_port', '')} → {html.escape(str(s.get('dst_ip', '')))}:{s.get('dst_port', '')}"
-        
+
         stls_status = "N/A (Direct)"
         if not s.get("is_implicit_tls"):
             if s.get("starttls_stripped"):
@@ -129,15 +138,21 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
                 stls_status = '<span class="badge badge-fail">CLEARTEXT FALLBACK</span>'
             else:
                 stls_status = '<span class="badge badge-low">UNKNOWN</span>'
-                
-        tls_ver = html.escape(str(s.get("tls_version") or ("None (Cleartext)" if not s.get("is_encrypted") else "Unknown")))
-        cipher_val = s.get("cipher_suite_name") or s.get("cipher_name") or ("None (Plaintext)" if not s.get("is_encrypted") else "Unknown")
+
+        tls_ver = html.escape(
+            str(s.get("tls_version") or ("None (Cleartext)" if not s.get("is_encrypted") else "Unknown"))
+        )
+        cipher_val = (
+            s.get("cipher_suite_name")
+            or s.get("cipher_name")
+            or ("None (Plaintext)" if not s.get("is_encrypted") else "Unknown")
+        )
         cipher = html.escape(str(cipher_val))
         pfs = "YES (PFS)" if s.get("has_forward_secrecy") else '<span class="text-hazard">NO (STATIC)</span>'
         ja3_client = html.escape(str(s.get("client_fingerprint") or s.get("ja3_hash", "Unknown")))
         s_score = s.get("session_score", 0)
         s_grade = html.escape(str(s.get("session_grade", "F")))
-        
+
         pqc_st = s.get("pqc_status", "CLASSICAL_TRANSITIONAL")
         if pqc_st == "PQC_RESISTANT":
             pqc_badge = '<span class="badge badge-pqc-res">PQC RESISTANT</span>'
@@ -148,7 +163,7 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
         else:
             pqc_badge = '<span class="badge badge-pqc-trans">CLASSICAL TRANSITIONAL</span>'
         pqc_grp = html.escape(str(s.get("pqc_group_name", "ECDHE")))
-        
+
         flow_rows.append(f"""
         <tr>
           <td><code>{s_id}</code></td>
@@ -163,7 +178,11 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
           <td><strong>{s_score}/100</strong> ({s_grade})</td>
         </tr>
         """)
-    flow_rows_html = "".join(flow_rows) if flow_rows else "<tr><td colspan='10' class='text-center'>No email session streams parsed.</td></tr>"
+    flow_rows_html = (
+        "".join(flow_rows)
+        if flow_rows
+        else "<tr><td colspan='10' class='text-center'>No email session streams parsed.</td></tr>"
+    )
 
     # Build Compliance Rows
     comp_rows = []
@@ -173,7 +192,7 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
         c_req = html.escape(str(c.get("requirement", "")))
         c_status = str(c.get("status", "fail"))
         c_details = html.escape(str(c.get("details", "")))
-        
+
         comp_rows.append(f"""
         <tr>
           <td><strong>{c_std}</strong></td>
@@ -183,7 +202,11 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
           <td>{c_details}</td>
         </tr>
         """)
-    comp_rows_html = "".join(comp_rows) if comp_rows else "<tr><td colspan='5' class='text-center'>No compliance rules evaluated.</td></tr>"
+    comp_rows_html = (
+        "".join(comp_rows)
+        if comp_rows
+        else "<tr><td colspan='5' class='text-center'>No compliance rules evaluated.</td></tr>"
+    )
 
     # Build Certificate Rows
     cert_rows = []
@@ -192,14 +215,22 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
     for cert in cert_source:
         sub = html.escape(str(cert.get("subject_cn", "Unknown")))
         iss = html.escape(str(cert.get("issuer_cn", "Unknown")))
-        exp = '<span class="badge badge-fail">EXPIRED</span>' if cert.get("is_expired") else '<span class="badge badge-pass">VALID</span>'
-        self_s = '<span class="badge badge-fail">SELF-SIGNED</span>' if cert.get("is_self_signed") else '<span class="badge badge-pass">CA-SIGNED</span>'
+        exp = (
+            '<span class="badge badge-fail">EXPIRED</span>'
+            if cert.get("is_expired")
+            else '<span class="badge badge-pass">VALID</span>'
+        )
+        self_s = (
+            '<span class="badge badge-fail">SELF-SIGNED</span>'
+            if cert.get("is_self_signed")
+            else '<span class="badge badge-pass">CA-SIGNED</span>'
+        )
         days = cert.get("days_remaining", 0)
         pk_type = cert.get("public_key_type", "Unknown")
         pk_bits = cert.get("public_key_bits", 0)
         key_info = f"{html.escape(str(pk_type))} {pk_bits} bit" if pk_bits else html.escape(str(pk_type))
         sig_hash = html.escape(str(cert.get("signature_hash", "Unknown")))
-        
+
         cert_rows.append(f"""
         <tr>
           <td><strong>{sub}</strong></td>
@@ -210,7 +241,11 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
           <td><code>{sig_hash}</code></td>
         </tr>
         """)
-    cert_rows_html = "".join(cert_rows) if cert_rows else "<tr><td colspan='6' class='text-center'>No X.509 digital certificates identified in inspected sessions.</td></tr>"
+    cert_rows_html = (
+        "".join(cert_rows)
+        if cert_rows
+        else "<tr><td colspan='6' class='text-center'>No X.509 digital certificates identified in inspected sessions.</td></tr>"
+    )
 
     # Critical Banner if active attack or severe vulnerability
     critical_banner_html = ""
@@ -661,18 +696,18 @@ def generate_html_report(analysis: dict[str, Any]) -> str:
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Critical Threats</div>
-          <div class="kpi-value" style="color: {'#ef4444' if critical_vulns else '#10b981'}">{len(critical_vulns)}</div>
+          <div class="kpi-value" style="color: {"#ef4444" if critical_vulns else "#10b981"}">{len(critical_vulns)}</div>
           <div class="kpi-sub">Total Vulns: {len(vulns)}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Certificates Audited</div>
           <div class="kpi-value">{len(certs)}</div>
-          <div class="kpi-sub">Expired: {len([c for c in certs if c.get('is_expired')])}</div>
+          <div class="kpi-sub">Expired: {len([c for c in certs if c.get("is_expired")])}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Standards Non-Compliant</div>
-          <div class="kpi-value" style="color: {'#ef4444' if len([c for c in compliance if c.get('status') == 'fail']) else '#10b981'}">
-            {len([c for c in compliance if c.get('status') == 'fail'])}
+          <div class="kpi-value" style="color: {"#ef4444" if len([c for c in compliance if c.get("status") == "fail"]) else "#10b981"}">
+            {len([c for c in compliance if c.get("status") == "fail"])}
           </div>
           <div class="kpi-sub">Total Evaluated: {len(compliance)}</div>
         </div>

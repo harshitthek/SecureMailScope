@@ -7,32 +7,33 @@ Endpoints:
   GET  /api/report/{id}/pdf — Download PDF forensic report
   GET  /api/report/{id}/json — Download JSON report
 """
+
 from __future__ import annotations
 
+import asyncio
+import json
 import os
 import re
-import uuid
-import json
-import tempfile
 import shutil
-import asyncio
+import tempfile
+import time
+import uuid
 from datetime import datetime, timezone
 from typing import Any
-import time
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Response
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi import APIRouter, File, HTTPException, Response, UploadFile
+from fastapi.responses import StreamingResponse
 
-from app.core.pcap_parser import parse_pcap, StreamData
+from app.core.anomaly import build_feature_vector, detect_anomalies
+from app.core.cert_validator import validate_certificate
+from app.core.ja3_engine import Ja3Result, compute_ja3, compute_ja3s
+from app.core.pcap_parser import parse_pcap
+from app.core.scorer import ScoringResult, calculate_grade_and_severity, score_enterprise, score_session
 from app.core.starttls_detector import detect_starttls
 from app.core.tls_analyzer import analyze_tls
-from app.core.cert_validator import validate_certificate
-from app.core.ja3_engine import compute_ja3, compute_ja3s, Ja3Result, Ja3sResult
-from app.core.scorer import score_session, score_enterprise, ScoringResult, calculate_grade_and_severity
-from app.core.anomaly import build_feature_vector, detect_anomalies
-from app.reports.pdf_exporter import generate_pdf_report
-from app.reports.json_exporter import format_json_report
 from app.reports.html_exporter import generate_html_report
+from app.reports.json_exporter import format_json_report
+from app.reports.pdf_exporter import generate_pdf_report
 
 router = APIRouter()
 
@@ -48,18 +49,23 @@ with open(os.path.join(_data_dir, "cipher_db.json"), "r") as f:
 with open(os.path.join(_data_dir, "nist_rules.json"), "r") as f:
     NIST_RULES: list[dict] = json.load(f)
 
+
 def _generate_synthetic_cert(cn: str, serial: str) -> tuple[str, str]:
     try:
+        import datetime
+
         from cryptography import x509
-        from cryptography.x509.oid import NameOID
         from cryptography.hazmat.primitives import hashes, serialization
         from cryptography.hazmat.primitives.asymmetric import rsa
-        import datetime
+        from cryptography.x509.oid import NameOID
+
         key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        subject = x509.Name([
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "DEFENSE FORENSICS CA"),
-            x509.NameAttribute(NameOID.COMMON_NAME, cn or "mail.defense.gov.in"),
-        ])
+        subject = x509.Name(
+            [
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "DEFENSE FORENSICS CA"),
+                x509.NameAttribute(NameOID.COMMON_NAME, cn or "mail.defense.gov.in"),
+            ]
+        )
         clean_serial = "".join([c for c in serial if c in "0123456789abcdefABCDEF"])[:8]
         s_int = int(clean_serial, 16) if clean_serial else 1001
         cert = (
@@ -113,7 +119,9 @@ if os.path.exists(_demo_cases_path):
 
                 # Certificate synthetic placeholder (kept separate from captured evidence)
                 cert = session.get("certificate")
-                if cert and (not cert.get("pem_data") or not cert.get("raw_der_hex") or len(cert.get("raw_der_hex", "")) < 50):
+                if cert and (
+                    not cert.get("pem_data") or not cert.get("raw_der_hex") or len(cert.get("raw_der_hex", "")) < 50
+                ):
                     cn = cert.get("subject_cn", "mail.defense.gov.in")
                     serial = cert.get("serial_number", "1001")
                     pem_str, der_hex = _generate_synthetic_cert(cn, serial)
@@ -138,7 +146,13 @@ if os.path.exists(_demo_cases_path):
                         v["mitre_attack_id"] = "T1552.001"
                         v["mitre_attack_technique"] = "Unsecured Credentials: Credentials in Transport"
                         v["mitre_d3fend_id"] = "D3-PA"
-                    elif "ssl" in title or "tls 1.0" in title or "tls 1.1" in title or "prohibited" in title or "deprecated" in title:
+                    elif (
+                        "ssl" in title
+                        or "tls 1.0" in title
+                        or "tls 1.1" in title
+                        or "prohibited" in title
+                        or "deprecated" in title
+                    ):
                         v["mitre_attack_id"] = "T1600.001"
                         v["mitre_attack_technique"] = "Weaken Encryption: Deprecated Protocol Fallback"
                         v["mitre_d3fend_id"] = "D3-CSM"
@@ -196,116 +210,138 @@ def _build_forensic_inspection(stream, starttls, tls) -> dict:
     step = 1
 
     # Step 1: TCP Handshake / Connection
-    state_timeline.append({
-        "step": step,
-        "phase": "TCP_CONNECT",
-        "direction": "C->S",
-        "summary": f"TCP 3-way handshake established on port {stream.dst_port} ({stream.protocol})",
-        "status": "normal",
-    })
+    state_timeline.append(
+        {
+            "step": step,
+            "phase": "TCP_CONNECT",
+            "direction": "C->S",
+            "summary": f"TCP 3-way handshake established on port {stream.dst_port} ({stream.protocol})",
+            "status": "normal",
+        }
+    )
     step += 1
 
     if not stream.is_implicit_tls:
         # Step 2: Server greeting / banner
         banner_text = starttls.server_banner or "Service greeting ready"
-        state_timeline.append({
-            "step": step,
-            "phase": "BANNER",
-            "direction": "S->C",
-            "summary": banner_text[:40],
-            "status": "normal",
-        })
+        state_timeline.append(
+            {
+                "step": step,
+                "phase": "BANNER",
+                "direction": "S->C",
+                "summary": banner_text[:40],
+                "status": "normal",
+            }
+        )
         step += 1
 
         if starttls.starttls_stripped:
-            state_timeline.append({
-                "step": step,
-                "phase": "STRIPTLS",
-                "direction": "S->C",
-                "summary": "STARTTLS capability missing from 250 greeting",
-                "status": "downgrade",
-                "is_transition_point": True,
-            })
+            state_timeline.append(
+                {
+                    "step": step,
+                    "phase": "STRIPTLS",
+                    "direction": "S->C",
+                    "summary": "STARTTLS capability missing from 250 greeting",
+                    "status": "downgrade",
+                    "is_transition_point": True,
+                }
+            )
             step += 1
             if starttls.cleartext_auth_detected:
-                state_timeline.append({
+                state_timeline.append(
+                    {
+                        "step": step,
+                        "phase": "AUTH_EXPOSED",
+                        "direction": "C->S",
+                        "summary": "Cleartext AUTH credentials transmitted across wire",
+                        "status": "compromised",
+                    }
+                )
+                step += 1
+        elif starttls.starttls_initiated:
+            state_timeline.append(
+                {
+                    "step": step,
+                    "phase": "STARTTLS_REQ",
+                    "direction": "C->S",
+                    "summary": "Client sent STARTTLS upgrade command",
+                    "status": "normal",
+                }
+            )
+            step += 1
+            state_timeline.append(
+                {
+                    "step": step,
+                    "phase": "STARTTLS_ACK",
+                    "direction": "S->C",
+                    "summary": "Server 220 Ready to start TLS",
+                    "status": "normal",
+                }
+            )
+            step += 1
+        elif starttls.is_cleartext_only and starttls.cleartext_auth_detected:
+            state_timeline.append(
+                {
                     "step": step,
                     "phase": "AUTH_EXPOSED",
                     "direction": "C->S",
-                    "summary": "Cleartext AUTH credentials transmitted across wire",
+                    "summary": "Cleartext user credentials transmitted unencrypted",
                     "status": "compromised",
-                })
-                step += 1
-        elif starttls.starttls_initiated:
-            state_timeline.append({
-                "step": step,
-                "phase": "STARTTLS_REQ",
-                "direction": "C->S",
-                "summary": "Client sent STARTTLS upgrade command",
-                "status": "normal",
-            })
-            step += 1
-            state_timeline.append({
-                "step": step,
-                "phase": "STARTTLS_ACK",
-                "direction": "S->C",
-                "summary": "Server 220 Ready to start TLS",
-                "status": "normal",
-            })
-            step += 1
-        elif starttls.is_cleartext_only and starttls.cleartext_auth_detected:
-            state_timeline.append({
-                "step": step,
-                "phase": "AUTH_EXPOSED",
-                "direction": "C->S",
-                "summary": "Cleartext user credentials transmitted unencrypted",
-                "status": "compromised",
-                "is_transition_point": True,
-            })
+                    "is_transition_point": True,
+                }
+            )
             step += 1
 
     if tls:
-        state_timeline.append({
-            "step": step,
-            "phase": "CLIENT_HELLO",
-            "direction": "C->S",
-            "summary": f"Client Hello offered {len(tls.client_cipher_suites)} ciphers",
-            "status": "secure",
-            "is_transition_point": True,
-        })
+        state_timeline.append(
+            {
+                "step": step,
+                "phase": "CLIENT_HELLO",
+                "direction": "C->S",
+                "summary": f"Client Hello offered {len(tls.client_cipher_suites)} ciphers",
+                "status": "secure",
+                "is_transition_point": True,
+            }
+        )
         step += 1
-        state_timeline.append({
-            "step": step,
-            "phase": "SERVER_HELLO",
-            "direction": "S->C",
-            "summary": f"Server Hello negotiated {tls.negotiated_version} with {tls.selected_cipher_name}",
-            "status": "secure",
-        })
+        state_timeline.append(
+            {
+                "step": step,
+                "phase": "SERVER_HELLO",
+                "direction": "S->C",
+                "summary": f"Server Hello negotiated {tls.negotiated_version} with {tls.selected_cipher_name}",
+                "status": "secure",
+            }
+        )
         step += 1
         if tls.certificate_der:
-            state_timeline.append({
-                "step": step,
-                "phase": "CERTIFICATE",
-                "direction": "S->C",
-                "summary": "X.509 leaf certificate presented",
-                "status": "secure",
-            })
+            state_timeline.append(
+                {
+                    "step": step,
+                    "phase": "CERTIFICATE",
+                    "direction": "S->C",
+                    "summary": "X.509 leaf certificate presented",
+                    "status": "secure",
+                }
+            )
             step += 1
     elif starttls.is_cleartext_only:
-        state_timeline.append({
-            "step": step,
-            "phase": "CLEARTEXT_FLOW",
-            "direction": "C->S",
-            "summary": "Unencrypted protocol stream transmitted in cleartext",
-            "status": "compromised",
-        })
+        state_timeline.append(
+            {
+                "step": step,
+                "phase": "CLEARTEXT_FLOW",
+                "direction": "C->S",
+                "summary": "Unencrypted protocol stream transmitted in cleartext",
+                "status": "compromised",
+            }
+        )
         step += 1
 
     # Raw chunks
     def make_chunks(data: bytes, direction: str, base_offset: int, phase_name: str):
         chunks = []
         for i in range(0, min(len(data), 160), 16):
-            slice_b = data[i:i + 16]
+            slice_b = data[i : i + 16]
             hex_str = " ".join(f"{b:02X}" for b in slice_b)
             ascii_str = "".join(chr(b) if 32 <= b <= 126 else "." for b in slice_b)
             is_trans = False
@@ -323,16 +359,18 @@ def _build_forensic_inspection(stream, starttls, tls) -> dict:
                 hl_label = "STARTTLS COMMAND"
                 hl_type = "info"
 
-            chunks.append({
-                "offset": f"0x{(base_offset + i):04X}",
-                "hex": hex_str,
-                "ascii": ascii_str,
-                "direction": direction,
-                "protocol_phase": phase_name,
-                "is_transition_point": is_trans,
-                "highlight_label": hl_label,
-                "highlight_type": hl_type,
-            })
+            chunks.append(
+                {
+                    "offset": f"0x{(base_offset + i):04X}",
+                    "hex": hex_str,
+                    "ascii": ascii_str,
+                    "direction": direction,
+                    "protocol_phase": phase_name,
+                    "is_transition_point": is_trans,
+                    "highlight_label": hl_label,
+                    "highlight_type": hl_type,
+                }
+            )
         return chunks
 
     raw_chunks = []
@@ -463,7 +501,9 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
             "ja3_client_name": ja3.client_name if ja3 else None,
             "ja3_is_known": ja3.is_known if ja3 else False,
             "ja3s_hash": ja3s.ja3s_hash if ja3s else None,
-            "certificate_chain_length": len(tls.certificate_chain_ders) if tls and tls.certificate_chain_ders else (1 if cert_info else 0),
+            "certificate_chain_length": len(tls.certificate_chain_ders)
+            if tls and tls.certificate_chain_ders
+            else (1 if cert_info else 0),
             "alpn_protocols": tls.alpn_protocols if tls else [],
             "certificate": _cert_to_dict(cert_info) if cert_info else None,
             "session_score": scoring.final_score,
@@ -503,7 +543,6 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
             sessions[i]["session_grade"] = new_grade
             sessions[i]["session_severity"] = new_sev
 
-
     # Step 7: Enterprise scoring
     session_scores = [s["session_score"] for s in sessions]
     enterprise_score, enterprise_grade = score_enterprise(session_scores)
@@ -527,7 +566,9 @@ def _run_analysis(file_path: str, filename: str) -> dict[str, Any]:
             # Merge affected sessions
             for uv in unique_vulns:
                 if uv["title"] == v["title"]:
-                    uv["affected_sessions"] = sorted(list(set(uv["affected_sessions"] + v.get("affected_sessions", []))))
+                    uv["affected_sessions"] = sorted(
+                        list(set(uv["affected_sessions"] + v.get("affected_sessions", [])))
+                    )
                     break
 
     # Sort vulns by severity
@@ -598,199 +639,225 @@ def _generate_vulns(
     vulns = []
 
     if starttls.is_cleartext_only:
-        vulns.append({
-            "id": f"VULN-{counter + len(vulns) + 1:03d}",
-            "severity": "critical",
-            "title": "Cleartext Email Communication — No Encryption",
-            "description": f"Session #{session_id} transmitted email data entirely in cleartext without any TLS encryption. Credentials and message contents are fully exposed to passive interception.",
-            "affected_sessions": [session_id],
-            "cve_references": [],
-            "nist_reference": "NIST SP 800-52r2 Section 3.1",
-            "mitre_attack_id": "T1071.003",
-            "mitre_attack_technique": "Application Layer Protocol: Mail Protocols",
-            "mitre_d3fend_id": "D3-EAC",
-            "remediation": "Enable TLS on the mail server. Use implicit TLS (ports 465/993/995) or enforce mandatory STARTTLS with MTA-STS.",
-        })
+        vulns.append(
+            {
+                "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                "severity": "critical",
+                "title": "Cleartext Email Communication — No Encryption",
+                "description": f"Session #{session_id} transmitted email data entirely in cleartext without any TLS encryption. Credentials and message contents are fully exposed to passive interception.",
+                "affected_sessions": [session_id],
+                "cve_references": [],
+                "nist_reference": "NIST SP 800-52r2 Section 3.1",
+                "mitre_attack_id": "T1071.003",
+                "mitre_attack_technique": "Application Layer Protocol: Mail Protocols",
+                "mitre_d3fend_id": "D3-EAC",
+                "remediation": "Enable TLS on the mail server. Use implicit TLS (ports 465/993/995) or enforce mandatory STARTTLS with MTA-STS.",
+            }
+        )
 
     if starttls.starttls_stripped:
-        vulns.append({
-            "id": f"VULN-{counter + len(vulns) + 1:03d}",
-            "severity": "critical",
-            "title": "STRIPTLS Downgrade Attack Suspected",
-            "description": f"Session #{session_id} shows an SMTP exchange on a submission port where STARTTLS was not advertised. This is consistent with an active Man-in-the-Middle STRIPTLS attack stripping encryption capabilities.",
-            "affected_sessions": [session_id],
-            "cve_references": [],
-            "nist_reference": "NIST SP 800-52r2 Section 3.1",
-            "mitre_attack_id": "T1557.002",
-            "mitre_attack_technique": "Adversary-in-the-Middle: Protocol Downgrade",
-            "mitre_d3fend_id": "D3-EAC",
-            "remediation": "Deploy MTA-STS (RFC 8461) and DANE/TLSA DNS records. Configure MTA to reject plaintext fallback on submission ports.",
-        })
+        vulns.append(
+            {
+                "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                "severity": "critical",
+                "title": "STRIPTLS Downgrade Attack Suspected",
+                "description": f"Session #{session_id} shows an SMTP exchange on a submission port where STARTTLS was not advertised. This is consistent with an active Man-in-the-Middle STRIPTLS attack stripping encryption capabilities.",
+                "affected_sessions": [session_id],
+                "cve_references": [],
+                "nist_reference": "NIST SP 800-52r2 Section 3.1",
+                "mitre_attack_id": "T1557.002",
+                "mitre_attack_technique": "Adversary-in-the-Middle: Protocol Downgrade",
+                "mitre_d3fend_id": "D3-EAC",
+                "remediation": "Deploy MTA-STS (RFC 8461) and DANE/TLSA DNS records. Configure MTA to reject plaintext fallback on submission ports.",
+            }
+        )
 
     if starttls.cleartext_auth_detected:
-        vulns.append({
-            "id": f"VULN-{counter + len(vulns) + 1:03d}",
-            "severity": "critical",
-            "title": "Cleartext Authentication Credentials Detected",
-            "description": f"Session #{session_id} contains AUTH PLAIN or AUTH LOGIN commands transmitted before TLS encryption. User credentials are exposed in the network capture.",
-            "affected_sessions": [session_id],
-            "cve_references": [],
-            "nist_reference": None,
-            "mitre_attack_id": "T1552.001",
-            "mitre_attack_technique": "Unsecured Credentials: Credentials in Transport",
-            "mitre_d3fend_id": "D3-PA",
-            "remediation": "Never transmit authentication over unencrypted channels. Enforce TLS before AUTH commands.",
-        })
+        vulns.append(
+            {
+                "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                "severity": "critical",
+                "title": "Cleartext Authentication Credentials Detected",
+                "description": f"Session #{session_id} contains AUTH PLAIN or AUTH LOGIN commands transmitted before TLS encryption. User credentials are exposed in the network capture.",
+                "affected_sessions": [session_id],
+                "cve_references": [],
+                "nist_reference": None,
+                "mitre_attack_id": "T1552.001",
+                "mitre_attack_technique": "Unsecured Credentials: Credentials in Transport",
+                "mitre_d3fend_id": "D3-PA",
+                "remediation": "Never transmit authentication over unencrypted channels. Enforce TLS before AUTH commands.",
+            }
+        )
 
     if tls:
         version = tls.negotiated_version
         if version in ("SSL 2.0", "SSL 3.0"):
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "critical",
-                "title": f"Prohibited Protocol {version} Detected",
-                "description": f"Session #{session_id} negotiated {version}, which is formally prohibited. Vulnerable to POODLE (SSL 3.0) and DROWN (SSL 2.0) attacks.",
-                "affected_sessions": [session_id],
-                "cve_references": ["CVE-2014-3566"] if version == "SSL 3.0" else ["CVE-2016-0800"],
-                "nist_reference": "NIST SP 800-52r2 Section 3.2.1",
-                "mitre_attack_id": "T1600.001",
-                "mitre_attack_technique": "Weaken Encryption: Deprecated Protocol Fallback",
-                "mitre_d3fend_id": "D3-CSM",
-                "remediation": f"Disable {version} on the mail server immediately. Upgrade to TLS 1.2 or TLS 1.3.",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "critical",
+                    "title": f"Prohibited Protocol {version} Detected",
+                    "description": f"Session #{session_id} negotiated {version}, which is formally prohibited. Vulnerable to POODLE (SSL 3.0) and DROWN (SSL 2.0) attacks.",
+                    "affected_sessions": [session_id],
+                    "cve_references": ["CVE-2014-3566"] if version == "SSL 3.0" else ["CVE-2016-0800"],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.2.1",
+                    "mitre_attack_id": "T1600.001",
+                    "mitre_attack_technique": "Weaken Encryption: Deprecated Protocol Fallback",
+                    "mitre_d3fend_id": "D3-CSM",
+                    "remediation": f"Disable {version} on the mail server immediately. Upgrade to TLS 1.2 or TLS 1.3.",
+                }
+            )
         elif version in ("TLS 1.0", "TLS 1.1"):
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "high",
-                "title": f"Deprecated Protocol {version} Detected",
-                "description": f"Session #{session_id} negotiated {version}, deprecated by RFC 8996. Vulnerable to BEAST (TLS 1.0) and Lucky 13 attacks.",
-                "affected_sessions": [session_id],
-                "cve_references": ["CVE-2011-3389"] if version == "TLS 1.0" else [],
-                "nist_reference": "NIST SP 800-52r2 Section 3.2.1",
-                "mitre_attack_id": "T1600.001",
-                "mitre_attack_technique": "Weaken Encryption: Deprecated Protocol Fallback",
-                "mitre_d3fend_id": "D3-CSM",
-                "remediation": f"Disable {version} and upgrade to TLS 1.2+ with AEAD cipher suites.",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "high",
+                    "title": f"Deprecated Protocol {version} Detected",
+                    "description": f"Session #{session_id} negotiated {version}, deprecated by RFC 8996. Vulnerable to BEAST (TLS 1.0) and Lucky 13 attacks.",
+                    "affected_sessions": [session_id],
+                    "cve_references": ["CVE-2011-3389"] if version == "TLS 1.0" else [],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.2.1",
+                    "mitre_attack_id": "T1600.001",
+                    "mitre_attack_technique": "Weaken Encryption: Deprecated Protocol Fallback",
+                    "mitre_d3fend_id": "D3-CSM",
+                    "remediation": f"Disable {version} and upgrade to TLS 1.2+ with AEAD cipher suites.",
+                }
+            )
 
         cipher_info = CIPHER_DB.get(tls.selected_cipher_hex, {})
         cat = cipher_info.get("category", "")
         if cat in ("RC4", "3DES", "NULL", "EXPORT"):
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "high",
-                "title": f"Weak Cipher Suite: {tls.selected_cipher_name}",
-                "description": f"Session #{session_id} negotiated {tls.selected_cipher_name} ({cat} category). {cipher_info.get('notes', '')}",
-                "affected_sessions": [session_id],
-                "cve_references": ["CVE-2016-2183"] if cat == "3DES" else [],
-                "nist_reference": "NIST SP 800-52r2 Section 3.3.2",
-                "mitre_attack_id": "T1600.002",
-                "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms",
-                "mitre_d3fend_id": "D3-CSM",
-                "remediation": "Remove this cipher suite from server configuration. Use AES-GCM or ChaCha20-Poly1305 AEAD ciphers.",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "high",
+                    "title": f"Weak Cipher Suite: {tls.selected_cipher_name}",
+                    "description": f"Session #{session_id} negotiated {tls.selected_cipher_name} ({cat} category). {cipher_info.get('notes', '')}",
+                    "affected_sessions": [session_id],
+                    "cve_references": ["CVE-2016-2183"] if cat == "3DES" else [],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.3.2",
+                    "mitre_attack_id": "T1600.002",
+                    "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms",
+                    "mitre_d3fend_id": "D3-CSM",
+                    "remediation": "Remove this cipher suite from server configuration. Use AES-GCM or ChaCha20-Poly1305 AEAD ciphers.",
+                }
+            )
         elif cat == "CBC":
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "medium",
-                "title": f"CBC Mode Cipher Suite in Use: {tls.selected_cipher_name}",
-                "description": f"Session #{session_id} negotiated {tls.selected_cipher_name} which uses CBC mode. CBC mode in TLS 1.2 is susceptible to timing side-channel attacks (Lucky 13, POODLE). NIST SP 800-52r2 Section 3.3.2 recommends AEAD cipher suites (AES-GCM or ChaCha20-Poly1305).",
-                "affected_sessions": [session_id],
-                "cve_references": ["CVE-2013-0169"],
-                "nist_reference": "NIST SP 800-52r2 Section 3.3.2",
-                "mitre_attack_id": "T1600.002",
-                "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms",
-                "mitre_d3fend_id": "D3-CSM",
-                "remediation": "Configure the mail server to disable CBC-mode cipher suites and mandate AEAD ciphers (e.g. ECDHE-ECDSA-AES256-GCM-SHA384 or ECDHE-RSA-AES256-GCM-SHA384).",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "medium",
+                    "title": f"CBC Mode Cipher Suite in Use: {tls.selected_cipher_name}",
+                    "description": f"Session #{session_id} negotiated {tls.selected_cipher_name} which uses CBC mode. CBC mode in TLS 1.2 is susceptible to timing side-channel attacks (Lucky 13, POODLE). NIST SP 800-52r2 Section 3.3.2 recommends AEAD cipher suites (AES-GCM or ChaCha20-Poly1305).",
+                    "affected_sessions": [session_id],
+                    "cve_references": ["CVE-2013-0169"],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.3.2",
+                    "mitre_attack_id": "T1600.002",
+                    "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms",
+                    "mitre_d3fend_id": "D3-CSM",
+                    "remediation": "Configure the mail server to disable CBC-mode cipher suites and mandate AEAD ciphers (e.g. ECDHE-ECDSA-AES256-GCM-SHA384 or ECDHE-RSA-AES256-GCM-SHA384).",
+                }
+            )
 
         if not tls.has_forward_secrecy and tls.key_exchange == "RSA":
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "high",
-                "title": "No Forward Secrecy — Static RSA Key Exchange",
-                "description": f"Session #{session_id} uses static RSA key exchange. If the server's private key is compromised, all historically recorded sessions can be retroactively decrypted.",
-                "affected_sessions": [session_id],
-                "cve_references": ["CVE-2017-13099"],
-                "nist_reference": "NIST SP 800-52r2 Section 3.3.1",
-                "mitre_attack_id": "T1600.002",
-                "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms (Static RSA)",
-                "mitre_d3fend_id": "D3-CSM",
-                "remediation": "Configure server to prefer ECDHE key exchange. Disable static RSA cipher suites.",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "high",
+                    "title": "No Forward Secrecy — Static RSA Key Exchange",
+                    "description": f"Session #{session_id} uses static RSA key exchange. If the server's private key is compromised, all historically recorded sessions can be retroactively decrypted.",
+                    "affected_sessions": [session_id],
+                    "cve_references": ["CVE-2017-13099"],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.3.1",
+                    "mitre_attack_id": "T1600.002",
+                    "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Algorithms (Static RSA)",
+                    "mitre_d3fend_id": "D3-CSM",
+                    "remediation": "Configure server to prefer ECDHE key exchange. Disable static RSA cipher suites.",
+                }
+            )
 
     if cert:
         if cert.is_expired:
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "high",
-                "title": "Expired Server Certificate",
-                "description": f"Session #{session_id} presents a certificate expired {abs(cert.days_remaining)} days ago ({cert.not_after}).",
-                "affected_sessions": [session_id],
-                "cve_references": [],
-                "nist_reference": "NIST SP 800-52r2 Section 3.4",
-                "mitre_attack_id": "T1588.004",
-                "mitre_attack_technique": "Obtain Capabilities: Digital Certificates",
-                "mitre_d3fend_id": "D3-CV",
-                "remediation": "Renew the server certificate. Use automated renewal (e.g., Let's Encrypt with certbot).",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "high",
+                    "title": "Expired Server Certificate",
+                    "description": f"Session #{session_id} presents a certificate expired {abs(cert.days_remaining)} days ago ({cert.not_after}).",
+                    "affected_sessions": [session_id],
+                    "cve_references": [],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.4",
+                    "mitre_attack_id": "T1588.004",
+                    "mitre_attack_technique": "Obtain Capabilities: Digital Certificates",
+                    "mitre_d3fend_id": "D3-CV",
+                    "remediation": "Renew the server certificate. Use automated renewal (e.g., Let's Encrypt with certbot).",
+                }
+            )
         if cert.is_self_signed:
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "high",
-                "title": "Self-Signed Certificate — No Trust Assurance",
-                "description": f"Session #{session_id} presents a self-signed certificate (Subject=Issuer: {cert.subject_cn}). This provides no third-party trust verification.",
-                "affected_sessions": [session_id],
-                "cve_references": [],
-                "nist_reference": "NIST SP 800-52r2 Section 3.4",
-                "mitre_attack_id": "T1588.004",
-                "mitre_attack_technique": "Obtain Capabilities: Digital Certificates",
-                "mitre_d3fend_id": "D3-CV",
-                "remediation": "Replace with a certificate issued by a trusted Certificate Authority (e.g., Let's Encrypt, DigiCert).",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "high",
+                    "title": "Self-Signed Certificate — No Trust Assurance",
+                    "description": f"Session #{session_id} presents a self-signed certificate (Subject=Issuer: {cert.subject_cn}). This provides no third-party trust verification.",
+                    "affected_sessions": [session_id],
+                    "cve_references": [],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.4",
+                    "mitre_attack_id": "T1588.004",
+                    "mitre_attack_technique": "Obtain Capabilities: Digital Certificates",
+                    "mitre_d3fend_id": "D3-CV",
+                    "remediation": "Replace with a certificate issued by a trusted Certificate Authority (e.g., Let's Encrypt, DigiCert).",
+                }
+            )
         if cert.is_weak_signature:
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "high",
-                "title": f"Weak Certificate Signature Hash ({cert.signature_hash})",
-                "description": f"Session #{session_id} certificate is signed with {cert.signature_hash}, which is cryptographically deprecated.",
-                "affected_sessions": [session_id],
-                "cve_references": [],
-                "nist_reference": "NIST SP 800-52r2 Section 3.6",
-                "mitre_attack_id": "T1600.002",
-                "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Hash",
-                "mitre_d3fend_id": "D3-CV",
-                "remediation": "Re-issue the certificate with SHA-256 or SHA-384 signature algorithm.",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "high",
+                    "title": f"Weak Certificate Signature Hash ({cert.signature_hash})",
+                    "description": f"Session #{session_id} certificate is signed with {cert.signature_hash}, which is cryptographically deprecated.",
+                    "affected_sessions": [session_id],
+                    "cve_references": [],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.6",
+                    "mitre_attack_id": "T1600.002",
+                    "mitre_attack_technique": "Weaken Encryption: Weak Cryptographic Hash",
+                    "mitre_d3fend_id": "D3-CV",
+                    "remediation": "Re-issue the certificate with SHA-256 or SHA-384 signature algorithm.",
+                }
+            )
         if cert.is_weak_key:
-            vulns.append({
-                "id": f"VULN-{counter + len(vulns) + 1:03d}",
-                "severity": "critical",
-                "title": f"Weak Public Key ({cert.public_key_type} {cert.public_key_bits}-bit)",
-                "description": f"Session #{session_id} certificate uses a {cert.public_key_bits}-bit {cert.public_key_type} key, which is below minimum security requirements and vulnerable to factoring.",
-                "affected_sessions": [session_id],
-                "cve_references": [],
-                "nist_reference": "NIST SP 800-52r2 Section 3.5",
-                "mitre_attack_id": "T1600.002",
-                "mitre_attack_technique": "Weaken Encryption: Inadequate Key Length",
-                "mitre_d3fend_id": "D3-CV",
-                "remediation": f"Re-issue with minimum {2048 if cert.public_key_type == 'RSA' else 256}-bit {cert.public_key_type} key.",
-            })
+            vulns.append(
+                {
+                    "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                    "severity": "critical",
+                    "title": f"Weak Public Key ({cert.public_key_type} {cert.public_key_bits}-bit)",
+                    "description": f"Session #{session_id} certificate uses a {cert.public_key_bits}-bit {cert.public_key_type} key, which is below minimum security requirements and vulnerable to factoring.",
+                    "affected_sessions": [session_id],
+                    "cve_references": [],
+                    "nist_reference": "NIST SP 800-52r2 Section 3.5",
+                    "mitre_attack_id": "T1600.002",
+                    "mitre_attack_technique": "Weaken Encryption: Inadequate Key Length",
+                    "mitre_d3fend_id": "D3-CV",
+                    "remediation": f"Re-issue with minimum {2048 if cert.public_key_type == 'RSA' else 256}-bit {cert.public_key_type} key.",
+                }
+            )
 
     if tls and ja3 and not ja3.is_known and not starttls.is_cleartext_only:
-        vulns.append({
-            "id": f"VULN-{counter + len(vulns) + 1:03d}",
-            "severity": "medium",
-            "title": f"Unrecognized Client JA3 Fingerprint: {ja3.ja3_hash[:16]}...",
-            "description": f"Session #{session_id} connects with an unverified ClientHello fingerprint (JA3: {ja3.ja3_hash}). The cryptographic signature does not match verified email user agents (Thunderbird, Outlook, Apple Mail), suggesting potential automated scripts or rogue client agents.",
-            "affected_sessions": [session_id],
-            "cve_references": [],
-            "nist_reference": "NIST SP 800-52r2 Section 3.1",
-            "mitre_attack_id": "T1071.003",
-            "mitre_attack_technique": "Application Layer Protocol: Mail Protocols",
-            "mitre_d3fend_id": "D3-CF",
-            "remediation": "Inspect endpoint process telemetry for anomalous mail clients connecting to the mail transfer agent.",
-        })
+        vulns.append(
+            {
+                "id": f"VULN-{counter + len(vulns) + 1:03d}",
+                "severity": "medium",
+                "title": f"Unrecognized Client JA3 Fingerprint: {ja3.ja3_hash[:16]}...",
+                "description": f"Session #{session_id} connects with an unverified ClientHello fingerprint (JA3: {ja3.ja3_hash}). The cryptographic signature does not match verified email user agents (Thunderbird, Outlook, Apple Mail), suggesting potential automated scripts or rogue client agents.",
+                "affected_sessions": [session_id],
+                "cve_references": [],
+                "nist_reference": "NIST SP 800-52r2 Section 3.1",
+                "mitre_attack_id": "T1071.003",
+                "mitre_attack_technique": "Application Layer Protocol: Mail Protocols",
+                "mitre_d3fend_id": "D3-CF",
+                "remediation": "Inspect endpoint process telemetry for anomalous mail clients connecting to the mail transfer agent.",
+            }
+        )
 
     return vulns
 
@@ -807,7 +874,12 @@ def _check_compliance(sessions: list[dict]) -> list[dict[str, Any]]:
 
         if check_type == "protocol_version":
             fail_vals = rule.get("fail_values", [])
-            bad = [s for s in sessions if s.get("tls_version") in fail_vals or (s.get("tls_version") is None and "None (Cleartext)" in fail_vals)]
+            bad = [
+                s
+                for s in sessions
+                if s.get("tls_version") in fail_vals
+                or (s.get("tls_version") is None and "None (Cleartext)" in fail_vals)
+            ]
             if bad:
                 status = "fail"
                 details = f"{len(bad)} session(s) use deprecated/prohibited protocols: {', '.join(set(str(s.get('tls_version')) for s in bad))}"
@@ -824,7 +896,11 @@ def _check_compliance(sessions: list[dict]) -> list[dict[str, Any]]:
 
         elif check_type == "cipher_mode":
             fail_cats = rule.get("fail_categories", [])
-            bad = [s for s in sessions if s.get("cipher_suite_hex") and CIPHER_DB.get(s["cipher_suite_hex"], {}).get("category") in fail_cats]
+            bad = [
+                s
+                for s in sessions
+                if s.get("cipher_suite_hex") and CIPHER_DB.get(s["cipher_suite_hex"], {}).get("category") in fail_cats
+            ]
             if bad:
                 status = "fail"
                 details = f"{len(bad)} session(s) use non-AEAD cipher modes"
@@ -832,7 +908,12 @@ def _check_compliance(sessions: list[dict]) -> list[dict[str, Any]]:
                 details = "All sessions use AEAD cipher modes (AES-GCM or ChaCha20)"
 
         elif check_type == "certificate":
-            bad = [s for s in sessions if s.get("certificate") and (s["certificate"].get("is_expired") or s["certificate"].get("is_self_signed"))]
+            bad = [
+                s
+                for s in sessions
+                if s.get("certificate")
+                and (s["certificate"].get("is_expired") or s["certificate"].get("is_self_signed"))
+            ]
             if bad:
                 status = "fail"
                 issues = []
@@ -865,7 +946,11 @@ def _check_compliance(sessions: list[dict]) -> list[dict[str, Any]]:
 
         elif check_type == "cipher_category":
             fail_cats = rule.get("fail_categories", [])
-            bad = [s for s in sessions if s.get("cipher_suite_hex") and CIPHER_DB.get(s["cipher_suite_hex"], {}).get("category") in fail_cats]
+            bad = [
+                s
+                for s in sessions
+                if s.get("cipher_suite_hex") and CIPHER_DB.get(s["cipher_suite_hex"], {}).get("category") in fail_cats
+            ]
             if bad:
                 status = "fail"
                 details = f"RC4 cipher detected in {len(bad)} session(s)"
@@ -888,14 +973,16 @@ def _check_compliance(sessions: list[dict]) -> list[dict[str, Any]]:
             status = "pass"
             details = "EC curve parameters checked where applicable"
 
-        checks.append({
-            "id": rule_id,
-            "standard": rule["standard"],
-            "section": rule["section"],
-            "requirement": rule["requirement"],
-            "status": status,
-            "details": details,
-        })
+        checks.append(
+            {
+                "id": rule_id,
+                "standard": rule["standard"],
+                "section": rule["section"],
+                "requirement": rule["requirement"],
+                "status": status,
+                "details": details,
+            }
+        )
 
     return checks
 
@@ -944,24 +1031,27 @@ def _aggregate_cert_summary(sessions: list[dict]) -> list[dict]:
             else:
                 overall = "secure"
 
-            summaries.append({
-                "server_name": s.get("server_name", s["dst_ip"]),
-                "subject_cn": cert.get("subject_cn", "Unknown"),
-                "issuer_cn": cert.get("issuer_cn", "Unknown"),
-                "is_expired": cert.get("is_expired", False),
-                "is_self_signed": cert.get("is_self_signed", False),
-                "is_weak_signature": cert.get("is_weak_signature", False),
-                "is_weak_key": cert.get("is_weak_key", False),
-                "days_remaining": cert.get("days_remaining", 0),
-                "public_key_type": cert.get("public_key_type", "Unknown"),
-                "public_key_bits": cert.get("public_key_bits", 0),
-                "signature_hash": cert.get("signature_hash", "Unknown"),
-                "overall_status": overall,
-            })
+            summaries.append(
+                {
+                    "server_name": s.get("server_name", s["dst_ip"]),
+                    "subject_cn": cert.get("subject_cn", "Unknown"),
+                    "issuer_cn": cert.get("issuer_cn", "Unknown"),
+                    "is_expired": cert.get("is_expired", False),
+                    "is_self_signed": cert.get("is_self_signed", False),
+                    "is_weak_signature": cert.get("is_weak_signature", False),
+                    "is_weak_key": cert.get("is_weak_key", False),
+                    "days_remaining": cert.get("days_remaining", 0),
+                    "public_key_type": cert.get("public_key_type", "Unknown"),
+                    "public_key_bits": cert.get("public_key_bits", 0),
+                    "signature_hash": cert.get("signature_hash", "Unknown"),
+                    "overall_status": overall,
+                }
+            )
     return summaries
 
 
 # ─── API Endpoints ───────────────────────────────────────────────
+
 
 @router.post("/upload")
 async def upload_pcap(file: UploadFile = File(...)):
@@ -975,7 +1065,7 @@ async def upload_pcap(file: UploadFile = File(...)):
 
     # Sanitize filename and prevent path traversal
     raw_name = os.path.basename(file.filename or "capture.pcap")
-    safe_filename = re.sub(r'[^a-zA-Z0-9_.-]', '_', raw_name)
+    safe_filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", raw_name)
     if not safe_filename:
         safe_filename = "capture.pcap"
 
@@ -1012,10 +1102,9 @@ async def upload_pcap(file: UploadFile = File(...)):
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-
 def _safe_export_token(aid: str) -> str:
     """Sanitize analysis ID to ensure safe RFC 6266 attachment filenames."""
-    cleaned = re.sub(r'[^a-zA-Z0-9_-]', '', aid)
+    cleaned = re.sub(r"[^a-zA-Z0-9_-]", "", aid)
     return cleaned[:16] if cleaned else "evidence"
 
 
@@ -1090,7 +1179,9 @@ async def export_certificate_pem(analysis_id: str, session_id: int):
 
     cert = target_session["certificate"]
     if cert.get("is_synthetic"):
-        raise HTTPException(status_code=404, detail="Synthetic placeholder certificate is not exportable as captured evidence")
+        raise HTTPException(
+            status_code=404, detail="Synthetic placeholder certificate is not exportable as captured evidence"
+        )
 
     pem_data = cert.get("pem_data")
     if not pem_data:
@@ -1123,7 +1214,9 @@ async def export_certificate_der(analysis_id: str, session_id: int):
 
     cert = target_session["certificate"]
     if cert.get("is_synthetic"):
-        raise HTTPException(status_code=404, detail="Synthetic placeholder certificate is not exportable as captured evidence")
+        raise HTTPException(
+            status_code=404, detail="Synthetic placeholder certificate is not exportable as captured evidence"
+        )
 
     der_hex = cert.get("raw_der_hex")
     der_bytes = b""
@@ -1138,6 +1231,7 @@ async def export_certificate_der(analysis_id: str, session_id: int):
         if pem_str and "-----BEGIN CERTIFICATE-----" in pem_str:
             from cryptography import x509
             from cryptography.hazmat.primitives import serialization
+
             try:
                 loaded = x509.load_pem_x509_certificate(pem_str.encode("utf-8"))
                 der_bytes = loaded.public_bytes(serialization.Encoding.DER)
@@ -1154,4 +1248,3 @@ async def export_certificate_der(analysis_id: str, session_id: int):
         media_type="application/pkix-cert",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
-

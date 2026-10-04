@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 from .cert_validator import CertificateInfo
+
 
 @dataclass
 class ScoringResult:
@@ -13,23 +15,33 @@ class ScoringResult:
     grade: str
     severity: str
 
+
 def calculate_grade_and_severity(score: int) -> tuple[str, str]:
     """Map a 0-100 score to letter grade and risk severity."""
     score_clamped = max(0, min(100, score))
     if score_clamped >= 90:
-        return 'A+', 'secure'
+        return "A+", "secure"
     elif score_clamped >= 80:
-        return 'A', 'low'
+        return "A", "low"
     elif score_clamped >= 70:
-        return 'B', 'low'
+        return "B", "low"
     elif score_clamped >= 60:
-        return 'C', 'medium'
+        return "C", "medium"
     elif score_clamped >= 50:
-        return 'D', 'medium'
+        return "D", "medium"
     else:
-        return 'F', ('critical' if score_clamped < 25 else 'high')
+        return "F", ("critical" if score_clamped < 25 else "high")
 
-def score_session(tls_version: str | None, cipher_category: str | None, cipher_is_aead: bool, key_exchange: str | None, cert: CertificateInfo | None, ja3_known: bool, is_cleartext: bool) -> ScoringResult:
+
+def score_session(
+    tls_version: str | None,
+    cipher_category: str | None,
+    cipher_is_aead: bool,
+    key_exchange: str | None,
+    cert: CertificateInfo | None,
+    ja3_known: bool,
+    is_cleartext: bool,
+) -> ScoringResult:
     """Compute cryptographic posture score for a single TLS session."""
     if is_cleartext:
         # No encryption at all — maximum penalty across the board
@@ -41,29 +53,29 @@ def score_session(tls_version: str | None, cipher_category: str | None, cipher_i
     else:
         # V_proto
         v_proto = 0
-        if tls_version in ['SSL 2.0', 'SSL 3.0']:
+        if tls_version in ["SSL 2.0", "SSL 3.0"]:
             v_proto = 40
-        elif tls_version in ['TLS 1.0', 'TLS 1.1']:
+        elif tls_version in ["TLS 1.0", "TLS 1.1"]:
             v_proto = 25
-        elif tls_version == 'TLS 1.2':
+        elif tls_version == "TLS 1.2":
             v_proto = 0 if cipher_is_aead else 5
-        elif tls_version == 'TLS 1.3':
+        elif tls_version == "TLS 1.3":
             v_proto = 0
 
         # V_cipher — cipher_db.json uses categories: RC4, 3DES, NULL, EXPORT, CBC, AEAD, TLS13
         v_cipher = 0
-        if cipher_category in ['RC4', '3DES', 'NULL', 'EXPORT']:
+        if cipher_category in ["RC4", "3DES", "NULL", "EXPORT"]:
             v_cipher = 30
-        elif cipher_category == 'CBC':
+        elif cipher_category == "CBC":
             v_cipher = 15
-        elif cipher_is_aead or cipher_category in ['AEAD', 'TLS13']:
+        elif cipher_is_aead or cipher_category in ["AEAD", "TLS13"]:
             v_cipher = 0
 
         # V_pfs — tls_analyzer outputs 'RSA', 'ECDHE', or 'DHE'
         v_pfs = 0
-        if key_exchange == 'RSA':
+        if key_exchange == "RSA":
             v_pfs = 20
-        elif key_exchange in ['ECDHE', 'DHE']:
+        elif key_exchange in ["ECDHE", "DHE"]:
             v_pfs = 0
 
         # V_cert
@@ -88,8 +100,6 @@ def score_session(tls_version: str | None, cipher_category: str | None, cipher_i
     final_score = max(0, min(100, raw_score))
     grade, severity = calculate_grade_and_severity(final_score)
 
-
-
     return ScoringResult(
         protocol_penalty=v_proto,
         cipher_penalty=v_cipher,
@@ -99,14 +109,15 @@ def score_session(tls_version: str | None, cipher_category: str | None, cipher_i
         raw_score=raw_score,
         final_score=final_score,
         grade=grade,
-        severity=severity
+        severity=severity,
     )
+
 
 def score_enterprise(session_scores: list[int]) -> tuple[int, str]:
     """Compute enterprise aggregate score and grade."""
     if not session_scores:
-        return 0, 'F'
-        
+        return 0, "F"
+
     avg_score = round(sum(session_scores) / len(session_scores))
     avg_score = max(0, min(100, avg_score))
     grade, _ = calculate_grade_and_severity(avg_score)
