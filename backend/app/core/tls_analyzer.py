@@ -34,14 +34,36 @@ class TlsAnalysis:
     ja3s_extensions: list[int] = field(default_factory=list)
     certificate_chain_ders: list[bytes] = field(default_factory=list)
     alpn_protocols: list[str] = field(default_factory=list)
+    pqc_status: str = "CLASSICAL_TRANSITIONAL"
+    pqc_group_name: str = "Classical ECDHE"
+    pqc_hndl_risk: str = "MODERATE"
+    negotiated_group_hex: str | None = None
 
 
+# Named Groups / Curves (Classical vs Post-Quantum Hybrid)
+_NAMED_GROUPS: dict[int, tuple[str, bool]] = {
+    # Post-Quantum Hybrid & Pure Groups (NIST FIPS 203 / ML-KEM / Kyber / RFC 10024)
+    0x6399: ("X25519Kyber768Draft00", True),
+    0x639A: ("SecP256r1Kyber768Draft00", True),
+    0x11EB: ("SecP256r1MLKEM768", True),
+    0x11EC: ("X25519MLKEM768", True),
+    0x11ED: ("SecP384r1MLKEM1024", True),
+    # Classical Ephemeral Groups
+    0x001D: ("x25519", False),
+    0x0017: ("secp256r1", False),
+    0x0018: ("secp384r1", False),
+    0x0019: ("secp521r1", False),
+    0x001E: ("x448", False),
+    0x0100: ("ffdhe2048", False),
+    0x0101: ("ffdhe3072", False),
+    0x0102: ("ffdhe4096", False),
+}
 
 # Load cipher database once at module level
 _DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "cipher_db.json")
 _CIPHER_DB: dict = {}
 if os.path.exists(_DB_PATH):
-    with open(_DB_PATH, "r") as _f:
+    with open(_DB_PATH, "r", encoding="utf-8") as _f:
         _CIPHER_DB = json.load(_f)
 
 
@@ -108,8 +130,10 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
         cert_chain_ders: list[bytes] = []
         alpn_protocols: list[str] = []
 
-        # Supported versions (for TLS 1.3 detection)
+        # Supported versions & key shares (for TLS 1.3 / PQC detection)
         sv_ext_version: int | None = None
+        sh_key_share_group: int | None = None
+        ch_key_share_groups: list[int] = []
 
         pos = _find_tls_record(payload, offset)
         if pos < 0:
@@ -228,6 +252,16 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                                     sv_ext_version = 0x0304
                                 si += 2
 
+                        elif ext_type == 0x0033 and len(ext_data) >= 2:
+                            # Key Share extension (Client Hello: offered key shares)
+                            ks_client_len = struct.unpack("!H", ext_data[0:2])[0]
+                            ksi = 2
+                            while ksi + 4 <= 2 + ks_client_len and ksi + 4 <= len(ext_data):
+                                g = struct.unpack("!H", ext_data[ksi:ksi + 2])[0]
+                                klen = struct.unpack("!H", ext_data[ksi + 2:ksi + 4])[0]
+                                ch_key_share_groups.append(g)
+                                ksi += 4 + klen
+
                         idx += 4 + ext_len
 
             elif hs_type == 0x02 and not server_hello_parsed:
@@ -270,6 +304,10 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
                             if v == 0x0304:
                                 negotiated_version = "TLS 1.3"
 
+                        elif ext_type == 0x0033 and len(ext_data) >= 2:
+                            # Key Share extension (TLS 1.3 negotiated NamedGroup)
+                            sh_key_share_group = struct.unpack("!H", ext_data[0:2])[0]
+
                         idx += 4 + ext_len
 
             elif hs_type == 0x0B and not cert_chain_ders:
@@ -307,12 +345,52 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
         pfs = cipher_entry.get("pfs", False)
 
         # Determine key exchange from cipher name and version
-        if "ECDHE" in sel_name or negotiated_version == "TLS 1.3" or pfs:
+        if sh_key_share_group in (0x0100, 0x0101, 0x0102):
+            kx = "DHE"
+        elif "ECDHE" in sel_name or negotiated_version == "TLS 1.3" or pfs:
             kx = "ECDHE"
         elif "DHE" in sel_name:
             kx = "DHE"
         else:
             kx = "RSA"
+
+        # Determine Post-Quantum Cryptography (PQC) & HNDL Risk status
+        pqc_status = "CLASSICAL_TRANSITIONAL"
+        pqc_group_name = "Classical ECDHE"
+        pqc_hndl_risk = "MODERATE"
+        negotiated_group_hex = None
+
+        if sh_key_share_group is not None:
+            negotiated_group_hex = f"0x{sh_key_share_group:04X}"
+            group_info = _NAMED_GROUPS.get(sh_key_share_group)
+            if group_info:
+                g_name, is_pqc = group_info
+                pqc_group_name = g_name
+                if is_pqc:
+                    pqc_status = "PQC_RESISTANT"
+                    pqc_hndl_risk = "NONE"
+                else:
+                    pqc_status = "CLASSICAL_TRANSITIONAL"
+                    pqc_hndl_risk = "MODERATE"
+            else:
+                pqc_group_name = f"NamedGroup 0x{sh_key_share_group:04X}"
+                pqc_status = "CLASSICAL_TRANSITIONAL"
+                pqc_hndl_risk = "MODERATE"
+        else:
+            # Fallback based on client curves, key shares, and key exchange.
+            # Client-offered groups alone never establish PQC resistance without ServerHello selection confirmation.
+            if negotiated_version == "TLS 1.3":
+                pqc_status = "UNKNOWN"
+                pqc_group_name = "Unknown (Key Share Unconfirmed)"
+                pqc_hndl_risk = "MODERATE"
+            elif kx in ("ECDHE", "DHE") or pfs:
+                pqc_status = "CLASSICAL_TRANSITIONAL"
+                pqc_group_name = "Classical ECDHE (x25519 / secp256r1)"
+                pqc_hndl_risk = "MODERATE"
+            elif kx == "RSA":
+                pqc_status = "CRQC_HARVEST_CRITICAL"
+                pqc_group_name = "Static RSA (No Forward Secrecy)"
+                pqc_hndl_risk = "CRITICAL"
 
         return TlsAnalysis(
             record_version=record_version,
@@ -336,6 +414,10 @@ def analyze_tls(payload: bytes, offset: int = 0) -> TlsAnalysis | None:
             ja3s_extensions=ja3s_extensions,
             certificate_chain_ders=cert_chain_ders,
             alpn_protocols=alpn_protocols,
+            pqc_status=pqc_status,
+            pqc_group_name=pqc_group_name,
+            pqc_hndl_risk=pqc_hndl_risk,
+            negotiated_group_hex=negotiated_group_hex,
         )
 
     except Exception as e:

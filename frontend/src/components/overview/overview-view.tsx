@@ -3,8 +3,11 @@
 import React, { useState } from "react";
 import { EvidenceCase } from "@/lib/types";
 import { PostureHero } from "./posture-hero";
+import { EditorialQuoteBand } from "./editorial-quote-band";
 import { ProtocolDivergenceStrip } from "./protocol-divergence-strip";
 import { FlowLedgerPreview } from "./flow-ledger-preview";
+import { SecurityTopology } from "./security-topology";
+import { WhatIfSimulator } from "./what-if-simulator";
 
 interface OverviewViewProps {
   activeCase: EvidenceCase;
@@ -24,19 +27,28 @@ export function OverviewView({ activeCase, onNavigateToFlow }: OverviewViewProps
   };
 
   return (
-    <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col gap-6 sm:gap-7 pb-16">
-      {/* 1. Asymmetric Posture Hero Cards (Posture Score & Primary Wire Finding) */}
+    <main className="flex-1 w-full max-w-[1216px] mx-auto px-6 py-3 flex flex-col gap-6 pb-14 select-none">
+      {/* 1. Slash Hero Split Composition with Gilded Line Chart & Mini Ledger */}
       <PostureHero activeCase={activeCase} onInspectFlow={handleInspect} />
 
-      {/* 2. Expected vs Observed Protocol Divergence & Forensic Inventory */}
+      {/* 2. Full-Bleed 4-Column Proof Stat Band & Didone Pull Quote (Video Frame 00:12) */}
+      <EditorialQuoteBand activeCase={activeCase} />
+
+      {/* 3. Interactive Hardening Sandbox & Real-Time Posture Elevation */}
+      <WhatIfSimulator activeCase={activeCase} />
+
+      {/* 4. Expected vs Observed Protocol Divergence Strip */}
       <ProtocolDivergenceStrip activeCase={activeCase} />
 
-      {/* 3. Differentiated Overview Flow: Reconstructed Email Streams & Forensic Ledger */}
+      {/* 5. Reconstructed Flow Ledger Table (Slash Data Table Archetype) */}
       <FlowLedgerPreview
         activeCase={activeCase}
         selectedFlowId={selectedFlowId}
         onSelectFlow={handleInspect}
       />
+
+      {/* 6. Node Graph Security Topology & Defense Pillars (Video Frame 00:16) */}
+      <SecurityTopology />
     </main>
   );
 }

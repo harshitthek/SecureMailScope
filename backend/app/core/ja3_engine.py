@@ -21,6 +21,19 @@ def filter_grease(values: list[int]) -> list[int]:
     """Remove GREASE values from a list of identifiers."""
     return [v for v in values if v not in GREASE_VALUES]
 
+_KNOWN_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'ja3_known.json')
+_KNOWN_DATA_CACHE: dict | None = None
+
+def _get_known_ja3() -> dict:
+    global _KNOWN_DATA_CACHE
+    if _KNOWN_DATA_CACHE is None:
+        try:
+            with open(_KNOWN_PATH, 'r', encoding='utf-8') as f:
+                _KNOWN_DATA_CACHE = json.load(f)
+        except Exception:
+            _KNOWN_DATA_CACHE = {}
+    return _KNOWN_DATA_CACHE
+
 def compute_ja3(version: int, ciphers: list[int], extensions: list[int], curves: list[int], point_formats: list[int]) -> Ja3Result:
     """Compute JA3 fingerprint hash from TLS Client Hello parameters."""
     ciphers_filtered = filter_grease(ciphers)
@@ -31,21 +44,16 @@ def compute_ja3(version: int, ciphers: list[int], extensions: list[int], curves:
     ja3_string = f"{version},{'-'.join(str(c) for c in ciphers_filtered)},{'-'.join(str(e) for e in extensions_filtered)},{'-'.join(str(c) for c in curves_filtered)},{'-'.join(str(p) for p in point_formats_filtered)}"
     ja3_hash = hashlib.md5(ja3_string.encode()).hexdigest()
 
-    known_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'ja3_known.json')
+    known_data = _get_known_ja3()
     client_name = None
     client_version = None
     is_known = False
 
-    try:
-        with open(known_path, 'r') as f:
-            known_data = json.load(f)
-        if ja3_hash in known_data:
-            entry = known_data[ja3_hash]
-            client_name = entry.get('client')       # ja3_known.json key
-            client_version = entry.get('version')   # ja3_known.json key
-            is_known = True
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
+    if ja3_hash in known_data:
+        entry = known_data[ja3_hash]
+        client_name = entry.get('client')       # ja3_known.json key
+        client_version = entry.get('version')   # ja3_known.json key
+        is_known = True
 
     return Ja3Result(
         ja3_string=ja3_string,

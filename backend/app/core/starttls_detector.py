@@ -128,14 +128,12 @@ def detect_starttls(stream: StreamData) -> StarttlsResult:
     pre_tls_upper = pre_tls_client.upper()
 
     cleartext_auth = bool(
-        # SMTP AUTH PLAIN / LOGIN
-        re.search(rb"AUTH\s+(PLAIN|LOGIN|CRAM-MD5)", pre_tls_upper) or
-        # IMAP LOGIN username password
-        re.search(rb"\bLOGIN\s+[^\r\n]+\s+[^\r\n]+", pre_tls_upper) or
+        # SMTP AUTH PLAIN / LOGIN / CRAM-MD5 at line start
+        re.search(rb"(?:^|\r\n|\n)AUTH\s+(PLAIN|LOGIN|CRAM-MD5)", pre_tls_upper) or
+        # IMAP LOGIN username password or tagged LOGIN
+        re.search(rb"(?:^|\r\n|\n)(?:[A-Z0-9]+\s+)?LOGIN\s+[^\r\n]+\s+[^\r\n]+", pre_tls_upper) or
         # POP3 USER / PASS sequence
-        (b"USER " in pre_tls_upper and b"PASS " in pre_tls_upper) or
-        # Base64 encoded auth exchange in pre-TLS
-        re.search(rb"\bAUTH\b", pre_tls_upper)
+        (re.search(rb"(?:^|\r\n|\n)USER\s+", pre_tls_upper) and re.search(rb"(?:^|\r\n|\n)PASS\s+", pre_tls_upper))
     )
 
     return StarttlsResult(

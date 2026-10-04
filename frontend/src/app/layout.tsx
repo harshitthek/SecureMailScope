@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-  fallback: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -30,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -38,19 +44,21 @@ export default function RootLayout({
               (function() {
                 try {
                   var stored = localStorage.getItem('sms_theme');
-                  if (stored === 'dark') {
-                    document.documentElement.classList.add('dark');
-                  } else {
+                  if (stored === 'light') {
                     document.documentElement.classList.remove('dark');
+                  } else {
+                    document.documentElement.classList.add('dark');
                   }
-                } catch (e) {}
+                } catch (e) {
+                  document.documentElement.classList.add('dark');
+                }
               })();
             `,
           }}
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans min-h-screen bg-sms-canvas text-sms-text-primary antialiased selection:bg-sms-accent-cyan/20 selection:text-sms-accent-cyan`}
+        className={`${inter.variable} ${playfair.variable} ${geistMono.variable} font-sans min-h-screen bg-sms-canvas text-sms-text-primary antialiased selection:bg-[#cc9166]/20 selection:text-[#cc9166]`}
       >
         {children}
       </body>

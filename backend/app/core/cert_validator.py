@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 from cryptography import x509
 from cryptography.x509 import load_der_x509_certificate
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, dsa, ed25519, ed448
 from cryptography.x509.oid import NameOID, ExtensionOID
 
@@ -25,6 +26,8 @@ class CertificateInfo:
     public_key_bits: int
     is_weak_key: bool
     san_entries: list[str]
+    pem_data: str = ""
+    raw_der_hex: str = ""
 
 def validate_certificate(der_bytes: bytes) -> CertificateInfo | None:
     """Parse X.509 DER certificates and validate cryptographic properties."""
@@ -102,6 +105,13 @@ def validate_certificate(der_bytes: bytes) -> CertificateInfo | None:
         except (x509.ExtensionNotFound, Exception):
             san_entries = []
 
+        # Export PEM string and DER hex representation for forensic evidence portability
+        try:
+            pem_str = cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+        except Exception:
+            pem_str = ""
+        der_hex = der_bytes.hex()
+
         return CertificateInfo(
             subject_cn=subject_cn,
             issuer_cn=issuer_cn,
@@ -119,7 +129,9 @@ def validate_certificate(der_bytes: bytes) -> CertificateInfo | None:
             public_key_type=public_key_type,
             public_key_bits=public_key_bits,
             is_weak_key=is_weak_key,
-            san_entries=san_entries
+            san_entries=san_entries,
+            pem_data=pem_str,
+            raw_der_hex=der_hex,
         )
     except Exception:
         return None

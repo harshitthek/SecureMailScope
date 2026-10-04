@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { EVIDENCE_CASES } from "@/lib/mock-data";
 import { EvidenceCase, AnalysisResult } from "@/lib/types";
@@ -9,17 +9,22 @@ import { NavStrip, ShellNavTab } from "@/components/shell/nav-strip";
 import { CaseContextStrip } from "@/components/shell/case-context-strip";
 import { OverviewView } from "@/components/overview/overview-view";
 import { UploadModal } from "@/components/shell/upload-modal";
+import { ShortcutHudModal } from "@/components/shell/shortcut-hud-modal";
+import { ToastProvider, useToast } from "@/components/shell/toast";
 import { FlowsView } from "@/components/views/flows-view";
 import { FindingsView } from "@/components/views/findings-view";
 import { CertificatesView } from "@/components/views/certificates-view";
 import { DissectorView } from "@/components/views/dissector-view";
 import { StandardsView } from "@/components/views/standards-view";
 import { ReportView } from "@/components/views/report-view";
+import { ApplicationFooter } from "@/components/shell/footer";
+import { getReportUrl, getAnalysis } from "@/lib/api";
 
 function ForensicWorkstationInner() {
   const searchParams = useSearchParams();
   const caseParam = searchParams.get("case");
   const tabParam = searchParams.get("tab")?.toUpperCase();
+  const { showToast } = useToast();
 
   // Determine active case strictly based on URL query param or fallback to CASE-04
   const resolvedCase = useMemo(() => {
@@ -42,32 +47,168 @@ function ForensicWorkstationInner() {
       : "OVERVIEW"
   );
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isHudOpen, setIsHudOpen] = useState(false);
+  const [selectedStreamId, setSelectedStreamId] = useState<number>(
+    resolvedCase.data.sessions[0]?.session_id || 1
+  );
+  const [selectedFlowIdForFlows, setSelectedFlowIdForFlows] = useState<number | null>(null);
 
-  // Synchronize state and guarantee URL consistency
+  // Synchronize state, fetch live backend analysis data, and guarantee URL consistency
   useEffect(() => {
     setActiveCase(resolvedCase);
+    setSelectedStreamId(resolvedCase.data.sessions[0]?.session_id || 1);
     const currentUrlParam = new URLSearchParams(window.location.search).get("case");
     if (currentUrlParam !== resolvedCase.case_code) {
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set("case", resolvedCase.case_code);
       window.history.replaceState(null, "", newUrl.toString());
     }
+
+    // Sync live forensic data from backend if available
+    const controller = new AbortController();
+    getAnalysis(resolvedCase.case_code, controller.signal)
+      .then((liveData: AnalysisResult | null) => {
+        if (liveData) {
+          setActiveCase((prev) => {
+            if (prev.case_code !== resolvedCase.case_code) {
+              return prev;
+            }
+            return {
+              ...prev,
+              data: {
+                ...prev.data,
+                ...liveData,
+                sessions: liveData.sessions && liveData.sessions.length > 0 ? liveData.sessions : prev.data.sessions,
+                vulnerabilities: liveData.vulnerabilities && liveData.vulnerabilities.length > 0 ? liveData.vulnerabilities : prev.data.vulnerabilities,
+              },
+            };
+          });
+        }
+      })
+      .catch((err) => {
+        if (err && err.name === "AbortError") return;
+        // Fallback safely to pre-bundled local data
+      });
+
+    return () => controller.abort();
   }, [resolvedCase]);
 
   // When user switches case via the header dropdown
-  const handleSelectCase = (c: EvidenceCase) => {
+  const handleSelectCase = useCallback((c: EvidenceCase) => {
     setActiveCase(c);
+    setSelectedStreamId(c.data.sessions[0]?.session_id || 1);
+    setSelectedFlowIdForFlows(null);
+    showToast(`Loaded Evidence Profile: ${c.label}`, "info");
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set("case", c.case_code);
     window.history.pushState(null, "", newUrl.toString());
-  };
+  }, [showToast]);
 
-  const handleSelectTab = (tab: ShellNavTab) => {
+  const handleSelectTab = useCallback((tab: ShellNavTab) => {
     setActiveTab(tab);
+    if (tab !== "FLOWS") {
+      setSelectedFlowIdForFlows(null);
+    }
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set("tab", tab);
     window.history.pushState(null, "", newUrl.toString());
-  };
+  }, []);
+
+  const handleExport = useCallback((format: "pdf" | "json" | "html") => {
+    const url = getReportUrl(activeCase.data.analysis_id, format);
+    showToast(`Generating ${format.toUpperCase()} Forensic Dossier...`, "success");
+    window.open(url, "_blank");
+  }, [activeCase, showToast]);
+
+  // SOC Keyboard Shortcuts Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcut triggers when modifier keys are held or when modals/drawers are open
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+      if (isUploadOpen || isHudOpen || (activeTab === "FLOWS" && selectedFlowIdForFlows !== null)) {
+        return;
+      }
+
+      // Ignore shortcut triggers when user is focused inside an input or textarea
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+
+      // Hotkey: 1 to 7 tab navigation
+      const tabMap: Record<string, ShellNavTab> = {
+        "1": "OVERVIEW",
+        "2": "FLOWS",
+        "3": "FINDINGS",
+        "4": "CERTIFICATES",
+        "5": "DISSECTOR",
+        "6": "STANDARDS",
+        "7": "REPORT",
+      };
+
+      if (tabMap[e.key]) {
+        e.preventDefault();
+        handleSelectTab(tabMap[e.key]);
+        showToast(`Jumped to ${tabMap[e.key]} Deck [${e.key}]`, "info");
+        return;
+      }
+
+      // Hotkey: ? -> toggle shortcut cheat sheet
+      if (e.key === "?") {
+        e.preventDefault();
+        setIsHudOpen((prev) => !prev);
+        return;
+      }
+
+      // Hotkey: / -> focus flow search input
+      if (e.key === "/") {
+        e.preventDefault();
+        if (activeTab !== "FLOWS") {
+          handleSelectTab("FLOWS");
+        }
+        setTimeout(() => {
+          const input = document.getElementById("flows-search-input");
+          if (input) {
+            input.focus();
+          }
+        }, 50);
+        return;
+      }
+
+      // Hotkey: U -> open PCAP upload modal
+      if (e.key === "u" || e.key === "U") {
+        e.preventDefault();
+        setIsUploadOpen(true);
+        return;
+      }
+
+      // Hotkey: D -> download PDF dossier
+      if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        handleExport("pdf");
+        return;
+      }
+
+      // Hotkey: H -> download HTML dossier
+      if (e.key === "h" || e.key === "H") {
+        e.preventDefault();
+        handleExport("html");
+        return;
+      }
+
+      // Hotkey: J -> download JSON report
+      if (e.key === "j" || e.key === "J") {
+        e.preventDefault();
+        handleExport("json");
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeTab, handleExport, handleSelectTab, showToast, isUploadOpen, isHudOpen, selectedFlowIdForFlows]);
 
   const handleUploadSuccess = (analysis: AnalysisResult) => {
     const customCase: EvidenceCase = {
@@ -92,6 +233,9 @@ function ForensicWorkstationInner() {
       data: analysis,
     };
     setActiveCase(customCase);
+    setSelectedStreamId(analysis.sessions[0]?.session_id || 1);
+    setSelectedFlowIdForFlows(null);
+    showToast(`Successfully analyzed PCAP: ${analysis.filename}`, "success");
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set("case", "USER-CAP");
     window.history.pushState(null, "", newUrl.toString());
@@ -121,8 +265,10 @@ function ForensicWorkstationInner() {
       {activeTab === "OVERVIEW" && (
         <OverviewView
           activeCase={activeCase}
-          onNavigateToFlow={() => {
-            handleSelectTab("FLOWS");
+          onNavigateToFlow={(flowId: number) => {
+            setSelectedStreamId(flowId);
+            setSelectedFlowIdForFlows(flowId);
+            handleSelectTab("DISSECTOR");
           }}
         />
       )}
@@ -130,7 +276,10 @@ function ForensicWorkstationInner() {
       {activeTab === "FLOWS" && (
         <FlowsView
           activeCase={activeCase}
-          onInspectFlowInDissector={() => {
+          initialFlowId={selectedFlowIdForFlows}
+          onInspectFlowInDissector={(flowId: number) => {
+            setSelectedStreamId(flowId);
+            setSelectedFlowIdForFlows(null);
             handleSelectTab("DISSECTOR");
           }}
         />
@@ -139,7 +288,9 @@ function ForensicWorkstationInner() {
       {activeTab === "FINDINGS" && (
         <FindingsView
           activeCase={activeCase}
-          onNavigateToFlow={() => {
+          onNavigateToFlow={(flowId: number) => {
+            setSelectedFlowIdForFlows(flowId);
+            setSelectedStreamId(flowId);
             handleSelectTab("FLOWS");
           }}
         />
@@ -150,7 +301,10 @@ function ForensicWorkstationInner() {
       )}
 
       {activeTab === "DISSECTOR" && (
-        <DissectorView activeCase={activeCase} />
+        <DissectorView
+          activeCase={activeCase}
+          initialStreamId={selectedStreamId}
+        />
       )}
 
       {activeTab === "STANDARDS" && (
@@ -161,11 +315,25 @@ function ForensicWorkstationInner() {
         <ReportView activeCase={activeCase} />
       )}
 
+      {/* 5. Slash Editorial Footer */}
+      <ApplicationFooter />
+
       {/* Upload PCAP Ingestion Modal */}
       <UploadModal
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onUploadSuccess={handleUploadSuccess}
+      />
+
+      {/* Keyboard Shortcuts & Command HUD Modal */}
+      <ShortcutHudModal
+        isOpen={isHudOpen}
+        onClose={() => setIsHudOpen(false)}
+        onSelectTab={handleSelectTab}
+        onOpenUpload={() => setIsUploadOpen(true)}
+        onExportPdf={() => handleExport("pdf")}
+        onExportHtml={() => handleExport("html")}
+        onExportJson={() => handleExport("json")}
       />
     </div>
   );
@@ -174,7 +342,9 @@ function ForensicWorkstationInner() {
 export default function ForensicWorkstationPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-sms-canvas" />}>
-      <ForensicWorkstationInner />
+      <ToastProvider>
+        <ForensicWorkstationInner />
+      </ToastProvider>
     </Suspense>
   );
 }

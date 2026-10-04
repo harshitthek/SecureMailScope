@@ -234,6 +234,214 @@ class TestForensicLogic(unittest.TestCase):
                 self.assertIn("vulnerabilities", res)
                 self.assertGreater(len(res["sessions"]), 0)
 
+    def test_html_report_generation(self):
+        """Verify HTML forensic report generates valid, complete, and air-gapped HTML5 markup."""
+        from app.reports.html_exporter import generate_html_report
+        mock_analysis = {
+            "analysis_id": "TEST-HTML-001",
+            "filename": "test_evidence.pcap",
+            "analyzed_at": "2026-10-04T00:00:00Z",
+            "file_size_bytes": 10240,
+            "processing_time_ms": 25,
+            "enterprise_score": 95,
+            "enterprise_grade": "A+",
+            "protocols_detected": ["SMTPS", "IMAPS"],
+            "sessions": [
+                {
+                    "session_id": "FLOW-01",
+                    "protocol": "SMTPS",
+                    "src_ip": "10.0.0.1",
+                    "src_port": 45000,
+                    "dst_ip": "10.0.0.25",
+                    "dst_port": 465,
+                    "is_implicit_tls": True,
+                    "tls_version": "TLS 1.3",
+                    "cipher_name": "TLS_AES_256_GCM_SHA384",
+                    "has_forward_secrecy": True,
+                    "session_score": 100,
+                    "session_grade": "A+",
+                }
+            ],
+            "vulnerabilities": [
+                {
+                    "title": "Legacy Protocol Warning",
+                    "description": "TLS 1.0 identified on legacy interface",
+                    "severity": "low",
+                    "protocol": "SMTP",
+                    "affected_session_id": "FLOW-01",
+                    "remediation": "smtpd_tls_mandatory_protocols = !TLSv1",
+                }
+            ],
+            "compliance": [
+                {
+                    "standard": "NIST SP 800-52r2",
+                    "section": "Section 3.1",
+                    "requirement": "TLS 1.2 or TLS 1.3 mandated",
+                    "status": "pass",
+                    "details": "Negotiated TLS 1.3",
+                }
+            ],
+            "certificate_summary": [
+                {
+                    "subject_cn": "mail.secure-defense.gov.in",
+                    "issuer_cn": "National Defense CA",
+                    "is_expired": False,
+                    "is_self_signed": False,
+                    "days_remaining": 320,
+                    "public_key_type": "RSA",
+                    "public_key_bits": 4096,
+                    "signature_hash": "SHA-256",
+                }
+            ],
+        }
+        html_out = generate_html_report(mock_analysis)
+        self.assertIn("<!DOCTYPE html>", html_out)
+        self.assertIn("TEST-HTML-001", html_out)
+        self.assertIn("SecureMailScope Forensic Audit Dossier", html_out)
+        self.assertIn("GRADE A+", html_out)
+        self.assertIn("NIST SP 800-52r2", html_out)
+        self.assertIn("mail.secure-defense.gov.in", html_out)
+        self.assertIn("Postfix", html_out)
+
+    def test_pqc_and_mitre_intelligence(self):
+        """Verify Post-Quantum classification and MITRE ATT&CK/D3FEND mappings."""
+        pcap_path = os.path.join(os.path.dirname(__file__), "..", "test_pcaps", "01_hardened_tls13_smtps.pcap")
+        if not os.path.exists(pcap_path):
+            self.skipTest("Sample pcap not found")
+
+        analysis = _run_analysis(pcap_path, "01_hardened_tls13_smtps.pcap")
+        sessions = analysis.get("sessions", [])
+        self.assertGreater(len(sessions), 0)
+
+        for s in sessions:
+            self.assertIn("pqc_status", s)
+            self.assertIn("pqc_group_name", s)
+            self.assertIn("pqc_hndl_risk", s)
+            self.assertIn(s["pqc_status"], ["PQC_RESISTANT", "CLASSICAL_TRANSITIONAL", "CRQC_HARVEST_CRITICAL", "UNENCRYPTED_EXPOSED", "UNKNOWN"])
+
+        vulns = analysis.get("vulnerabilities", [])
+        for v in vulns:
+            self.assertIn("mitre_attack_id", v)
+            self.assertIn("mitre_d3fend_id", v)
+
+    def test_pem_certificate_serialization(self):
+        """Verify raw X.509 certificate serializes to valid PEM format."""
+        pcap_path = os.path.join(os.path.dirname(__file__), "..", "test_pcaps", "01_hardened_tls13_smtps.pcap")
+        if not os.path.exists(pcap_path):
+            self.skipTest("Sample pcap not found")
+
+        analysis = _run_analysis(pcap_path, "01_hardened_tls13_smtps.pcap")
+        cert_found = False
+        for s in analysis.get("sessions", []):
+            cert = s.get("certificate")
+            if cert and cert.get("pem_data"):
+                cert_found = True
+                pem_str = cert["pem_data"]
+                self.assertTrue(pem_str.startswith("-----BEGIN CERTIFICATE-----"))
+                self.assertIn("-----END CERTIFICATE-----", pem_str)
+                break
+        self.assertTrue(cert_found, "Expected at least one session with certificate PEM serialization")
+
+    def test_security_hardening_sanitization(self):
+        """Verify API security hardening: token sanitization and filename defense."""
+        from app.api.routes import _safe_export_token
+
+        # Test path traversal injection
+        self.assertEqual(_safe_export_token("../../../etc/passwd"), "etcpasswd")
+        # Test windows path traversal
+        self.assertEqual(_safe_export_token("..\\..\\boot.ini"), "bootini")
+        # Test special characters and 16-char max truncation
+        self.assertEqual(_safe_export_token("<script>alert(1)</script>"), "scriptalert1scri")
+        # Test normal UUID truncation
+        self.assertEqual(_safe_export_token("c28a8607-7b83-498c-8f2a-b62a6fa2c123"), "c28a8607-7b83-49")
+        # Test empty input fallback
+        self.assertEqual(_safe_export_token(""), "evidence")
+        self.assertEqual(_safe_export_token("!@#$%^&*()"), "evidence")
+
+
+    def test_pdf_report_special_characters_escaping(self):
+        """Verify PDF exporter safely escapes XML characters without crashing."""
+        from app.reports.pdf_exporter import generate_pdf_report
+        sample_analysis = {
+            "analysis_id": "TEST-XML-01",
+            "filename": "capture <test> & audit.pcap",
+            "analyzed_at": "2026-10-04T12:00:00Z",
+            "processing_time_ms": 12,
+            "enterprise_score": 85,
+            "enterprise_grade": "A",
+            "total_sessions": 1,
+            "protocols_detected": ["SMTP"],
+            "sessions": [
+                {
+                    "session_id": 1,
+                    "server_name": "mail.example.gov",
+                    "protocol": "SMTP",
+                    "tls_version": "TLS 1.3",
+                    "cipher_suite_name": "TLS_AES_256_GCM_SHA384",
+                    "has_forward_secrecy": True,
+                    "session_score": 85,
+                }
+            ],
+            "vulnerabilities": [
+                {
+                    "severity": "high",
+                    "title": "Weak Key < 2048 & Inadequate Hash",
+                    "description": "RSA key size < 2048 bits & MD5/SHA-1 detected in certificate",
+                    "remediation": "Re-issue certificate with RSA >= 2048 bits & SHA-256",
+                }
+            ],
+            "compliance": [
+                {
+                    "status": "pass",
+                    "standard": "NIST SP 800-52r2",
+                    "section": "§3.1",
+                    "requirement": "TLS 1.2 or higher enforced & active",
+                }
+            ],
+        }
+        pdf_bytes = generate_pdf_report(sample_analysis)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF-1.4"))
+        self.assertGreater(len(pdf_bytes), 1000)
+
+    def test_starttls_auth_false_positive_prevention(self):
+        """Verify auth domain names in EHLO do not trigger cleartext auth alerts."""
+        from app.core.pcap_parser import StreamData
+        from app.core.starttls_detector import detect_starttls
+        stream = StreamData(
+            stream_id=1,
+            src_ip="192.168.1.10",
+            src_port=49152,
+            dst_ip="10.0.0.1",
+            dst_port=587,
+            protocol="SMTP",
+            is_implicit_tls=False,
+            client_payload=b"EHLO auth.defense.gov.in\r\nSTARTTLS\r\n",
+            server_payload=b"220 mail.defense.gov.in ESMTP Postfix\r\n250-STARTTLS\r\n220 2.0.0 Ready to start TLS\r\n",
+            timestamp="2026-10-04T12:00:00Z",
+            packet_count=4,
+        )
+        res = detect_starttls(stream)
+        self.assertFalse(res.cleartext_auth_detected)
+        self.assertTrue(res.starttls_advertised)
+        self.assertTrue(res.starttls_initiated)
+        self.assertTrue(res.starttls_accepted)
+
+    def test_modular_tcp_reassembly_wraparound(self):
+        """Verify TCP reassembly handles high sequence numbers and retransmitted segments."""
+        from app.core.pcap_parser import reassemble_tcp_payload
+        from scapy.layers.inet import IP, TCP
+        p1 = IP(src="1.1.1.1", dst="2.2.2.2")/TCP(seq=0xFFFFFFF0, sport=587, dport=49152)/b"Hello "
+        p1.time = 1.0
+        p2 = IP(src="1.1.1.1", dst="2.2.2.2")/TCP(seq=(0xFFFFFFF0 + 6) % (1 << 32), sport=587, dport=49152)/b"SecureMailScope"
+        p2.time = 1.1
+        # Duplicate retransmission of p1
+        p1_dup = IP(src="1.1.1.1", dst="2.2.2.2")/TCP(seq=0xFFFFFFF0, sport=587, dport=49152)/b"Hello "
+        p1_dup.time = 1.2
+        result = reassemble_tcp_payload([p1, p2, p1_dup])
+        self.assertEqual(result, b"Hello SecureMailScope")
+
 
 if __name__ == "__main__":
     unittest.main()
+
+

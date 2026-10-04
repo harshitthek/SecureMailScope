@@ -3,120 +3,194 @@
 @tailwind utilities;
 
 /* ============================================================
-   SECUREMAILSCOPE DESIGN SYSTEM TOKENS
-   Enterprise Cybersecurity Theme: Light Mode First & Dark Operations
+   SLASH DESIGN SYSTEM TOKENS
+   Midnight Vault with Gilded Ledger Lines (Dark Mode Baseline)
    ============================================================ */
 
 :root {
-  /* LIGHT THEME (Default): Modern Enterprise Cybersecurity Dashboard */
-  --sms-canvas: #F8FAFC;
-  --sms-surface-primary: #FFFFFF;
-  --sms-surface-secondary: #F1F5F9;
-  --sms-surface-hover: #E2E8F0;
-  --sms-surface-selected: #EFF6FF;
-  --sms-surface-raw: #F8FAFC;
+  /* Direct Slash Tokens (Midnight Vault) */
+  --color-obsidian: #08080a;
+  --color-onyx: #040406;
+  --color-carbon: #121317;
+  --color-graphite: #1c1d22;
+  --color-slate: #2e3038;
+  --color-smoke: #464853;
+  --color-ash: #5e616e;
+  --color-steel: #777a88;
+  --color-fog: #9194a1;
+  --color-mist: #acafb9;
+  --color-silver: #c7c9d1;
+  --color-bone: #e2e3e9;
+  --color-paper-white: #ffffff;
+  --color-copper: #cc9166;
+  --color-gilded-gradient: #ae9357;
+  --gradient-gilded: linear-gradient(103deg, rgb(174, 147, 87), rgb(255, 240, 204) 40%, rgb(174, 147, 87) 70%, rgba(189, 157, 79, 0));
 
-  --sms-border: #E2E8F0;
-  --sms-border-strong: #CBD5E1;
-  --sms-selected-rail: #2563EB;
+  /* SecureMailScope Surface Mapping */
+  --sms-canvas: #08080a;
+  --sms-surface-primary: #040406;
+  --sms-surface-secondary: #121317;
+  --sms-surface-hover: #1c1d22;
+  --sms-surface-selected: #16171d;
+  --sms-surface-raw: #08080a;
 
-  --sms-text-primary: #0F172A;
-  --sms-text-secondary: #334155;
-  --sms-text-muted: #64748B;
+  /* Hairline Borders */
+  --sms-border: #1c1d22;
+  --sms-border-strong: #2e3038;
+  --sms-selected-rail: #cc9166;
 
-  --sms-raw-text: #1E293B;
-  --sms-raw-offset: #64748B;
+  /* Typographic Registers */
+  --sms-text-primary: #ffffff;
+  --sms-text-secondary: #e2e3e9;
+  --sms-text-muted: #9194a1;
+  --sms-text-ash: #5e616e;
 
-  /* Primary Brand & Accents */
-  --sms-accent-cyan: #0284C7;       /* Cyber Blue/Teal */
-  --sms-accent-cyan-hover: #0369A1;
-  --sms-accent-cyan-dim: rgba(2, 132, 199, 0.08);
+  --sms-raw-text: #e2e3e9;
+  --sms-raw-offset: #777a88;
 
-  /* Primary Semantic Cybersecurity Accents: Green #22C55E & Red #EF4444 */
-  --sms-status-green: #22C55E;
-  --sms-status-green-dim: rgba(34, 197, 94, 0.12);
-  --sms-status-green-border: rgba(34, 197, 94, 0.35);
+  /* Single Chromatic Brand Accent: Copper */
+  --sms-accent-cyan: #cc9166;
+  --sms-accent-cyan-hover: #dfa77e;
+  --sms-accent-cyan-dim: rgba(204, 145, 102, 0.12);
 
-  --sms-status-red: #EF4444;
-  --sms-status-red-dim: rgba(239, 68, 68, 0.12);
-  --sms-status-red-border: rgba(239, 68, 68, 0.35);
+  /* Semantic State Indicators (Desaturated, Non-Vibrating) */
+  --sms-status-green: #34d399;
+  --sms-status-green-dim: rgba(52, 211, 153, 0.10);
+  --sms-status-green-border: rgba(52, 211, 153, 0.28);
 
-  --sms-status-amber: #F59E0B;
-  --sms-status-amber-dim: rgba(245, 158, 11, 0.12);
-  --sms-status-amber-border: rgba(245, 158, 11, 0.35);
+  --sms-status-red: #f87171;
+  --sms-status-red-dim: rgba(248, 113, 113, 0.10);
+  --sms-status-red-border: rgba(248, 113, 113, 0.28);
 
-  --sms-status-blue: #3B82F6;
-  --sms-status-blue-dim: rgba(59, 130, 246, 0.12);
+  --sms-status-amber: #cc9166;
+  --sms-status-amber-dim: rgba(204, 145, 102, 0.12);
+  --sms-status-amber-border: rgba(204, 145, 102, 0.30);
 
-  --sms-btn-primary-bg: #0F172A;
-  --sms-btn-primary-hover: #1E293B;
-  --sms-btn-primary-text: #FFFFFF;
-  --sms-btn-primary-border: #0F172A;
+  --sms-status-blue: #9194a1;
+  --sms-status-blue-dim: rgba(145, 148, 161, 0.12);
 
-  --sms-radius-tag: 6px;
-  --sms-radius-btn: 8px;
-  --sms-radius-surface: 14px;
-  --sms-radius-modal: 16px;
+  /* Buttons */
+  --sms-btn-primary-bg: #ffffff;
+  --sms-btn-primary-hover: #e2e3e9;
+  --sms-btn-primary-text: #000000;
+  --sms-btn-primary-border: #ffffff;
 
-  --sms-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --sms-shadow-card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.07), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --sms-shadow-header: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
-  --sms-shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px #E2E8F0;
+  /* Shapes */
+  --sms-radius-tag: 9999px;
+  --sms-radius-btn: 9999px;
+  --sms-radius-surface: 10px;
+  --sms-radius-modal: 10px;
+
+  /* Shadows: Hairline borders over heavy drop shadows */
+  --sms-shadow-card: none;
+  --sms-shadow-card-hover: 0 0 0 1px #2e3038;
+  --sms-shadow-header: none;
+  --sms-shadow-modal: 0 0 0 1px #2e3038;
 }
 
 .dark {
-  /* DARK THEME: Night Security Operations Console */
-  --sms-canvas: #0B0F17;
-  --sms-surface-primary: #111827;
-  --sms-surface-secondary: #1F2937;
-  --sms-surface-hover: #2D3748;
-  --sms-surface-selected: #1E293B;
-  --sms-surface-raw: #0D121D;
+  /* Reinforce Midnight Vault in Dark Mode */
+  --sms-canvas: #08080a;
+  --sms-surface-primary: #040406;
+  --sms-surface-secondary: #121317;
+  --sms-surface-hover: #1c1d22;
+  --sms-surface-selected: #16171d;
+  --sms-surface-raw: #08080a;
 
-  --sms-border: #1E293B;
-  --sms-border-strong: #334155;
-  --sms-selected-rail: #38BDF8;
+  --sms-border: #1c1d22;
+  --sms-border-strong: #2e3038;
+  --sms-selected-rail: #cc9166;
 
-  --sms-text-primary: #F8FAFC;
-  --sms-text-secondary: #CBD5E1;
-  --sms-text-muted: #94A3B8;
+  --sms-text-primary: #ffffff;
+  --sms-text-secondary: #e2e3e9;
+  --sms-text-muted: #9194a1;
+  --sms-text-ash: #5e616e;
 
-  --sms-raw-text: #E2E8F0;
-  --sms-raw-offset: #64748B;
+  --sms-accent-cyan: #cc9166;
+  --sms-accent-cyan-hover: #dfa77e;
+  --sms-accent-cyan-dim: rgba(204, 145, 102, 0.12);
+}
 
-  --sms-accent-cyan: #38BDF8;
-  --sms-accent-cyan-hover: #7DD3FC;
-  --sms-accent-cyan-dim: rgba(56, 189, 248, 0.12);
+/* ============================================================
+   SLASH DAYLIGHT VAULT (WARM CASHMERE & ARCHITECTURAL SEPIA)
+   Ultra-Comfortable, Zero-Glare, Soft Eye-Resting Palette
+   ============================================================ */
 
-  --sms-status-green: #22C55E;
-  --sms-status-green-dim: rgba(34, 197, 94, 0.16);
-  --sms-status-green-border: rgba(34, 197, 94, 0.40);
+html:not(.dark) {
+  color-scheme: light;
 
-  --sms-status-red: #EF4444;
-  --sms-status-red-dim: rgba(239, 68, 68, 0.16);
-  --sms-status-red-border: rgba(239, 68, 68, 0.40);
+  /* Direct Slash Tokens for Soft Cashmere & Sepia */
+  --color-obsidian: #e2ddd3;          /* Warm Cashmere Slate canvas (low eye emission) */
+  --color-onyx: #ebe6dc;              /* Soft Warm Linen cards (non-glaring paper) */
+  --color-carbon: #ded7cb;            /* Warm Sandstone panels & sub-cards */
+  --color-graphite: #cec7b8;          /* Gentle Warm Stone hairline borders */
+  --color-slate: #bfb7a6;             /* Soft Secondary borders */
+  --color-smoke: #9e9584;             /* Muted Smoke */
+  --color-ash: #8a8274;               /* Gentle Pebble */
+  --color-steel: #7d7568;             /* Muted Steel */
+  --color-fog: #70695c;               /* Warm Taupe secondary text */
+  --color-mist: #544e43;              /* Deep Warm Mist */
+  --color-silver: #423d34;            /* Soft Umber */
+  --color-bone: #3c3730;              /* Muted Warm Charcoal body */
+  --color-paper-white: #2b2721;       /* Soft Hand-Pressed Roasted Umber headings */
+  --color-copper: #945323;            /* Rich Warm Chestnut Terracotta */
+  --color-gilded-gradient: #8a6d2b;
+  --gradient-gilded: linear-gradient(103deg, rgb(138, 109, 43), rgb(186, 150, 78) 40%, rgb(138, 109, 43) 70%, rgba(138, 109, 43, 0));
 
-  --sms-status-amber: #F59E0B;
-  --sms-status-amber-dim: rgba(245, 158, 11, 0.16);
-  --sms-status-amber-border: rgba(245, 158, 11, 0.40);
+  /* SecureMailScope Surface Mapping */
+  --sms-canvas: #e2ddd3;
+  --sms-surface-primary: #ebe6dc;
+  --sms-surface-secondary: #ded7cb;
+  --sms-surface-hover: #d6cfc1;
+  --sms-surface-selected: #d6cfc1;
+  --sms-surface-raw: #e2ddd3;
 
-  --sms-status-blue: #60A5FA;
-  --sms-status-blue-dim: rgba(96, 165, 250, 0.16);
+  /* Hairline Borders */
+  --sms-border: #cec7b8;
+  --sms-border-strong: #bfb7a6;
+  --sms-selected-rail: #945323;
 
-  --sms-btn-primary-bg: #38BDF8;
-  --sms-btn-primary-hover: #7DD3FC;
-  --sms-btn-primary-text: #0B0F17;
-  --sms-btn-primary-border: #38BDF8;
+  /* Typographic Registers */
+  --sms-text-primary: #2b2721;
+  --sms-text-secondary: #3c3730;
+  --sms-text-muted: #70695c;
+  --sms-text-ash: #8a8274;
 
-  --sms-radius-tag: 6px;
-  --sms-radius-btn: 8px;
-  --sms-radius-surface: 14px;
-  --sms-radius-modal: 16px;
+  --sms-raw-text: #3c3730;
+  --sms-raw-offset: #7d7568;
 
-  --sms-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
-  --sms-shadow-card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  --sms-shadow-header: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-  --sms-shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px #334155;
+  /* Single Chromatic Brand Accent: Warm Chestnut Terracotta */
+  --sms-accent-cyan: #945323;
+  --sms-accent-cyan-hover: #7b421a;
+  --sms-accent-cyan-dim: rgba(148, 83, 35, 0.12);
+
+  /* Semantic State Indicators (Warm, Desaturated, Non-Aggressive) */
+  --sms-status-green: #1e6b47;
+  --sms-status-green-dim: rgba(30, 107, 71, 0.08);
+  --sms-status-green-border: rgba(30, 107, 71, 0.22);
+
+  --sms-status-red: #9c2828;
+  --sms-status-red-dim: rgba(156, 40, 40, 0.08);
+  --sms-status-red-border: rgba(156, 40, 40, 0.22);
+
+  --sms-status-amber: #96570c;
+  --sms-status-amber-dim: rgba(150, 87, 12, 0.08);
+  --sms-status-amber-border: rgba(150, 87, 12, 0.22);
+
+  --sms-status-blue: #1e4b80;
+  --sms-status-blue-dim: rgba(30, 75, 128, 0.08);
+
+  /* Primary Action Buttons: Roasted Umber */
+  --sms-btn-primary-bg: #2b2721;
+  --sms-btn-primary-hover: #3c3730;
+  --sms-btn-primary-text: #ebe6dc;
+  --sms-btn-primary-border: #2b2721;
+
+  /* Soft Ambient Elevation */
+  --sms-shadow-card: 0 1px 3px 0 rgba(35, 30, 20, 0.04), 0 1px 2px -1px rgba(35, 30, 20, 0.04);
+  --sms-shadow-card-hover: 0 4px 6px -1px rgba(35, 30, 20, 0.06), 0 2px 4px -2px rgba(35, 30, 20, 0.06);
+  --sms-shadow-header: 0 1px 2px 0 rgba(35, 30, 20, 0.04);
+  --sms-shadow-modal: 0 20px 25px -5px rgba(35, 30, 20, 0.12), 0 8px 10px -6px rgba(35, 30, 20, 0.08);
 }
 
 /* ============================================================
@@ -128,14 +202,14 @@
 }
 
 html {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 body {
   background-color: var(--sms-canvas);
-  color: var(--sms-text-primary);
-  font-family: var(--font-geist-sans), Inter, system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
+  color: var(--sms-text-secondary);
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
@@ -145,6 +219,11 @@ body {
 /* ============================================================
    TYPOGRAPHY UTILITIES
    ============================================================ */
+
+.font-serif-display {
+  font-family: var(--font-serif), 'Playfair Display', 'Ivy Presto', 'DM Serif Display', Georgia, serif;
+  letter-spacing: 0.01em;
+}
 
 .font-mono-tech {
   font-family: var(--font-geist-mono), "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
@@ -156,18 +235,39 @@ body {
   font-feature-settings: "tnum" 1;
 }
 
+/* Gilded ledger line utility */
+.gilded-line {
+  background: var(--gradient-gilded);
+}
+
 /* Modern Card Styling */
 .sms-card {
   background-color: var(--sms-surface-primary);
   border: 1px solid var(--sms-border);
-  border-radius: var(--sms-radius-surface);
+  border-radius: 10px;
   box-shadow: var(--sms-shadow-card);
-  transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease;
+  transition: border-color 150ms ease, background-color 150ms ease;
 }
 
 .sms-card:hover {
-  box-shadow: var(--sms-shadow-card-hover);
   border-color: var(--sms-border-strong);
+  box-shadow: var(--sms-shadow-card-hover);
+}
+
+/* Pill control */
+.pill-control {
+  border-radius: 9999px;
+  border: 1px solid var(--sms-border-strong);
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--sms-text-secondary);
+  background: transparent;
+  transition: all 150ms ease;
+}
+
+.pill-control:hover {
+  color: var(--sms-text-primary);
+  border-color: #777a88;
 }
 
 /* Interactive transitions */
@@ -181,7 +281,7 @@ body {
 
 /* Focus outline */
 :focus-visible {
-  outline: 2px solid var(--sms-accent-cyan);
+  outline: 2px solid var(--color-copper);
   outline-offset: 2px;
 }
 
@@ -192,14 +292,384 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #08080a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--sms-border-strong);
-  border-radius: 4px;
+  background: #1c1d22;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--sms-text-muted);
+  background: #2e3038;
+}
+
+/* ============================================================
+   DAYLIGHT VAULT UTILITY OVERRIDES (Strictly Scoped: html:not(.dark))
+   Guarantees 100% Zero Regressions for Dark Mode
+   Warm Cashmere Linen & Architectural Sepia
+   ============================================================ */
+
+html:not(.dark) body {
+  background-color: #e2ddd3 !important;
+  color: #3c3730 !important;
+}
+
+html:not(.dark) ::selection {
+  background-color: rgba(148, 83, 35, 0.22);
+  color: #2b2721;
+}
+
+/* 1. Structural Surfaces & Background Hierarchy (Comforting, Zero Harshness) */
+html:not(.dark) .bg-\[\#08080a\] {
+  background-color: #e2ddd3 !important;
+}
+
+html:not(.dark) .bg-\[\#040406\] {
+  background-color: #ebe6dc !important;
+  box-shadow: 0 1px 3px 0 rgba(35, 30, 20, 0.05), 0 1px 2px -1px rgba(35, 30, 20, 0.04);
+}
+
+html:not(.dark) .bg-\[\#121317\] {
+  background-color: #ded7cb !important;
+}
+
+html:not(.dark) .bg-\[\#16171d\] {
+  background-color: #d6cfc1 !important;
+}
+
+html:not(.dark) .bg-\[\#0d0e12\] {
+  background-color: #ded7cb !important;
+}
+
+html:not(.dark) .bg-\[\#08080a\]\/50 {
+  background-color: #ded7cb !important;
+}
+
+html:not(.dark) .bg-\[\#1c1d22\] {
+  background-color: #cec7b8 !important;
+}
+
+html:not(.dark) .hover\:bg-\[\#121317\]:hover {
+  background-color: #d6cfc1 !important;
+}
+
+html:not(.dark) .hover\:bg-\[\#1c1d22\]:hover {
+  background-color: #cec7b8 !important;
+}
+
+html:not(.dark) .hover\:bg-\[\#252730\]:hover {
+  background-color: #c7c0b0 !important;
+}
+
+html:not(.dark) .bg-white\/5 {
+  background-color: rgba(35, 30, 20, 0.04) !important;
+}
+
+html:not(.dark) .bg-white\/10 {
+  background-color: rgba(35, 30, 20, 0.07) !important;
+}
+
+html:not(.dark) .hover\:bg-white\/5:hover {
+  background-color: rgba(35, 30, 20, 0.06) !important;
+}
+
+html:not(.dark) .hover\:bg-white\/10:hover {
+  background-color: rgba(35, 30, 20, 0.09) !important;
+}
+
+html:not(.dark) .hover\:bg-\[\#121317\]\/40:hover {
+  background-color: rgba(206, 199, 184, 0.5) !important;
+}
+
+/* 2. Structural Hairline Borders (Gentle Warm Stone) */
+html:not(.dark) .border-\[\#1c1d22\] {
+  border-color: #cec7b8 !important;
+}
+
+html:not(.dark) .border-\[\#2e3038\] {
+  border-color: #bfb7a6 !important;
+}
+
+html:not(.dark) .border-\[\#464853\] {
+  border-color: #9e9584 !important;
+}
+
+html:not(.dark) .hover\:border-\[\#2e3038\]:hover {
+  border-color: #aca290 !important;
+}
+
+html:not(.dark) .hover\:border-\[\#777a88\]:hover {
+  border-color: #70695c !important;
+}
+
+html:not(.dark) .hover\:border-white:hover {
+  border-color: #2b2721 !important;
+}
+
+html:not(.dark) .divide-\[\#1c1d22\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #cec7b8 !important;
+}
+
+html:not(.dark) .divide-\[\#2e3038\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #bfb7a6 !important;
+}
+
+/* 3. Typographic Registers (Soft Roasted Umber & Warm Charcoal) */
+html:not(.dark) .text-white {
+  color: #2b2721 !important;
+}
+
+html:not(.dark) .text-\[\#e2e3e9\] {
+  color: #3c3730 !important;
+}
+
+html:not(.dark) .text-\[\#c7c9d1\] {
+  color: #4f483d !important;
+}
+
+html:not(.dark) .text-\[\#acafb9\] {
+  color: #5e574a !important;
+}
+
+html:not(.dark) .text-\[\#9194a1\] {
+  color: #70695c !important;
+}
+
+html:not(.dark) .text-\[\#777a88\] {
+  color: #8a8274 !important;
+}
+
+html:not(.dark) .text-\[\#5e616e\],
+html:not(.dark) .text-\[\#464853\] {
+  color: #9e9584 !important;
+}
+
+html:not(.dark) .hover\:text-white:hover {
+  color: #2b2721 !important;
+}
+
+/* 4. Single Editorial Accent: Warm Chestnut Terracotta */
+html:not(.dark) .text-\[\#cc9166\] {
+  color: #945323 !important;
+}
+
+html:not(.dark) .bg-\[\#cc9166\] {
+  background-color: #945323 !important;
+}
+
+html:not(.dark) .border-\[\#cc9166\] {
+  border-color: #945323 !important;
+}
+
+html:not(.dark) .hover\:text-\[\#cc9166\]:hover {
+  color: #7b421a !important;
+}
+
+html:not(.dark) .hover\:border-\[\#cc9166\]:hover {
+  border-color: #7b421a !important;
+}
+
+html:not(.dark) .bg-\[\#cc9166\]\/10,
+html:not(.dark) .bg-\[\#cc9166\]\/12,
+html:not(.dark) .bg-\[\#cc9166\]\/15,
+html:not(.dark) .bg-\[\#cc9166\]\/20 {
+  background-color: rgba(148, 83, 35, 0.10) !important;
+}
+
+html:not(.dark) .border-\[\#cc9166\]\/30,
+html:not(.dark) .border-\[\#cc9166\]\/40,
+html:not(.dark) .border-\[\#cc9166\]\/50 {
+  border-color: rgba(148, 83, 35, 0.32) !important;
+}
+
+/* 5. Primary Action Pills & Inversion */
+html:not(.dark) .bg-white.text-black,
+html:not(.dark) .bg-white.text-\[\#040406\],
+html:not(.dark) .bg-white.text-neutral-900 {
+  background-color: #2b2721 !important;
+  color: #ebe6dc !important;
+  border-color: #2b2721 !important;
+}
+
+html:not(.dark) .bg-white.text-black *,
+html:not(.dark) .bg-white.text-\[\#040406\] * {
+  color: #ebe6dc !important;
+}
+
+html:not(.dark) .bg-white.text-black svg,
+html:not(.dark) .bg-white.text-\[\#040406\] svg {
+  stroke: #ebe6dc !important;
+  color: #ebe6dc !important;
+}
+
+html:not(.dark) .hover\:bg-white\/90:hover {
+  background-color: #3c3730 !important;
+}
+
+html:not(.dark) .border-white {
+  border-color: #2b2721 !important;
+}
+
+/* 6. Semantic Alert & Status Badges (Warm, Gentle, Non-Aggressive) */
+/* Critical / Stripped / Threat */
+html:not(.dark) .text-\[\#f87171\],
+html:not(.dark) .text-red-400 {
+  color: #9c2828 !important;
+}
+
+html:not(.dark) .bg-\[\#7f1d1d\]\/20,
+html:not(.dark) .bg-\[\#f87171\]\/10,
+html:not(.dark) .bg-red-500\/10 {
+  background-color: rgba(156, 40, 40, 0.08) !important;
+}
+
+html:not(.dark) .border-\[\#f87171\]\/30,
+html:not(.dark) .border-\[\#f87171\]\/40,
+html:not(.dark) .border-red-500\/20,
+html:not(.dark) .border-red-500\/30 {
+  border-color: rgba(156, 40, 40, 0.24) !important;
+}
+
+/* Secure / Compliant / Hardened */
+html:not(.dark) .text-\[\#10b981\],
+html:not(.dark) .text-\[\#34d399\],
+html:not(.dark) .text-emerald-400 {
+  color: #1e6b47 !important;
+}
+
+html:not(.dark) .bg-\[\#064e3b\]\/20,
+html:not(.dark) .bg-\[\#34d399\]\/10,
+html:not(.dark) .bg-emerald-500\/10 {
+  background-color: rgba(30, 107, 71, 0.08) !important;
+}
+
+html:not(.dark) .border-\[\#10b981\]\/30,
+html:not(.dark) .border-\[\#10b981\]\/40,
+html:not(.dark) .border-\[\#34d399\]\/30,
+html:not(.dark) .border-emerald-500\/20,
+html:not(.dark) .border-emerald-500\/30 {
+  border-color: rgba(30, 107, 71, 0.24) !important;
+}
+
+/* Warning / Legacy / Non-Compliant */
+html:not(.dark) .text-\[\#fbbf24\],
+html:not(.dark) .text-amber-400 {
+  color: #96570c !important;
+}
+
+html:not(.dark) .bg-\[\#78350f\]\/20,
+html:not(.dark) .bg-\[\#fbbf24\]\/10,
+html:not(.dark) .bg-amber-500\/10 {
+  background-color: rgba(150, 87, 12, 0.08) !important;
+}
+
+html:not(.dark) .border-\[\#fbbf24\]\/30,
+html:not(.dark) .border-\[\#fbbf24\]\/40,
+html:not(.dark) .border-amber-500\/20,
+html:not(.dark) .border-amber-500\/30 {
+  border-color: rgba(150, 87, 12, 0.24) !important;
+}
+
+/* Protocol Violet & Informational Blue */
+html:not(.dark) .text-purple-400 {
+  color: #632396 !important;
+}
+html:not(.dark) .bg-purple-500\/10 {
+  background-color: rgba(99, 35, 150, 0.08) !important;
+}
+html:not(.dark) .border-purple-500\/20,
+html:not(.dark) .border-purple-500\/30 {
+  border-color: rgba(99, 35, 150, 0.22) !important;
+}
+
+html:not(.dark) .text-blue-400,
+html:not(.dark) .text-\[\#60a5fa\] {
+  color: #1e4b80 !important;
+}
+html:not(.dark) .bg-blue-500\/10,
+html:not(.dark) .bg-\[\#1e3a8a\]\/20 {
+  background-color: rgba(30, 75, 128, 0.08) !important;
+}
+html:not(.dark) .border-blue-500\/20 {
+  border-color: rgba(30, 75, 128, 0.22) !important;
+}
+
+/* 7. SVG Ledger Trajectory & Gauges */
+html:not(.dark) #gilded-line-grad stop:nth-child(1) { stop-color: rgb(138, 109, 43); }
+html:not(.dark) #gilded-line-grad stop:nth-child(2) { stop-color: rgb(186, 150, 78); }
+html:not(.dark) #gilded-line-grad stop:nth-child(3) { stop-color: rgb(138, 109, 43); }
+html:not(.dark) #gilded-area-grad stop:nth-child(1) { stop-color: rgba(186, 150, 78, 0.12); }
+
+html:not(.dark) svg circle[fill="#ffffff"] {
+  fill: #2b2721 !important;
+}
+html:not(.dark) svg circle[stroke="#040406"] {
+  stroke: #ebe6dc !important;
+}
+html:not(.dark) svg circle[stroke="#08080a"] {
+  stroke: #e2ddd3 !important;
+}
+html:not(.dark) svg circle[stroke="#1c1d22"] {
+  stroke: #cec7b8 !important;
+}
+html:not(.dark) svg path[stroke="#1c1d22"] {
+  stroke: #cec7b8 !important;
+}
+html:not(.dark) svg line[stroke="#2e3038"] {
+  stroke: #bfb7a6 !important;
+}
+html:not(.dark) svg text[fill="#777a88"] {
+  fill: #7d7568 !important;
+}
+
+/* 8. Overlays, Modals, Drawers & Popovers */
+html:not(.dark) .bg-black\/60,
+html:not(.dark) .bg-black\/70,
+html:not(.dark) .bg-black\/80 {
+  background-color: rgba(35, 30, 22, 0.40) !important;
+}
+
+html:not(.dark) .z-40.bg-\[\#040406\],
+html:not(.dark) .z-50.bg-\[\#040406\],
+html:not(.dark) .absolute.bg-\[\#040406\] {
+  box-shadow: 0 10px 25px -5px rgba(35, 30, 20, 0.14), 0 8px 10px -6px rgba(35, 30, 20, 0.08) !important;
+}
+
+/* 9. Scrollbars in Daylight Vault */
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #e2ddd3;
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #bfb7a6;
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #9e9584;
+}
+
+/* 10. Form Controls & Search Inputs */
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+html:not(.dark) textarea {
+  background-color: #ebe6dc !important;
+  border-color: #bfb7a6 !important;
+  color: #2b2721 !important;
+}
+
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"])::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #8a8274 !important;
+}
+
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus,
+html:not(.dark) textarea:focus {
+  border-color: #945323 !important;
+  outline: none !important;
+}
+
+/* 11. Code & Dissector Blocks */
+html:not(.dark) pre,
+html:not(.dark) code {
+  color: #3c3730;
 }

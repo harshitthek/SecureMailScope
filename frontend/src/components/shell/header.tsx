@@ -40,155 +40,136 @@ export function ApplicationHeader({
   const isHardened = activeCase.posture_grade === "A+" || activeCase.posture_grade === "A";
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 pt-4 pb-1">
-      <header className="sms-card bg-sms-surface-primary border border-sms-border rounded-2xl shadow-header p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 select-none transition-smooth">
-        {/* LEFT: Identity, Title, Badges & Professional Subtitle */}
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/10 via-sky-500/10 to-transparent border border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-sm shrink-0">
-            <Shield className="w-6 h-6" strokeWidth={2} />
+    <header className="w-full bg-[#08080a] border-b border-[#1c1d22] sticky top-0 z-40 select-none">
+      <div className="max-w-[1216px] mx-auto px-6 h-16 flex items-center justify-between gap-4">
+        {/* LEFT: Brand Lockup with Copper Eyebrow */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#121317] border border-[#2e3038] flex items-center justify-center text-[#cc9166] shrink-0">
+            <Shield className="w-4 h-4" strokeWidth={1.75} />
           </div>
 
-          <div className="flex flex-col">
-            <div className="flex items-center flex-wrap gap-2.5">
-              <span className="font-black text-2xl sm:text-[26px] tracking-tight text-sms-text-primary leading-tight font-sans">
-                SecureMailScope
-              </span>
-              <span className="px-2 py-0.5 text-xs font-mono-tech font-bold rounded-md border border-sms-border-strong bg-sms-surface-secondary text-sms-text-secondary">
-                SIH26159
-              </span>
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-mono-tech font-semibold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                NTRO SENSOR ACTIVE
-              </span>
-            </div>
-
-            <p className="text-xs sm:text-sm text-sms-text-muted font-medium mt-1 leading-snug">
-              Enterprise Passive Email Cryptographic Forensics &amp; Wire Analysis (RFC 8314 / NIST SP 800-52r2)
-            </p>
+          <div className="flex items-baseline gap-2.5">
+            <span className="font-serif text-xl sm:text-2xl tracking-[0.01em] text-white font-normal">
+              SecureMailScope
+            </span>
+            <span className="text-[13px] font-semibold tracking-[-0.02em] text-[#cc9166] uppercase hidden sm:inline">
+              NTRO · SIH26159
+            </span>
           </div>
         </div>
 
-        {/* CENTER / CASE SELECTOR */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-full lg:w-auto" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setCaseMenuOpen(!caseMenuOpen)}
-              className="w-full lg:w-auto h-11 px-4 rounded-xl border border-sms-border hover:border-sms-border-strong bg-sms-surface-secondary hover:bg-sms-surface-hover text-sms-text-primary text-sm flex items-center justify-between gap-3 transition-all duration-150 shadow-sm"
-              aria-expanded={caseMenuOpen}
+        {/* CENTER: Case Selector Pill */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setCaseMenuOpen(!caseMenuOpen)}
+            className="h-9 px-3.5 rounded-full border border-[#2e3038] hover:border-[#777a88] bg-[#121317] hover:bg-[#1c1d22] text-[#e2e3e9] text-xs font-mono flex items-center gap-2.5 transition-colors"
+            aria-expanded={caseMenuOpen}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isHardened ? "bg-[#34d399]" : "bg-[#f87171]"
+              }`}
+            />
+            <span className="font-medium text-white">
+              {activeCase.case_code}
+            </span>
+            <span className="text-[#5e616e] hidden md:inline">·</span>
+            <span className="text-[#acafb9] hidden md:inline truncate max-w-[120px]">
+              {activeCase.name}
+            </span>
+            <span
+              className={`px-2 py-0.2 rounded-full text-[11px] border font-medium ${
+                isHardened
+                  ? "text-[#34d399] border-[#34d399]/30 bg-[#34d399]/10"
+                  : "text-[#f87171] border-[#f87171]/30 bg-[#f87171]/10"
+              }`}
             >
-              <div className="flex items-center gap-2.5">
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    isHardened ? "bg-sms-status-green ring-2 ring-emerald-500/20" : "bg-sms-status-red ring-2 ring-red-500/20"
-                  }`}
-                />
-                <span className="font-bold font-mono-tech tracking-tight text-sms-text-primary">
-                  {activeCase.case_code}
-                </span>
-                <span className="text-sms-text-muted hidden sm:inline">·</span>
-                <span className="text-sms-text-secondary font-medium hidden sm:inline truncate max-w-[130px]">
-                  {activeCase.name}
-                </span>
-              </div>
+              {activeCase.posture_score}/100
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-[#777a88]" strokeWidth={1.8} />
+          </button>
 
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-xs font-mono-tech font-bold px-2 py-0.5 rounded-md ${
-                    isHardened
-                      ? "text-sms-status-green bg-sms-status-green/10"
-                      : "text-sms-status-red bg-sms-status-red/10"
-                  }`}
-                >
-                  {activeCase.posture_score}/100 ({activeCase.posture_grade})
-                </span>
-                <ChevronDown className="w-4 h-4 text-sms-text-muted" strokeWidth={1.8} />
+          {caseMenuOpen && (
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 sm:w-96 rounded-[10px] border border-[#2e3038] bg-[#040406] shadow-2xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-[#9194a1] border-b border-[#1c1d22] flex items-center justify-between font-mono">
+                <span>Forensic Case Dossiers</span>
+                <span className="text-[#cc9166]">4 Preset Captures</span>
               </div>
-            </button>
-
-            {caseMenuOpen && (
-              <div className="absolute left-0 lg:left-1/2 lg:-translate-x-1/2 mt-2 w-full lg:w-[420px] rounded-2xl border border-sms-border-strong bg-sms-surface-primary shadow-modal z-50 p-2 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-sms-text-muted border-b border-sms-border flex items-center justify-between font-mono-tech">
-                  <span>Forensic Case Dossiers</span>
-                  <span>4 Preset Captures</span>
-                </div>
-                <div className="divide-y divide-sms-border/50 mt-1">
-                  {EVIDENCE_CASES.map((c) => {
-                    const isSelected = c.id === activeCase.id;
-                    const cIsHardened = c.posture_grade === "A+" || c.posture_grade === "A";
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectCase(c);
-                          setCaseMenuOpen(false);
-                        }}
-                        className={`w-full text-left px-3.5 py-3 rounded-xl flex items-center justify-between hover:bg-sms-surface-hover transition-all duration-150 ${
-                          isSelected ? "bg-sms-surface-secondary border border-sms-border" : ""
-                        }`}
-                      >
-                        <div className="flex flex-col gap-1 pr-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono-tech font-bold text-sm text-sms-text-primary">
-                              {c.case_code} · {c.name}
-                            </span>
-                            <span
-                              className={`text-[11px] font-mono-tech font-bold px-1.5 py-0.5 rounded-md ${
-                                cIsHardened
-                                  ? "text-sms-status-green bg-sms-status-green/10"
-                                  : "text-sms-status-red bg-sms-status-red/10"
-                              }`}
-                            >
-                              {c.posture_score}/100 ({c.posture_grade})
-                            </span>
-                          </div>
-                          <span className="text-xs text-sms-text-secondary line-clamp-1">
-                            {c.description}
+              <div className="divide-y divide-[#1c1d22] mt-1">
+                {EVIDENCE_CASES.map((c) => {
+                  const isSelected = c.id === activeCase.id;
+                  const cIsHardened = c.posture_grade === "A+" || c.posture_grade === "A";
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        onSelectCase(c);
+                        setCaseMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2.5 rounded-[8px] flex items-center justify-between hover:bg-[#121317] transition-colors ${
+                        isSelected ? "bg-[#121317] border border-[#2e3038]" : ""
+                      }`}
+                    >
+                      <div className="flex flex-col gap-0.5 pr-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-medium text-xs text-white">
+                            {c.case_code} · {c.name}
+                          </span>
+                          <span
+                            className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full border ${
+                              cIsHardened
+                                ? "text-[#34d399] border-[#34d399]/30 bg-[#34d399]/10"
+                                : "text-[#f87171] border-[#f87171]/30 bg-[#f87171]/10"
+                            }`}
+                          >
+                            {c.posture_score}/100 ({c.posture_grade})
                           </span>
                         </div>
-                        {isSelected && (
-                          <Check className="w-4 h-4 text-emerald-500 shrink-0 ml-2" strokeWidth={2} />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                        <span className="text-[11px] text-[#9194a1] line-clamp-1">
+                          {c.description}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <Check className="w-4 h-4 text-[#cc9166] shrink-0 ml-2" strokeWidth={2} />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* RIGHT: Prominent PDF Button, Upload PCAP, Export & Theme Toggle */}
-        <div className="flex items-center flex-wrap gap-2.5 justify-end">
-          {/* Prominent PDF Button (Requirement 2) */}
+        {/* RIGHT: Ghost Outline + White Primary Action Button */}
+        <div className="flex items-center gap-2.5">
+          {/* Ghost Outline PDF Button */}
           <button
             type="button"
             onClick={handleDirectPdfDownload}
             title="Download Forensic Audit Dossier (PDF)"
-            className="h-10 px-4 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 hover:bg-red-100/90 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 font-semibold text-sm flex items-center gap-2 transition-all duration-150 shadow-sm hover:shadow hover:-translate-y-0.5"
+            className="hidden sm:flex h-9 px-4 rounded-full border border-white hover:bg-white/10 text-white font-medium text-xs font-sans items-center gap-1.5 transition-colors"
           >
-            <FileText className="w-4 h-4 text-red-500 dark:text-red-400" strokeWidth={2} />
-            <span className="font-semibold tracking-tight">Export PDF</span>
+            <FileText className="w-3.5 h-3.5 text-[#cc9166]" strokeWidth={2} />
+            <span>Export PDF</span>
           </button>
 
-          {/* Export Menu for additional formats */}
           <ExportMenu analysisId={activeCase.data.analysis_id} />
 
-          {/* Upload PCAP Button */}
+          {/* Single Primary Action Button in Viewport (White Pill, Black Text) */}
           <button
             type="button"
             onClick={onOpenUpload}
-            className="h-10 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 font-semibold text-sm flex items-center gap-2 transition-all duration-150 shadow-sm hover:shadow hover:-translate-y-0.5"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#e2e3e9] text-black font-medium text-xs font-sans flex items-center gap-1.5 transition-colors"
           >
-            <UploadCloud className="w-4 h-4" strokeWidth={2} />
+            <UploadCloud className="w-3.5 h-3.5 text-black" strokeWidth={2} />
             <span>Upload PCAP</span>
           </button>
 
-          {/* Theme Toggle */}
           <ThemeToggle />
         </div>
-      </header>
-    </div>
+      </div>
+    </header>
   );
 }

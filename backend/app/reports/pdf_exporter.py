@@ -2,8 +2,7 @@
 PDF forensic report generator using ReportLab.
 Generates a multi-page professional report from analysis results.
 """
-from __future__ import annotations
-
+import html
 import io
 import os
 from typing import Any
@@ -148,12 +147,13 @@ def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
     story.append(Paragraph("1. Executive Summary", s["h1"]))
     story.append(HRFlowable(width="100%", thickness=0.5, color=C_BORDER, spaceAfter=8))
 
-    crit_count = len([v for v in analysis.get("vulnerabilities", []) if v["severity"] == "critical"])
-    high_count = len([v for v in analysis.get("vulnerabilities", []) if v["severity"] == "high"])
-    fail_count = len([c for c in analysis.get("compliance", []) if c["status"] == "fail"])
+    crit_count = len([v for v in analysis.get("vulnerabilities", []) if str(v.get("severity", "")).lower() == "critical"])
+    high_count = len([v for v in analysis.get("vulnerabilities", []) if str(v.get("severity", "")).lower() == "high"])
+    fail_count = len([c for c in analysis.get("compliance", []) if c.get("status") == "fail"])
 
+    safe_filename = html.escape(str(analysis.get("filename", "N/A")))
     story.append(Paragraph(
-        f"Analysis of <b>{analysis.get('filename', 'N/A')}</b> identified "
+        f"Analysis of <b>{safe_filename}</b> identified "
         f"<b>{analysis.get('total_sessions', 0)}</b> email communication sessions across "
         f"<b>{len(analysis.get('protocols_detected', []))}</b> protocol types. "
         f"The overall cryptographic posture is rated <b>{grade}</b> ({score}/100).",
@@ -208,12 +208,16 @@ def generate_pdf_report(analysis: dict[str, Any]) -> bytes:
         story.append(Paragraph("No vulnerabilities detected. All sessions meet security requirements.", s["body"]))
     else:
         for v in vulns:
-            sev = v["severity"].upper()
-            sev_color = SEVERITY_COLORS.get(v["severity"], C_MUTED)
+            raw_sev = str(v.get("severity", "medium")).lower()
+            sev = raw_sev.upper()
+            sev_color = SEVERITY_COLORS.get(raw_sev, C_MUTED)
+            v_title = html.escape(str(v.get("title", "")))
+            v_desc = html.escape(str(v.get("description", "")))
+            v_remed = html.escape(str(v.get("remediation", "")))
             story.append(KeepTogether([
-                Paragraph(f"<font color='{sev_color.hexval()}'>[{sev}]</font> <b>{v['title']}</b>", s["body"]),
-                Paragraph(v["description"], s["small"]),
-                Paragraph(f"<b>Remediation:</b> {v['remediation']}", s["small"]),
+                Paragraph(f"<font color='{sev_color.hexval()}'>[{sev}]</font> <b>{v_title}</b>", s["body"]),
+                Paragraph(v_desc, s["small"]),
+                Paragraph(f"<b>Remediation:</b> {v_remed}", s["small"]),
                 Spacer(1, 6),
             ]))
 
