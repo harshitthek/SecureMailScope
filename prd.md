@@ -3,139 +3,86 @@
 ## Meta
 - **Project:** SecureMailScope
 - **PS ID:** SIH26159
-- **Agency:** National Technical Research Organisation (NTRO)
+- **Agency:** National Technical Research Organisation (NTRO), Government of India
 - **Theme:** Blockchain & Cybersecurity
-- **Sprint Goal:** Working prototype with demo video in ≤48 hours
-- **Date:** 2026-09-30
+- **Scope:** Complete Enterprise Platform (Passive Core + Live TAP Sensor + Spool Daemon + Relational DB + SIEM + Automated Remediation + 8-Deck SOC Workstation)
+- **Status:** Complete & Production-Ready
 
 ---
 
-## 1. Product Vision (One-Liner)
-A passive network forensic tool that ingests raw PCAP files, reconstructs email protocol sessions (SMTP/IMAP/POP3), dissects TLS handshakes, audits cryptographic posture against NIST/RFC standards, fingerprints clients via JA3, flags anomalies using ML, and outputs an interactive security dashboard + exportable forensic reports.
+## 1. Product Vision
+An end-to-end passive network forensic framework for email cryptographic security posture assessment that:
+1. Reconstructs email protocol sessions (SMTP, SMTPS, IMAP, IMAPS, POP3, POP3S) out-of-band without traffic injection or mail body decryption.
+2. Dissects TLS handshakes across SSL 2.0 through TLS 1.3, flags protocol downgrades (e.g. AiTM STRIPTLS), and audits X.509 certificate chains.
+3. Classifies Post-Quantum Cryptography (PQC) readiness and identifies Harvest-Now-Decrypt-Later (HNDL) exposure.
+4. Sniffs live wire network traffic via passive TAP sensors with in-flight threat heuristics and WebSocket telemetry.
+5. Ingests captures continuously through an automated file spool watcher.
+6. Persists normalized evidence into an async relational database.
+7. Emits real-time ArcSight CEF logs, RFC 5424 Syslog (:514 UDP), and SOAR webhooks.
+8. Automatically synthesizes Ansible hardening playbooks, Suricata rules, Snort 3 signatures, and MITRE D3FEND defensive countermeasures.
+9. Renders an interactive 8-deck industrial brutalist SOC workstation with dual-mode packet dissectors and cryptographic posture diffing.
 
 ---
 
-## 2. Users & Personas
+## 2. Personas & Stakeholders
 
-| Persona | Role | Primary Need |
-|---------|------|-------------|
-| **SOC Analyst** | Security Operations Center operator | Upload PCAP → get prioritized vulnerability list in <30 seconds |
-| **Digital Forensics Investigator** | Post-incident response | Reconstruct email sessions, extract certificates, verify chain of custody |
-| **Enterprise IT Admin** | Mail server administrator | Identify misconfigured mail servers and get remediation config snippets |
-| **NTRO Evaluator** | SIH Judge | See all PS deliverables working end-to-end in a 3-minute demo |
-
----
-
-## 3. Core Feature Requirements (MoSCoW)
-
-### MUST Have (MVP — Prototype Video Scope)
-1. **PCAP File Upload:** Drag-and-drop `.pcap` / `.pcapng` file upload via web UI.
-2. **Protocol Auto-Detection:** Automatically identify SMTP (25, 587, 465), IMAP (143, 993), POP3 (110, 995) sessions from the capture.
-3. **TCP Stream Reassembly:** Reconstruct complete TCP communication streams from raw packets.
-4. **STARTTLS Detection:** Detect plaintext-to-TLS upgrade transitions; flag sessions that never upgrade (cleartext fallback).
-5. **TLS Handshake Parsing:** Extract from Client Hello & Server Hello:
-   - Negotiated TLS version
-   - Selected cipher suite
-   - Key exchange mechanism (static RSA vs ECDHE)
-   - SNI (Server Name Indication)
-6. **X.509 Certificate Extraction & Validation:**
-   - Subject, Issuer, Validity dates (expired check)
-   - Signature algorithm (flag SHA-1 / MD5)
-   - Public key type & length (flag RSA < 2048)
-   - Self-signed detection
-7. **Cryptographic Posture Scoring:** Weighted formula producing a 0–100 score per session and an aggregate enterprise grade (A+ through F).
-8. **Vulnerability Flagging:** Flag deprecated protocols (SSL 2/3, TLS 1.0/1.1), weak ciphers (RC4, 3DES, EXPORT, NULL), missing forward secrecy, CBC-mode ciphers.
-9. **Interactive Dashboard:** Single-page web dashboard showing:
-   - Overall enterprise posture score (large gauge/donut)
-   - Session table with per-session scores and severity badges
-   - Protocol version distribution (pie/bar chart)
-   - Cipher suite breakdown
-   - Certificate health summary
-10. **Report Export:** Generate downloadable forensic report in JSON and PDF formats.
-
-### SHOULD Have (If Time Permits)
-11. **JA3 Fingerprinting:** Compute JA3 hashes from Client Hello; compare against known-good client database (Thunderbird, Outlook, Apple Mail); flag unknown fingerprints.
-12. **Anomaly Detection:** Isolation Forest or simple statistical outlier detection on TLS feature vectors to flag suspicious sessions.
-13. **NIST SP 800-52r2 Compliance Checklist:** Explicit pass/fail checklist mapped to standard sections.
-14. **Remediation Snippets:** Auto-generate Postfix `main.cf` / Dovecot config patches that fix detected issues.
-
-### COULD Have (Post-Hackathon)
-15. **Real-time streaming PCAP analysis** (live capture mode).
-16. **Certificate chain validation** against Mozilla CA bundle.
-17. **JA4 fingerprinting** (server-side).
-18. **SIEM/SOAR integration** (Splunk HEC, Elastic webhook).
-
-### WON'T Have (Out of Scope)
-- Active port scanning or probing of live mail servers.
-- Email content decryption or reading.
-- User authentication / multi-tenant SaaS features.
-- Mobile native app.
+| Persona | Role | Enterprise Workflow |
+| :--- | :--- | :--- |
+| **SOC / CERT Analyst** | Tactical Threat Monitor | Observes live TAP telemetry, receives in-flight threat alerts, triggers SIEM test dispatches. |
+| **Forensic Investigator** | Incident Post-Mortem | Uses dual-mode protocol dissector to inspect raw hex/ASCII state machines and verify downgrade transitions. |
+| **System Administrator** | Mail Server Hardening | Downloads synthesized Ansible playbooks and IDS signatures to remediate configuration gaps. |
+| **NTRO Evaluator** | Government Compliance | Evaluates mathematical posture scoring against NIST SP 800-52r2, RFC 8314, and BSI TR-02102-2. |
 
 ---
 
-## 4. Functional Flow
+## 3. Delivered Feature Capabilities Matrix
 
-```
-[User uploads .pcap file]
-        │
-        ▼
-[Backend: Parse packets with scapy/dpkt]
-        │
-        ▼
-[Filter TCP streams on email ports (25, 110, 143, 465, 587, 993, 995)]
-        │
-        ▼
-[Reassemble TCP streams → detect protocol type]
-        │
-        ├─── Implicit TLS (465, 993, 995): Jump straight to TLS parsing
-        │
-        └─── STARTTLS (25, 587, 143, 110): Track plaintext phase → detect
-             STARTTLS command → mark TLS transition offset
-        │
-        ▼
-[Parse TLS Record Layer → extract Client Hello, Server Hello, Certificate]
-        │
-        ▼
-[Extract features: TLS version, cipher, key exchange, cert metadata, JA3]
-        │
-        ▼
-[Apply scoring formula + vulnerability rules + anomaly detection]
-        │
-        ▼
-[Return structured JSON result to frontend]
-        │
-        ▼
-[Frontend renders dashboard: score gauge, session table, charts, alerts]
-        │
-        ▼
-[User clicks Export → generates PDF/JSON forensic report]
-```
+### 3.1 Passive Forensic Core & Dissection (Complete ✅)
+- Multi-format ingestion: `.pcap`, `.pcapng`, `.cap`.
+- Complete TCP stream reassembly handling sequence wraparounds and deduplication.
+- Opportunistic STARTTLS detection and AiTM downgrade / STRIPTLS alert generation.
+- TLS 1.0–1.3 dissection: Client Hello, Server Hello, Key Exchange, SNI, Supported Groups, Point Formats.
+- X.509 certificate validation: signature digests (SHA-1/MD5), public keys (RSA < 2048), expiration, self-signed status.
+- MD5 JA3 client fingerprinting with GREASE value filtering and signature lookup.
+- Mathematical composite scoring formula (0–100) and enterprise grades (A+ to F).
+- Formal multi-page ReportLab PDF, JSON, and interactive HTML audit dossier exports.
 
----
+### 3.2 Live Wire TAP Sensor & WebSocket Telemetry (Complete ✅)
+- Passive sniffing on physical/virtual interfaces under BPF filter: `tcp and (port 25 or 587 or 465 or 993 or 110)`.
+- In-flight heuristics detecting STRIPTLS downgrades, cleartext authentication, and deprecated SSLv3.
+- Thread-safe circular ring buffer (2,000 packet capacity) with one-click snapshotting to forensic dossiers.
+- Configurable synthetic attack replay streaming at variable packet rates (e.g. 12 PPS).
+- Bi-directional WebSocket (`/api/ws/telemetry`) streaming sensor health, buffer capacity, and real-time alerts.
 
-## 5. Non-Functional Requirements
-- **Performance:** Process a 50MB PCAP (≈500 email sessions) in under 30 seconds.
-- **File Size Limit:** Accept PCAPs up to 200MB.
-- **Browser Support:** Chrome 90+, Firefox 90+, Edge 90+ (demo video only).
-- **No External Network Calls:** All analysis is local/server-side. No data leaves the machine (NTRO security requirement).
-- **Single Deployment:** Everything runs from `docker compose up` or `python app.py` + `npm run dev`.
+### 3.3 Automated Spool Directory Daemon (Complete ✅)
+- Continuous directory monitoring: `spool/incoming/` -> `spool/processed/` / `spool/quarantine/`.
+- File lock detection to prevent ingesting partially transferred or active writes.
+- Maximum file size safety threshold (50 MB) and extension validation.
+- Background worker with on-demand sweep trigger (`POST /api/spool/scan`).
 
----
+### 3.4 Async SQLite Relational Persistence (Complete ✅)
+- Normalized SQLAlchemy 2.0 schema: `CaptureCaseModel`, `FlowSessionModel`, `FindingModel`, `CertEvidenceModel`.
+- Read-through high-speed memory caching.
+- Seeded defense benchmark profiles (`CASE-01` through `CASE-04`) with PQC classification.
+- Paginated REST APIs for listing, retrieving, and deleting capture cases.
 
-## 6. Acceptance Criteria for Demo Video
-The prototype video must demonstrate these 5 scenarios in sequence:
-1. **Upload PCAP-01 (Hardened Server):** Show Grade A+, score 98/100, all green.
-2. **Upload PCAP-02 (Legacy Server):** Show Grade F, score 25/100, red flags for TLS 1.0, 3DES, SHA-1, 1024-bit RSA.
-3. **Upload PCAP-03 (STRIPTLS Attack):** Show CRITICAL alert, score 0/100, flashing red banner "Cleartext Credentials Detected — Active Downgrade Attack."
-4. **Show Dashboard:** Demonstrate charts, session drill-down, certificate details panel.
-5. **Export Report:** Click export, show generated PDF with vulnerability table and compliance checklist.
+### 3.5 Enterprise SIEM & SOC Alerting (Complete ✅)
+- ArcSight Common Event Format (CEF:0) serialization with CRLF injection sanitization.
+- RFC 5424 UDP Syslog dispatcher transmitting to port 514 UDP.
+- Webhook dispatcher for JSON dispatch to SOAR platforms (Splunk, Elastic, Slack, Teams).
+- In-memory alert audit trail and test alert dispatch API.
 
----
+### 3.6 Automated Remediation & MITRE D3FEND (Complete ✅)
+- Dynamic Ansible playbook generator (`mail_hardening.yml`) for Postfix and Dovecot.
+- Suricata IDS detection rules (`suricata_mail_rules.rules`) with custom SIDs 2615901–2615905.
+- Snort 3 Lua rules (`snort3_mail_rules.lua`).
+- MITRE D3FEND defensive matrix mapping: `D3-OTP`, `D3-CSD`, `D3-PFS`, `D3-CTA`, `D3-EAC`, `D3-PA`, `D3-CV`, `D3-CSM`.
 
-## 7. Tech Stack (Locked)
-- **Backend:** Python 3.11, FastAPI
-- **Packet Parsing:** scapy + dpkt + cryptography (for X.509)
-- **AI/ML:** scikit-learn (Isolation Forest), hashlib (JA3)
-- **Frontend:** Next.js 14 (App Router) + Tailwind CSS + shadcn/ui + Recharts
-- **PDF Generation:** reportlab (server-side)
-- **Containerization:** Docker + docker-compose (optional for demo)
+### 3.7 Industrial Brutalist 3-Pane SOC Workstation (Complete ✅)
+- 8 Specialized Operational Decks: Overview, Flows, Findings, Certificates, Dissector, Standards, Remediation, Dossier.
+- Forensic Posture Diff Modal benchmarking against `CASE-01` hardened baseline.
+- Real-time SIEM Telemetry Modal with Syslog status and test dispatch.
+- In-flight Wire Threat Feed Drawer.
+- Spool Ingestion Card embedded in upload modal.
+- Dynamic Case Selector with in-UI case deletion.
+- Micro-components strictly under 150 LOC, WCAG 2.1 AA accessible, 0 lint/build errors.
