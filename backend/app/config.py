@@ -33,6 +33,12 @@ class AppSettings:
         self.tap_buffer_max_packets: int = int(os.getenv("TAP_BUFFER_MAX_PACKETS", "2000"))
         self.test_pcaps_dir: Path = (PROJECT_ROOT / "backend" / "test_pcaps").resolve()
 
+        # Database persistence configuration (SQLAlchemy 2.0 Async + SQLite WAL / PostgreSQL)
+        default_db_path = (PROJECT_ROOT / "backend" / "securemailscope.db").resolve()
+        self.database_url: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{default_db_path.as_posix()}")
+        self.database_echo: bool = os.getenv("DATABASE_ECHO", "false").lower() in ("1", "true", "yes")
+        self.database_wal_mode: bool = os.getenv("DATABASE_WAL_MODE", "true").lower() in ("1", "true", "yes")
+
         # SIEM Alerting (ArcSight CEF / RFC 5424 Syslog) and Webhook configuration
         self.siem_enabled: bool = os.getenv("SIEM_ENABLED", "false").lower() in ("1", "true", "yes")
         self.siem_syslog_host: str = os.getenv("SIEM_SYSLOG_HOST", "127.0.0.1")

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import re
 import shutil
@@ -21,9 +22,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 
+from app.api.spool_routes import _verify_operator_auth
 from app.core.anomaly import build_feature_vector, detect_anomalies
 from app.core.cert_validator import validate_certificate
 from app.core.ja3_engine import Ja3Result, compute_ja3, compute_ja3s
@@ -36,9 +38,25 @@ from app.reports.json_exporter import format_json_report
 from app.reports.pdf_exporter import generate_pdf_report
 
 router = APIRouter()
+logger = logging.getLogger("securemailscope.routes")
 
-# In-memory results store
+# In-memory results store and synchronization
 _results: dict[str, dict[str, Any]] = {}
+_cache_lock: asyncio.Lock | None = None
+_cache_lock_loop: asyncio.AbstractEventLoop | None = None
+
+
+def _get_cache_lock() -> asyncio.Lock:
+    global _cache_lock, _cache_lock_loop
+    try:
+        current_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        current_loop = None
+    if _cache_lock is None or _cache_lock_loop is not current_loop:
+        _cache_lock = asyncio.Lock()
+        _cache_lock_loop = current_loop
+    return _cache_lock
+
 
 # Load static data
 _data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
@@ -1092,11 +1110,18 @@ async def upload_pcap(file: UploadFile = File(...)):
         _results[analysis_id] = result
 
         try:
+            from app.db.repository import CaseRepository
+
+            await CaseRepository.save_case(result, source="manual_upload")
+        except Exception as db_err:
+            logger.warning("Failed to persist uploaded PCAP to database: %s", db_err)
+
+        try:
             from app.siem.dispatcher import alert_dispatcher
 
             await alert_dispatcher.dispatch_case_findings(result)
-        except Exception:
-            pass
+        except Exception as siem_err:
+            logger.warning("Failed to dispatch SIEM alerts for uploaded PCAP: %s", siem_err)
 
         return {"analysis_id": analysis_id}
 
@@ -1115,22 +1140,67 @@ def _safe_export_token(aid: str) -> str:
     return cleaned[:16] if cleaned else "evidence"
 
 
+async def _resolve_analysis(analysis_id: str) -> dict[str, Any]:
+    """Retrieve analysis results with in-memory L1 cache and database fallback."""
+    if analysis_id in _results:
+        return _results[analysis_id]
+
+    async with _get_cache_lock():
+        if analysis_id in _results:
+            return _results[analysis_id]
+
+        from app.db.repository import CaseRepository
+
+        case_data = await CaseRepository.get_case_by_id(analysis_id)
+        if case_data:
+            _results[analysis_id] = case_data
+            return case_data
+
+    raise HTTPException(status_code=404, detail="Analysis not found")
+
+
+@router.get("/cases")
+async def list_cases(
+    limit: int = Query(default=50, ge=1, le=200, description="Maximum cases to return"),
+    offset: int = Query(default=0, ge=0, description="Pagination offset"),
+    _auth: None = Depends(_verify_operator_auth),
+):
+    """List persisted capture cases with metadata and cryptographic ratings."""
+    from app.db.repository import CaseRepository
+
+    cases = await CaseRepository.list_cases(limit=limit, offset=offset)
+    total = await CaseRepository.count_cases()
+    return {"total": total, "cases": cases}
+
+
+@router.delete("/cases/{case_id:path}")
+async def delete_case(
+    case_id: str,
+    _auth: None = Depends(_verify_operator_auth),
+):
+    """Delete a capture case dossier and its associated evidence."""
+    from app.db.repository import CaseRepository
+
+    async with _get_cache_lock():
+        deleted = await CaseRepository.delete_case(case_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Case not found")
+        _results.pop(case_id, None)
+        return {"status": "deleted", "case_id": case_id}
+
+
 @router.get("/analysis/{analysis_id}")
 async def get_analysis(analysis_id: str):
     """Get complete analysis results."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-    return _results[analysis_id]
+    return await _resolve_analysis(analysis_id)
 
 
 @router.get("/report/{analysis_id}/json")
 async def get_json_report(analysis_id: str):
     """Download JSON forensic report."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
+    analysis = await _resolve_analysis(analysis_id)
     safe_id = _safe_export_token(analysis_id)
-    json_bytes = format_json_report(_results[analysis_id])
+    json_bytes = format_json_report(analysis)
     return StreamingResponse(
         iter([json_bytes]),
         media_type="application/json",
@@ -1141,11 +1211,9 @@ async def get_json_report(analysis_id: str):
 @router.get("/report/{analysis_id}/pdf")
 async def get_pdf_report(analysis_id: str):
     """Download PDF forensic report."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
+    analysis = await _resolve_analysis(analysis_id)
     safe_id = _safe_export_token(analysis_id)
-    pdf_bytes = generate_pdf_report(_results[analysis_id])
+    pdf_bytes = generate_pdf_report(analysis)
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
@@ -1156,11 +1224,9 @@ async def get_pdf_report(analysis_id: str):
 @router.get("/report/{analysis_id}/html")
 async def get_html_report(analysis_id: str):
     """Download standalone self-contained HTML forensic dossier."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
+    analysis = await _resolve_analysis(analysis_id)
     safe_id = _safe_export_token(analysis_id)
-    html_content = generate_html_report(_results[analysis_id])
+    html_content = generate_html_report(analysis)
     return Response(
         content=html_content,
         media_type="text/html; charset=utf-8",
@@ -1171,10 +1237,7 @@ async def get_html_report(analysis_id: str):
 @router.get("/certificate/{analysis_id}/{session_id}/pem")
 async def export_certificate_pem(analysis_id: str, session_id: int):
     """Export raw X.509 certificate in PEM format for forensic tooling."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
-    analysis = _results[analysis_id]
+    analysis = await _resolve_analysis(analysis_id)
     target_session = None
     for s in analysis.get("sessions", []):
         if s.get("session_id") == session_id:
@@ -1206,10 +1269,7 @@ async def export_certificate_pem(analysis_id: str, session_id: int):
 @router.get("/certificate/{analysis_id}/{session_id}/der")
 async def export_certificate_der(analysis_id: str, session_id: int):
     """Export raw X.509 certificate in binary DER format for forensic tooling."""
-    if analysis_id not in _results:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-
-    analysis = _results[analysis_id]
+    analysis = await _resolve_analysis(analysis_id)
     target_session = None
     for s in analysis.get("sessions", []):
         if s.get("session_id") == session_id:
