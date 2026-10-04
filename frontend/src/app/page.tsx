@@ -19,6 +19,9 @@ import { StandardsView } from "@/components/views/standards-view";
 import { ReportView } from "@/components/views/report-view";
 import { ApplicationFooter } from "@/components/shell/footer";
 import { getReportUrl, getAnalysis } from "@/lib/api";
+import { useLiveTap } from "@/hooks/useLiveTap";
+import { TapStatusBar } from "@/components/telemetry/tap-status-bar";
+import { LiveAlertToast } from "@/components/telemetry/live-alert-toast";
 
 function ForensicWorkstationInner() {
   const searchParams = useSearchParams();
@@ -52,6 +55,7 @@ function ForensicWorkstationInner() {
     resolvedCase.data.sessions[0]?.session_id || 1
   );
   const [selectedFlowIdForFlows, setSelectedFlowIdForFlows] = useState<number | null>(null);
+  const { tapState, activeAlert, isConnected, dismissAlert } = useLiveTap();
 
   // Synchronize state, fetch live backend analysis data, and guarantee URL consistency
   useEffect(() => {
@@ -241,13 +245,52 @@ function ForensicWorkstationInner() {
     window.history.pushState(null, "", newUrl.toString());
   };
 
+  const handleSnapshotSuccess = (analysis: AnalysisResult) => {
+    const tapCase: EvidenceCase = {
+      id: analysis.analysis_id,
+      case_code: analysis.case_code || "TAP-CAP",
+      name: analysis.filename.replace(/\.pcapng?$/i, "").toUpperCase(),
+      label: `[TAP: ${analysis.filename}]`,
+      target_host: analysis.sessions[0]?.server_name || "Live Wire Sensor",
+      protocol: analysis.protocols_detected.join("/") || "EMAIL",
+      severity:
+        analysis.enterprise_score < 50
+          ? "critical"
+          : analysis.enterprise_score < 80
+          ? "medium"
+          : "secure",
+      packet_count: analysis.total_packets,
+      stream_count: analysis.total_sessions,
+      posture_score: analysis.enterprise_score,
+      posture_grade: analysis.enterprise_grade,
+      bpf_filter: "tcp and (port 25 or 587 or 465 or 993 or 110)",
+      description: `Passive network TAP wire capture (${analysis.total_packets} packets, ${analysis.total_sessions} email streams).`,
+      data: analysis,
+    };
+    setActiveCase(tapCase);
+    setSelectedStreamId(analysis.sessions[0]?.session_id || 1);
+    setSelectedFlowIdForFlows(null);
+    showToast(`Engaged live TAP capture dossier: ${analysis.filename}`, "success");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-sms-canvas text-sms-text-primary selection:bg-sky-500/20 selection:text-sky-600 dark:selection:text-sky-400 antialiased">
+      {/* 0. Live In-flight Wire Alert Banner */}
+      <LiveAlertToast alert={activeAlert} onDismiss={dismissAlert} />
+
       {/* 1. Global Application Header Hero Banner */}
       <ApplicationHeader
         activeCase={activeCase}
         onSelectCase={handleSelectCase}
         onOpenUpload={() => setIsUploadOpen(true)}
+      />
+
+      {/* 1.5. Live Passive Network TAP Telemetry & Control Bar */}
+      <TapStatusBar
+        tapState={tapState}
+        isConnected={isConnected}
+        onSnapshotSuccess={handleSnapshotSuccess}
+        onToast={showToast}
       />
 
       {/* 2. Integrated Navigation Strip */}
