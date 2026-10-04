@@ -40,8 +40,23 @@ from app.reports.pdf_exporter import generate_pdf_report
 router = APIRouter()
 logger = logging.getLogger("securemailscope.routes")
 
-# In-memory results store
+# In-memory results store and synchronization
 _results: dict[str, dict[str, Any]] = {}
+_cache_lock: asyncio.Lock | None = None
+_cache_lock_loop: asyncio.AbstractEventLoop | None = None
+
+
+def _get_cache_lock() -> asyncio.Lock:
+    global _cache_lock, _cache_lock_loop
+    try:
+        current_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        current_loop = None
+    if _cache_lock is None or _cache_lock_loop is not current_loop:
+        _cache_lock = asyncio.Lock()
+        _cache_lock_loop = current_loop
+    return _cache_lock
+
 
 # Load static data
 _data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
@@ -1123,12 +1138,16 @@ async def _resolve_analysis(analysis_id: str) -> dict[str, Any]:
     if analysis_id in _results:
         return _results[analysis_id]
 
-    from app.db.repository import CaseRepository
+    async with _get_cache_lock():
+        if analysis_id in _results:
+            return _results[analysis_id]
 
-    case_data = await CaseRepository.get_case_by_id(analysis_id)
-    if case_data:
-        _results[analysis_id] = case_data
-        return case_data
+        from app.db.repository import CaseRepository
+
+        case_data = await CaseRepository.get_case_by_id(analysis_id)
+        if case_data:
+            _results[analysis_id] = case_data
+            return case_data
 
     raise HTTPException(status_code=404, detail="Analysis not found")
 
@@ -1155,11 +1174,12 @@ async def delete_case(
     """Delete a capture case dossier and its associated evidence."""
     from app.db.repository import CaseRepository
 
-    deleted = await CaseRepository.delete_case(case_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Case not found")
-    _results.pop(case_id, None)
-    return {"status": "deleted", "case_id": case_id}
+    async with _get_cache_lock():
+        deleted = await CaseRepository.delete_case(case_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Case not found")
+        _results.pop(case_id, None)
+        return {"status": "deleted", "case_id": case_id}
 
 
 @router.get("/analysis/{analysis_id}")

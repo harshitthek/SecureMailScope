@@ -80,30 +80,36 @@ async def test_cases_rest_api_and_read_through_cache():
         res_neg = await client.get("/api/cases?offset=-1")
         assert res_neg.status_code == 422
 
-        # Valid listing
-        res = await client.get("/api/cases?limit=10")
-        assert res.status_code == 200 and res.json()["total"] >= 4
-
-        # Read-through cache from DB
-        _results.pop("CASE-01", None)
-        res_case = await client.get("/api/analysis/CASE-01")
-        assert res_case.status_code == 200 and "CASE-01" in _results
-
-        # Operator auth enforcement
+        # Operator auth enforcement and authenticated operations
+        test_key = "op-db-secret"
+        auth_headers = {"X-API-Key": test_key}
         old_key = settings.operator_api_key
         try:
-            settings.operator_api_key = "op-db-secret"
+            settings.operator_api_key = test_key
+
+            # Unauthenticated requests rejected
             unauth = await client.get("/api/cases")
             assert unauth.status_code == 401
-            auth_ok = await client.get("/api/cases", headers={"X-API-Key": "op-db-secret"})
-            assert auth_ok.status_code == 200
+
+            # Valid authenticated listing
+            res = await client.get("/api/cases?limit=10", headers=auth_headers)
+            assert res.status_code == 200 and res.json()["total"] >= 4
+
+            # Read-through cache from DB
+            _results.pop("CASE-01", None)
+            res_case = await client.get("/api/analysis/CASE-01")
+            assert res_case.status_code == 200 and "CASE-01" in _results
+
+            # Authenticated case deletion
+            temp = {"analysis_id": "TEST-TO-DEL", "filename": "del.pcap", "sessions": [], "vulnerabilities": []}
+            await CaseRepository.save_case(temp)
+            _results["TEST-TO-DEL"] = temp
+
+            unauth_del = await client.delete("/api/cases/TEST-TO-DEL")
+            assert unauth_del.status_code == 401
+
+            del_res = await client.delete("/api/cases/TEST-TO-DEL", headers=auth_headers)
+            assert del_res.status_code == 200 and "TEST-TO-DEL" not in _results
+            assert (await client.get("/api/analysis/TEST-TO-DEL")).status_code == 404
         finally:
             settings.operator_api_key = old_key
-
-        # Delete case
-        temp = {"analysis_id": "TEST-TO-DEL", "filename": "del.pcap", "sessions": [], "vulnerabilities": []}
-        await CaseRepository.save_case(temp)
-        _results["TEST-TO-DEL"] = temp
-        del_res = await client.delete("/api/cases/TEST-TO-DEL")
-        assert del_res.status_code == 200 and "TEST-TO-DEL" not in _results
-        assert (await client.get("/api/analysis/TEST-TO-DEL")).status_code == 404
