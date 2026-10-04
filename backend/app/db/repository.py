@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Any
 
@@ -29,7 +30,7 @@ class CaseRepository:
     @classmethod
     async def save_case(cls, case_data: dict[str, Any], source: str = "manual_upload") -> str:
         """Persist or update a capture case with normalized relational sessions and findings."""
-        case_id = case_data.get("analysis_id") or f"CASE-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        case_id = case_data.get("analysis_id") or f"CASE-{uuid.uuid4().hex[:12].upper()}"
         case_data["analysis_id"] = case_id
         now_iso = datetime.now(timezone.utc).isoformat()
         timestamp = case_data.get("analysis_timestamp") or case_data.get("analyzed_at") or now_iso
@@ -47,12 +48,10 @@ class CaseRepository:
                 # Persist flow sessions and cert evidence
                 for s in case_data.get("sessions", []):
                     flow = build_flow_session(case_id, s)
-                    session.add(flow)
-                    await session.flush()
-
                     cert = s.get("certificate")
                     if cert and isinstance(cert, dict):
-                        session.add(build_cert_evidence(flow.id, cert))
+                        flow.certificates.append(build_cert_evidence(cert))
+                    session.add(flow)
 
                 # Persist security findings
                 for v in case_data.get("vulnerabilities", []):

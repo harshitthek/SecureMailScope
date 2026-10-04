@@ -95,7 +95,7 @@ export async function listStoredCases(limit: number = 50, offset: number = 0) {
 }
 
 export async function deleteStoredCase(caseId: string) {
-  const res = await fetch(`${API_BASE}/api/cases/${caseId}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/api/cases/${encodeURIComponent(caseId)}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Failed to delete case");
   return res.json();
 }

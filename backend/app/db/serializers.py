@@ -98,26 +98,28 @@ def build_flow_session(case_id: str, s: dict[str, Any]) -> FlowSessionModel:
     )
 
 
-def build_cert_evidence(session_id: int, cert: dict[str, Any]) -> CertificateEvidenceModel:
+def build_cert_evidence(cert: dict[str, Any], session_id: int | None = None) -> CertificateEvidenceModel:
     """Build CertificateEvidenceModel from certificate dictionary."""
-    return CertificateEvidenceModel(
-        session_id=session_id,
-        subject_cn=cert.get("subject_cn"),
-        issuer_cn=cert.get("issuer_cn"),
-        serial_number=str(cert.get("serial_number", "")) or None,
-        not_before=cert.get("not_before"),
-        not_after=cert.get("not_after"),
-        is_expired=bool(cert.get("is_expired", False)),
-        is_self_signed=bool(cert.get("is_self_signed", False)),
-        signature_hash=cert.get("signature_hash"),
-        is_weak_signature=bool(cert.get("is_weak_signature", False)),
-        public_key_type=cert.get("public_key_type"),
-        public_key_bits=cert.get("public_key_bits"),
-        is_weak_key=bool(cert.get("is_weak_key", False)),
-        is_synthetic=bool(cert.get("is_synthetic", False)),
-        pem_data=cert.get("pem_data") or cert.get("synthetic_pem"),
-        raw_der_hex=cert.get("raw_der_hex") or cert.get("synthetic_der_hex"),
-    )
+    kwargs: dict[str, Any] = {
+        "subject_cn": cert.get("subject_cn"),
+        "issuer_cn": cert.get("issuer_cn"),
+        "serial_number": str(cert.get("serial_number", "")) or None,
+        "not_before": cert.get("not_before"),
+        "not_after": cert.get("not_after"),
+        "is_expired": bool(cert.get("is_expired", False)),
+        "is_self_signed": bool(cert.get("is_self_signed", False)),
+        "signature_hash": cert.get("signature_hash"),
+        "is_weak_signature": bool(cert.get("is_weak_signature", False)),
+        "public_key_type": cert.get("public_key_type"),
+        "public_key_bits": cert.get("public_key_bits"),
+        "is_weak_key": bool(cert.get("is_weak_key", False)),
+        "is_synthetic": bool(cert.get("is_synthetic", False)),
+        "pem_data": cert.get("pem_data") or cert.get("synthetic_pem"),
+        "raw_der_hex": cert.get("raw_der_hex") or cert.get("synthetic_der_hex"),
+    }
+    if session_id is not None:
+        kwargs["session_id"] = session_id
+    return CertificateEvidenceModel(**kwargs)
 
 
 def build_finding_model(case_id: str, v: dict[str, Any]) -> SecurityFindingModel:
