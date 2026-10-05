@@ -15,6 +15,7 @@ interface TapStatusBarProps {
   onOpenThreats?: () => void;
   onSnapshotSuccess: (analysis: AnalysisResult) => void;
   onToast: (msg: string, type?: "info" | "success" | "warning") => void;
+  onReplaySuccess?: (analysis: AnalysisResult, caseCode: string) => void;
 }
 
 export function TapStatusBar({
@@ -25,6 +26,7 @@ export function TapStatusBar({
   onOpenThreats,
   onSnapshotSuccess,
   onToast,
+  onReplaySuccess,
 }: TapStatusBarProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const isActive = tapState.state === "SNIFFING" || tapState.state === "REPLAYING";
@@ -49,8 +51,11 @@ export function TapStatusBar({
   const handleReplaySimulated = async () => {
     setIsProcessing(true);
     try {
-      await startTapReplay("02_striptls_mitm_attack.pcap", 12.0);
-      onToast("Simulated STRIPTLS replay streaming at 12 PPS.", "warning");
+      const data = await startTapReplay("02_striptls_mitm_attack.pcap", 12.0);
+      onToast("Demo AiTM STRIPTLS attack engaged! Replaying attack packets on port 587...", "warning");
+      if (data?.analysis && onReplaySuccess) {
+        onReplaySuccess(data.analysis, data.case_code || "CASE-02");
+      }
     } catch (err) {
       onToast(err instanceof Error ? err.message : "Replay failed", "warning");
     } finally {

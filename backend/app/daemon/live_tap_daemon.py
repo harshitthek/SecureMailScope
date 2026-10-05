@@ -197,19 +197,36 @@ class LiveTapDaemon:
             )
 
         # 3. STRIPTLS Downgrade Indication
-        if b"STARTTLS" in payload and (dport == 587 or sport == 587):
-            if b"500 " in payload or b"502 " in payload or b"454 " in payload:
-                self._broadcast(
-                    "SECURITY_ALERT",
-                    {
-                        "severity": "critical",
-                        "title": "STRIPTLS Active Downgrade Attack",
-                        "mitre_id": "T1557.002",
-                        "vector": f"{src_ip}:{sport} -> {dst_ip}:{dport}",
-                        "description": "STARTTLS negotiation failed or rejected by intermediate gateway on submission port 587.",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    },
-                )
+        is_submission = dport == 587 or sport == 587 or dport == 25 or sport == 25
+        if (
+            (b"STARTTLS" in payload and is_submission and (b"500 " in payload or b"502 " in payload or b"454 " in payload))
+            or (is_submission and (b"AUTH PLAIN" in payload or b"AUTH LOGIN" in payload))
+        ):
+            self._broadcast(
+                "SECURITY_ALERT",
+                {
+                    "severity": "critical",
+                    "title": "STRIPTLS Active Downgrade Attack",
+                    "mitre_id": "T1557.002",
+                    "vector": f"{src_ip}:{sport} -> {dst_ip}:{dport}",
+                    "description": "STARTTLS negotiation tampered or stripped on submission port 587; client fell back to cleartext.",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+
+        # 3b. Wire Credential Leakage Interception
+        if b"dXNlcm5hbWU=" in payload or b"cGFzc3dvcmQ" in payload or b"admin@" in payload:
+            self._broadcast(
+                "SECURITY_ALERT",
+                {
+                    "severity": "critical",
+                    "title": "Plaintext Credentials Intercepted on Wire",
+                    "mitre_id": "T1552.001",
+                    "vector": f"{src_ip}:{sport} -> {dst_ip}:{dport}",
+                    "description": "Base64 administrative credentials captured in unencrypted mail transit without TLS.",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+            )
 
         # 4. Deprecated SSLv3 / TLS 1.0 record headers
         if payload.startswith(b"\x16\x03\x00") or payload.startswith(b"\x16\x03\x01"):
