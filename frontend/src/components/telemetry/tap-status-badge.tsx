@@ -14,7 +14,7 @@ export function TapStatusBadge({ tapState, isConnected }: TapStatusBadgeProps) {
   const isReplay = tapState.state === "REPLAYING";
 
   return (
-    <div className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-border bg-card/60 text-xs font-mono select-none">
+    <div className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-border bg-card/60 text-xs font-mono select-none shrink-0">
       <div className="flex items-center gap-1.5">
         <Radio
           className={`w-3.5 h-3.5 ${

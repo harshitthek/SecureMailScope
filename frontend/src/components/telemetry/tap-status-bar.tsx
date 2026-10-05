@@ -84,15 +84,15 @@ export function TapStatusBar({
   };
 
   return (
-    <div className="w-full bg-card/40 border-b border-border px-6 py-2 flex flex-wrap items-center justify-between gap-3 text-xs select-none">
-      <div className="flex items-center gap-3">
+    <div className="w-full bg-card/40 border-b border-border px-4 lg:px-6 py-2 flex items-center justify-between gap-3 text-xs select-none overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-3 shrink-0">
         <TapStatusBadge tapState={tapState} isConnected={isConnected} />
-        <span className="text-muted-foreground hidden lg:inline font-mono text-[11px]">
-          BPF: tcp and (port 25 or 587 or 465 or 993 or 110)
+        <span className="text-muted-foreground hidden xl:inline font-mono text-[11px]" title="tcp and (port 25 or 587 or 465 or 993 or 110)">
+          BPF: <span className="hidden 2xl:inline">tcp and (port 25 or 587 or 465 or 993 or 110)</span><span className="2xl:hidden">mail ports</span>
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         <button
           type="button"
           onClick={handleToggleTap}

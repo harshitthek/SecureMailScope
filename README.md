@@ -113,10 +113,10 @@ The platform detects protocol downgrade attacks (e.g. inline AiTM **STRIPTLS**),
 - **Dynamic Ansible Playbooks**: Synthesizes idempotent Postfix and Dovecot hardening playbooks (`mail_hardening.yml`).
 - **Suricata & Snort 3 Signatures**: Generates custom IDS signatures with SIDs 2615901–2615905.
 - **MITRE D3FEND Matrix**: Direct mapping to defensive controls:
-  - `D3-OTP`: Opportunistic Inbound TLS Verification (RFC 7817)
-  - `D3-CSD`: Cipher Suite Deprecation Enforcement (NIST SP 800-52r2)
-  - `D3-PFS`: Ephemeral Key Exchange Mandate (ECDHE)
-  - `D3-CTA`: Certificate Trust & Signature Audit (X.509 RFC 5280)
+  - `D3-EAC`: Encrypted Administrative Communication (STRIPTLS mitigation)
+  - `D3-PA`: Protocol Authentication (Plaintext auth prevention)
+  - `D3-CSM`: Cryptographic Suite Minimum (Deprecated ciphers / TLS 1.0)
+  - `D3-CV`: Certificate Validation (X.509 RFC 5280)
 
 ### 3.7 Industrial Brutalist 3-Pane SOC Workstation
 - **8 Operational Decks**: Overview, Flows, Findings, Certificates, Dissector, Standards, Remediation, Dossier.
@@ -222,7 +222,7 @@ Workstation dashboard is accessible at `http://localhost:3000`.
 ```bash
 pytest backend/tests -v
 ```
-**Test Results**: `45 passed in ~26s` across database persistence, live TAP sniffing, threat heuristics, SIEM formatting, spool daemon sweeping, and remediation generation.
+**Test Results**: `46 passed in ~11s` across database persistence, live TAP sniffing, threat heuristics, SIEM formatting, spool daemon sweeping, and remediation generation.
 
 ### Frontend Linting & Production Build
 ```bash
