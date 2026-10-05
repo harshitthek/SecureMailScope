@@ -32,8 +32,15 @@ async def _resolve_analysis(analysis_id: str) -> dict[str, Any]:
         if case:
             _results[analysis_id] = case
             return case
-    except (ImportError, Exception):
+    except ImportError:
         pass
+    except Exception as e:
+        import logging
+
+        logging.getLogger("securemailscope.remediation").error(
+            "Database error querying analysis case %s: %s", analysis_id, e
+        )
+        raise HTTPException(status_code=500, detail="Database error resolving analysis case")
 
     raise HTTPException(status_code=404, detail="Analysis case not found")
 

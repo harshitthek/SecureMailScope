@@ -11,7 +11,7 @@ from typing import Any
 def generate_ansible_playbook(case_data: dict[str, Any]) -> str:
     """Generate an idempotent Ansible playbook tailored to discovered cryptographic weaknesses."""
     case_code = case_data.get("case_code") or case_data.get("analysis_id", "CASE-UNKNOWN")
-    target_host = case_data.get("filename", "mail-gateway.defense.gov.in")
+    target_host = str(case_data.get("filename") or "mail-gateway.defense.gov.in").replace("\r", " ").replace("\n", " ")
     vulns = case_data.get("vulnerabilities", [])
     protocols = [str(p).upper() for p in case_data.get("protocols_detected", [])]
     is_dovecot = any(p in protocols for p in ("IMAP", "IMAPS", "POP3", "POP3S"))
@@ -36,6 +36,7 @@ def generate_ansible_playbook(case_data: dict[str, Any]) -> str:
         "  become: true",
         "  vars:",
         "    postfix_main_cf: /etc/postfix/main.cf",
+        "    postfix_master_cf: /etc/postfix/master.cf",
         "    dovecot_ssl_conf: /etc/dovecot/conf.d/10-ssl.conf",
         "  tasks:",
     ]
@@ -44,11 +45,12 @@ def generate_ansible_playbook(case_data: dict[str, Any]) -> str:
     if has_striptls:
         lines.extend(
             [
-                "    - name: Mitigate STRIPTLS (T1557.002) - Mandate encryption on submission port",
+                "    - name: Mitigate STRIPTLS (T1557.002) - Enforce mandatory encryption on submission service in master.cf",
                 "      ansible.builtin.lineinfile:",
-                '        path: "{{ postfix_main_cf }}"',
-                "        regexp: '^smtpd_tls_security_level\\s*='",
-                "        line: 'smtpd_tls_security_level = may'",
+                '        path: "{{ postfix_master_cf }}"',
+                "        regexp: '^\\s*-o\\s+smtpd_tls_security_level='",
+                "        insertafter: '^submission\\s+inet'",
+                "        line: '  -o smtpd_tls_security_level=encrypt'",
                 "      notify: Restart Postfix",
             ]
         )
@@ -104,19 +106,6 @@ def generate_ansible_playbook(case_data: dict[str, Any]) -> str:
             ]
         )
 
-    # Task: Certificate Hardening
-    if has_cert_weak:
-        lines.extend(
-            [
-                "    - name: Ensure X.509 certificate and private key paths exist and have restrictive permissions",
-                "      ansible.builtin.file:",
-                "        path: /etc/ssl/certs/mailserver.pem",
-                "        owner: root",
-                "        group: root",
-                "        mode: '0644'",
-            ]
-        )
-
     # Task: Dovecot IMAP/POP3 Hardening
     if is_dovecot:
         lines.extend(
@@ -133,6 +122,18 @@ def generate_ansible_playbook(case_data: dict[str, Any]) -> str:
                 "        regexp: '^ssl_min_protocol\\s*='",
                 "        line: 'ssl_min_protocol = TLSv1.2'",
                 "      notify: Restart Dovecot",
+            ]
+        )
+
+    # Task: Certificate Hardening & Operator Guidance
+    if has_cert_weak:
+        lines.extend(
+            [
+                "    - name: Flush handlers before reporting certificate action requirement",
+                "      ansible.builtin.meta: flush_handlers",
+                "    - name: Fail play due to unresolved X.509 certificate weakness",
+                "      ansible.builtin.fail:",
+                '        msg: "ACTION REQUIRED: Weak or invalid X.509 certificate detected. Provision a valid CA-signed certificate and matching private key at your mail service\'s configured certificate paths (e.g. smtpd_tls_cert_file / ssl_cert in Postfix and Dovecot) and reload services."',
             ]
         )
 

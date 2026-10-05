@@ -33,8 +33,7 @@ def build_remediation_summary(case_data: dict[str, Any]) -> dict[str, Any]:
             "status": "CRITICAL" if has_striptls else "COMPLIANT",
             "rationale": "Mandates TLS encryption on email transport to defeat STRIPTLS / AiTM attacks.",
             "actions": [
-                "Configure 'smtpd_tls_security_level = may' in Postfix main.cf",
-                "Deploy Suricata SID 2615901 for real-time AiTM STARTTLS tampering detection",
+                "Configure submission service override '-o smtpd_tls_security_level=encrypt' in Postfix master.cf",
             ]
             if has_striptls
             else ["Encryption requirement active across ingress ports."],
@@ -46,7 +45,7 @@ def build_remediation_summary(case_data: dict[str, Any]) -> dict[str, Any]:
             "rationale": "Prohibits credential negotiation prior to cryptographic session establishment.",
             "actions": [
                 "Set 'smtpd_tls_auth_only = yes' in Postfix main.cf",
-                "Deploy Suricata SID 2615902 to detect cleartext AUTH PLAIN/LOGIN attempts",
+                "Deploy Suricata SID 2615901 to detect cleartext AUTH PLAIN/LOGIN attempts",
             ]
             if has_auth_exposure
             else ["Cleartext authentication disabled."],
@@ -59,7 +58,7 @@ def build_remediation_summary(case_data: dict[str, Any]) -> dict[str, Any]:
             "actions": [
                 "Disable SSLv2, SSLv3, TLS 1.0, TLS 1.1 in smtpd_tls_mandatory_protocols",
                 "Restrict tls_high_cipherlist to HIGH:!aNULL:!kRSA:!3DES:!RC4:!MD5:!PSK",
-                "Deploy Suricata SIDs 2615903-2615904 for deprecated handshake detection",
+                "Deploy Suricata SIDs 2615902-2615903 for deprecated handshake detection",
             ]
             if (has_proto_weak or has_cipher_weak)
             else ["Ciphers conform to NIST SP 800-52r2."],
@@ -84,7 +83,7 @@ def build_remediation_summary(case_data: dict[str, Any]) -> dict[str, Any]:
         "case_code": case_code,
         "analysis_id": case_id,
         "target_host": target_host,
-        "action_items_count": max(1, total_actions),
+        "action_items_count": total_actions,
         "d3fend_matrix": d3fend_techniques,
         "playbook_available": True,
         "ids_rules_available": True,
