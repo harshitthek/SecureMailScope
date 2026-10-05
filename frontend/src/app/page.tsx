@@ -16,12 +16,15 @@ import { FindingsView } from "@/components/views/findings-view";
 import { CertificatesView } from "@/components/views/certificates-view";
 import { DissectorView } from "@/components/views/dissector-view";
 import { StandardsView } from "@/components/views/standards-view";
+import { RemediationView } from "@/components/views/remediation/remediation-view";
 import { ReportView } from "@/components/views/report-view";
 import { ApplicationFooter } from "@/components/shell/footer";
 import { getReportUrl, getAnalysis } from "@/lib/api";
 import { useLiveTap } from "@/hooks/useLiveTap";
 import { TapStatusBar } from "@/components/telemetry/tap-status-bar";
 import { LiveAlertToast } from "@/components/telemetry/live-alert-toast";
+import { SiemTelemetryModal } from "@/components/telemetry/siem-telemetry-modal";
+import { WireThreatFeedDrawer } from "@/components/telemetry/wire-threat-feed-drawer";
 
 function ForensicWorkstationInner() {
   const searchParams = useSearchParams();
@@ -45,17 +48,19 @@ function ForensicWorkstationInner() {
 
   const [activeCase, setActiveCase] = useState<EvidenceCase>(resolvedCase);
   const [activeTab, setActiveTab] = useState<ShellNavTab>(
-    (tabParam && ["OVERVIEW", "FLOWS", "FINDINGS", "CERTIFICATES", "DISSECTOR", "STANDARDS", "REPORT"].includes(tabParam))
+    (tabParam && ["OVERVIEW", "FLOWS", "FINDINGS", "CERTIFICATES", "DISSECTOR", "STANDARDS", "REMEDIATION", "REPORT"].includes(tabParam))
       ? (tabParam as ShellNavTab)
       : "OVERVIEW"
   );
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isHudOpen, setIsHudOpen] = useState(false);
+  const [isSiemOpen, setIsSiemOpen] = useState(false);
+  const [isThreatsOpen, setIsThreatsOpen] = useState(false);
   const [selectedStreamId, setSelectedStreamId] = useState<number>(
     resolvedCase.data.sessions[0]?.session_id || 1
   );
   const [selectedFlowIdForFlows, setSelectedFlowIdForFlows] = useState<number | null>(null);
-  const { tapState, activeAlert, isConnected, dismissAlert } = useLiveTap();
+  const { tapState, activeAlert, alertHistory, isConnected, dismissAlert, clearAlerts } = useLiveTap();
 
   // Synchronize state, fetch live backend analysis data, and guarantee URL consistency
   useEffect(() => {
@@ -149,7 +154,8 @@ function ForensicWorkstationInner() {
         "4": "CERTIFICATES",
         "5": "DISSECTOR",
         "6": "STANDARDS",
-        "7": "REPORT",
+        "7": "REMEDIATION",
+        "8": "REPORT",
       };
 
       if (tabMap[e.key]) {
@@ -273,6 +279,42 @@ function ForensicWorkstationInner() {
     showToast(`Engaged live TAP capture dossier: ${analysis.filename}`, "success");
   };
 
+  const handleReplaySuccess = useCallback((analysis: AnalysisResult, caseCode: string) => {
+    const matched = EVIDENCE_CASES.find((c) => c.case_code === caseCode || c.id === caseCode);
+    const attackCase: EvidenceCase = matched ? {
+      ...matched,
+      data: {
+        ...matched.data,
+        ...analysis,
+        sessions: analysis.sessions && analysis.sessions.length > 0 ? analysis.sessions : matched.data.sessions,
+        vulnerabilities: analysis.vulnerabilities && analysis.vulnerabilities.length > 0 ? analysis.vulnerabilities : matched.data.vulnerabilities,
+      },
+    } : {
+      id: analysis.analysis_id || caseCode,
+      case_code: caseCode || "DEMO-ATTACK",
+      name: "STRIPTLS_MITM_DEMO",
+      label: `[DEMO ATTACK: ${caseCode}]`,
+      target_host: analysis.sessions[0]?.server_name || "mailgw-01.external.org:587",
+      protocol: analysis.protocols_detected.join("/") || "SMTP",
+      severity: "critical",
+      packet_count: analysis.total_packets || 188,
+      stream_count: analysis.total_sessions || 1,
+      posture_score: analysis.enterprise_score || 14,
+      posture_grade: analysis.enterprise_grade || "F",
+      bpf_filter: "tcp and port 587",
+      description: "Active inline STARTTLS stripping downgrade attack replayed on port 587 leaking credentials.",
+      data: analysis,
+    };
+    setActiveCase(attackCase);
+    setSelectedStreamId(analysis.sessions[0]?.session_id || 1);
+    setSelectedFlowIdForFlows(null);
+    showToast(`DEMO ATTACK ENGAGED: Loaded real attack evidence for ${caseCode} (Score: ${attackCase.posture_score}/100, Grade: ${attackCase.posture_grade})`, "warning");
+
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set("case", caseCode);
+    window.history.pushState(null, "", newUrl.toString());
+  }, [showToast]);
+
   return (
     <div className="min-h-screen flex flex-col bg-sms-canvas text-sms-text-primary selection:bg-sky-500/20 selection:text-sky-600 dark:selection:text-sky-400 antialiased">
       {/* 0. Live In-flight Wire Alert Banner */}
@@ -289,9 +331,48 @@ function ForensicWorkstationInner() {
       <TapStatusBar
         tapState={tapState}
         isConnected={isConnected}
+        threatCount={alertHistory.length}
+        onOpenSiem={() => setIsSiemOpen(true)}
+        onOpenThreats={() => setIsThreatsOpen(true)}
         onSnapshotSuccess={handleSnapshotSuccess}
         onToast={showToast}
+        onReplaySuccess={handleReplaySuccess}
       />
+
+      {/* 1.6. Active Replay Demo Attack Banner */}
+      {tapState.state === "REPLAYING" && (
+        <div className="w-full bg-rose-950/80 border-b border-rose-500/60 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-rose-200 font-mono shadow-md animate-pulse">
+          <div className="flex items-center gap-3">
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+            </span>
+            <span className="font-bold tracking-wider text-rose-100 bg-rose-900/80 border border-rose-500/50 px-2 py-0.5 rounded text-[11px]">
+              DEMO ATTACK IN PROGRESS
+            </span>
+            <span className="text-rose-200 hidden md:inline">
+              AiTM STRIPTLS Downgrade on Port 587 (12 PPS). MitM stripping &apos;250-STARTTLS&apos; &rarr; Plaintext auth leak.
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="font-bold text-rose-300">POSTURE: {activeCase.posture_score}/100 ({activeCase.posture_grade})</span>
+            <button
+              type="button"
+              onClick={() => handleSelectTab("DISSECTOR")}
+              className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-mono text-[11px] font-semibold transition-colors"
+            >
+              INSPECT WIRE HEX &rarr;
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectTab("FINDINGS")}
+              className="px-2.5 py-1 rounded bg-rose-900/60 hover:bg-rose-800/80 text-rose-200 border border-rose-500/40 font-mono text-[11px] transition-colors"
+            >
+              VIEW MITRE FINDINGS &rarr;
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. Integrated Navigation Strip */}
       <NavStrip
@@ -354,6 +435,10 @@ function ForensicWorkstationInner() {
         <StandardsView activeCase={activeCase} />
       )}
 
+      {activeTab === "REMEDIATION" && (
+        <RemediationView activeCase={activeCase} />
+      )}
+
       {activeTab === "REPORT" && (
         <ReportView activeCase={activeCase} />
       )}
@@ -377,6 +462,20 @@ function ForensicWorkstationInner() {
         onExportPdf={() => handleExport("pdf")}
         onExportHtml={() => handleExport("html")}
         onExportJson={() => handleExport("json")}
+      />
+
+      {/* Enterprise SIEM & SOC Telemetry Modal */}
+      <SiemTelemetryModal
+        isOpen={isSiemOpen}
+        onClose={() => setIsSiemOpen(false)}
+      />
+
+      {/* In-Flight Wire Threat Event Drawer */}
+      <WireThreatFeedDrawer
+        isOpen={isThreatsOpen}
+        onClose={() => setIsThreatsOpen(false)}
+        alerts={alertHistory}
+        onClear={clearAlerts}
       />
     </div>
   );

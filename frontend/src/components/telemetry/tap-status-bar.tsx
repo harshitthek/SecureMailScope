@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Play, Square, FastForward, Camera, Loader2 } from "lucide-react";
+import { Play, Square, FastForward, Camera, Loader2, Radio, Flame } from "lucide-react";
 import { TapState } from "@/hooks/useLiveTap";
 import { TapStatusBadge } from "./tap-status-badge";
 import { startTapCapture, stopTapCapture, startTapReplay, snapshotTapBuffer, getAnalysis } from "@/lib/api";
@@ -10,15 +10,23 @@ import { AnalysisResult } from "@/lib/types";
 interface TapStatusBarProps {
   tapState: TapState;
   isConnected: boolean;
+  threatCount?: number;
+  onOpenSiem?: () => void;
+  onOpenThreats?: () => void;
   onSnapshotSuccess: (analysis: AnalysisResult) => void;
   onToast: (msg: string, type?: "info" | "success" | "warning") => void;
+  onReplaySuccess?: (analysis: AnalysisResult, caseCode: string) => void;
 }
 
 export function TapStatusBar({
   tapState,
   isConnected,
+  threatCount,
+  onOpenSiem,
+  onOpenThreats,
   onSnapshotSuccess,
   onToast,
+  onReplaySuccess,
 }: TapStatusBarProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const isActive = tapState.state === "SNIFFING" || tapState.state === "REPLAYING";
@@ -33,9 +41,8 @@ export function TapStatusBar({
         await startTapCapture();
         onToast("Live passive network TAP capture engaged.", "success");
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "TAP operation failed";
-      onToast(msg, "warning");
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "TAP failed", "warning");
     } finally {
       setIsProcessing(false);
     }
@@ -44,11 +51,13 @@ export function TapStatusBar({
   const handleReplaySimulated = async () => {
     setIsProcessing(true);
     try {
-      await startTapReplay("02_striptls_mitm_attack.pcap", 12.0);
-      onToast("Simulated STRIPTLS MitM attack wire replay streaming at 12 PPS.", "warning");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Replay failed";
-      onToast(msg, "warning");
+      const data = await startTapReplay("02_striptls_mitm_attack.pcap", 12.0);
+      onToast("Demo AiTM STRIPTLS attack engaged! Replaying attack packets on port 587...", "warning");
+      if (data?.analysis && onReplaySuccess) {
+        onReplaySuccess(data.analysis, data.case_code || "CASE-02");
+      }
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "Replay failed", "warning");
     } finally {
       setIsProcessing(false);
     }
@@ -56,20 +65,19 @@ export function TapStatusBar({
 
   const handleSnapshot = async () => {
     if (tapState.buffer_count === 0) {
-      onToast("Packet buffer is empty. Capture packets before snapshotting.", "warning");
+      onToast("Packet buffer is empty. Capture packets first.", "warning");
       return;
     }
     setIsProcessing(true);
     try {
       const snap = await snapshotTapBuffer("Live Wire Snapshot");
-      if (snap.success && snap.run_id) {
+      if (snap?.success && snap?.run_id) {
         const fullAnalysis = await getAnalysis(snap.run_id);
         onSnapshotSuccess(fullAnalysis);
         onToast(`Snapshot analyzed! Score: ${snap.overall_score}/100 (${snap.overall_grade})`, "success");
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Snapshot failed";
-      onToast(msg, "warning");
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "Snapshot failed", "warning");
     } finally {
       setIsProcessing(false);
     }
@@ -90,18 +98,10 @@ export function TapStatusBar({
           onClick={handleToggleTap}
           disabled={isProcessing}
           className={`h-7 px-3 rounded-full font-mono text-[11px] font-medium flex items-center gap-1.5 transition-colors border ${
-            isActive
-              ? "bg-rose-500/15 text-rose-300 border-rose-500/40 hover:bg-rose-500/25"
-              : "bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25"
+            isActive ? "bg-rose-500/15 text-rose-300 border-rose-500/40 hover:bg-rose-500/25" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25"
           }`}
         >
-          {isProcessing ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : isActive ? (
-            <Square className="w-3 h-3 fill-rose-300" />
-          ) : (
-            <Play className="w-3 h-3 fill-emerald-300" />
-          )}
+          {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : isActive ? <Square className="w-3 h-3 fill-rose-300" /> : <Play className="w-3 h-3 fill-emerald-300" />}
           <span>{isActive ? "STOP TAP" : "START TAP"}</span>
         </button>
 
@@ -110,7 +110,6 @@ export function TapStatusBar({
           onClick={handleReplaySimulated}
           disabled={isProcessing || isActive}
           className="h-7 px-3 rounded-full border border-border hover:border-amber-500/50 bg-secondary/60 hover:bg-secondary text-foreground font-mono text-[11px] flex items-center gap-1.5 transition-colors disabled:opacity-40"
-          title="Replay MitM Attack Scenario"
         >
           <FastForward className="w-3 h-3 text-amber-400" />
           <span>REPLAY ATTACK</span>
@@ -121,11 +120,26 @@ export function TapStatusBar({
           onClick={handleSnapshot}
           disabled={isProcessing || tapState.buffer_count === 0}
           className="h-7 px-3 rounded-full border border-sky-500/40 bg-sky-500/15 hover:bg-sky-500/25 text-sky-200 font-mono text-[11px] font-medium flex items-center gap-1.5 transition-colors disabled:opacity-40"
-          title="Snapshot Buffer to Forensic Dossier"
         >
           <Camera className="w-3 h-3 text-sky-400" />
           <span>SNAPSHOT ({tapState.buffer_count})</span>
         </button>
+
+        {onOpenSiem && (
+          <button type="button" onClick={onOpenSiem} className="h-7 px-2.5 rounded-full border border-[#2e3038] hover:border-[#cc9166]/50 bg-[#121317] hover:bg-[#1a1c22] text-[#e2e3e9] font-mono text-[11px] flex items-center gap-1.5 transition-colors">
+            <Radio className="w-3 h-3 text-[#cc9166]" />
+            <span>SIEM :514</span>
+          </button>
+        )}
+
+        {onOpenThreats && (
+          <button type="button" onClick={onOpenThreats} className={`h-7 px-2.5 rounded-full font-mono text-[11px] flex items-center gap-1.5 transition-colors border ${
+            (threatCount ?? 0) > 0 ? "bg-rose-500/15 text-rose-300 border-rose-500/40 hover:bg-rose-500/25" : "bg-[#121317] text-[#9194a1] border-[#2e3038] hover:text-white"
+          }`}>
+            <Flame className="w-3 h-3 text-rose-400" />
+            <span>THREATS ({threatCount ?? 0})</span>
+          </button>
+        )}
       </div>
     </div>
   );

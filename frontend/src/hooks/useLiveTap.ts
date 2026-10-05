@@ -32,6 +32,7 @@ export function useLiveTap() {
     active_interface: null,
   });
   const [activeAlert, setActiveAlert] = useState<TapAlert | null>(null);
+  const [alertHistory, setAlertHistory] = useState<TapAlert[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -60,6 +61,7 @@ export function useLiveTap() {
               setTapState(msg.status);
             } else if (msg.type === "SECURITY_ALERT") {
               setActiveAlert(msg.data);
+              setAlertHistory((prev) => [msg.data, ...prev].slice(0, 50));
             }
           } catch {
             // Ignore malformed WS frames
@@ -105,12 +107,15 @@ export function useLiveTap() {
   }, []);
 
   const dismissAlert = useCallback(() => setActiveAlert(null), []);
+  const clearAlerts = useCallback(() => setAlertHistory([]), []);
 
   return {
     tapState,
     activeAlert,
+    alertHistory,
     isConnected,
     dismissAlert,
+    clearAlerts,
     sendCommand,
   };
 }

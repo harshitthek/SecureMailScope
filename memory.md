@@ -1,202 +1,133 @@
-# SecureMailScope — Project Memory & Context
-
-## What Is This File?
-This file is the single source of truth for any AI agent or developer working on this project. Read this FIRST before writing any code. It contains project decisions, constraints, naming conventions, and domain knowledge that must be respected at all times.
-
----
+# SecureMailScope — Project Memory & Architecture Context
 
 ## 1. Project Identity
 - **Project Name:** SecureMailScope
-- **Tagline:** AI-Assisted Cryptographic Security Posture Assessment for Secure Email Communications
+- **Tagline:** Enterprise Passive Network Forensic Framework for Cryptographic Security Posture Assessment of Encrypted Email Communications
 - **SIH Problem Statement:** SIH26159
 - **Sponsoring Agency:** National Technical Research Organisation (NTRO), Government of India
-- **Hackathon:** Smart India Hackathon 2026
+- **Theme:** Blockchain & Cybersecurity
+- **Status:** Complete Enterprise Grade Platform
 
 ---
 
-## 2. Critical Constraints
-- **TIME:** This is a rapid prototype. We have ~48 hours. Every decision must favor speed over perfection.
-- **FRONTEND PURPOSE:** The frontend exists ONLY for the prototype demo video. It must look polished on screen but does NOT need production hardening, auth, error boundaries, or edge-case handling.
-- **BACKEND PURPOSE:** The backend must actually work — it parses real PCAP files and produces real analysis. This is the core IP.
-- **NO ACTIVE SCANNING:** The tool is PASSIVE ONLY. It reads pre-captured `.pcap` / `.pcapng` files. It never connects to any external mail server. This is a hard requirement from NTRO.
-- **NO EMAIL CONTENT:** We never read, decrypt, or display email message bodies. We only analyze the cryptographic handshake metadata and session parameters.
-- **OFFLINE-ONLY:** No API calls to external services. All analysis happens locally on the server.
+## 2. Core Architectural Principles
+- **STRICTLY PASSIVE:** The platform functions out-of-band on network tap data or pre-captured packet files (`.pcap`, `.pcapng`). Zero active scanning or packet injection into production mail pathways.
+- **ZERO PAYLOAD DECRYPTION:** The system never reads, decrypts, stores, or inspects email message bodies. Forensics are confined exclusively to cryptographic handshake metadata, protocol state machines, and transport security envelopes.
+- **AIR-GAPPED COMPLIANCE:** Analysis runs entirely on-premises without calling external verification authorities or cloud endpoints.
+- **DEFENSE-GRADE UI STANDARDS:** Adheres to `/usemax` micro-components ($< 150\text{ LOC}$ per component), WCAG 2.1 AA accessibility, and an industrial brutalist SOC design system (high density, 1px structural grid lines, monospace telemetry, zero marketing gradients).
 
 ---
 
-## 3. Monorepo Structure
+## 3. Monorepo Directory Topology
 
 ```
 SecureMailScope/
-├── backend/                    # Python FastAPI server
+├── backend/
 │   ├── app/
-│   │   ├── main.py             # FastAPI app entry point
-│   │   ├── api/
-│   │   │   └── routes.py       # API endpoints (/upload, /analyze, /report)
-│   │   ├── core/
-│   │   │   ├── pcap_parser.py  # PCAP ingestion, TCP stream reassembly
-│   │   │   ├── tls_analyzer.py # TLS handshake parsing, cipher extraction
-│   │   │   ├── cert_validator.py # X.509 certificate validation
-│   │   │   ├── starttls_detector.py # STARTTLS state machine
-│   │   │   ├── ja3_engine.py   # JA3 fingerprint computation
-│   │   │   ├── scorer.py       # Cryptographic posture scoring formula
-│   │   │   └── anomaly.py      # Isolation Forest anomaly detection
-│   │   ├── reports/
-│   │   │   ├── json_exporter.py
-│   │   │   └── pdf_exporter.py
-│   │   └── data/
-│   │       ├── cipher_db.json  # IANA cipher suite → security classification
-│   │       ├── ja3_known.json  # Known-good JA3 hashes (Thunderbird, Outlook, etc.)
-│   │       └── nist_rules.json # NIST SP 800-52r2 compliance rules
-│   ├── test_pcaps/             # Synthetic test PCAP files for demo
-│   │   ├── hardened_tls13.pcap
-│   │   ├── legacy_tls10.pcap
-│   │   ├── striptls_attack.pcap
-│   │   └── rogue_client.pcap
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/                   # Next.js 14 App Router
+│   │   ├── main.py                  # FastAPI entry point, CORS, startup lifespan, routes
+│   │   ├── api/                     # REST and WebSocket route definitions
+│   │   │   ├── routes.py            # Core upload and dossier retrieval
+│   │   │   ├── tap_routes.py        # Live network TAP control endpoints
+│   │   │   ├── ws_telemetry.py      # Telemetry & alert WebSocket endpoint
+│   │   │   ├── case_routes.py       # Relational SQLite case management
+│   │   │   ├── siem_routes.py       # ArcSight CEF, Syslog, Webhooks
+│   │   │   ├── spool_routes.py      # Automated spool daemon endpoints
+│   │   │   └── remediation_routes.py # Ansible, Suricata, Snort, MITRE D3FEND
+│   │   ├── core/                    # Core forensic analysis pipeline
+│   │   │   ├── pcap_parser.py       # Stream demultiplexing & TCP reassembly
+│   │   │   ├── starttls_detector.py # STARTTLS transitions & STRIPTLS detection
+│   │   │   ├── tls_analyzer.py      # TLS 1.0–1.3 handshake dissecting & JA3
+│   │   │   ├── cert_validator.py    # X.509 DER certificate cryptanalysis
+│   │   │   ├── ja3_engine.py        # MD5 JA3 fingerprinting & GREASE filtering
+│   │   │   ├── scorer.py            # Posture scoring & enterprise grading
+│   │   │   └── anomaly.py           # Isolation Forest anomaly engine
+│   │   ├── tap/                     # Live wire network sensor
+│   │   │   ├── live_wire_sniffer.py # Scapy AsyncSniffer on physical/virtual NICs
+│   │   │   ├── ring_buffer.py       # Thread-safe packet circular buffer
+│   │   │   ├── threat_heuristics.py # In-flight wire threat detection
+│   │   │   └── replay_engine.py     # Configurable PCAP replay streaming
+│   │   ├── spool/                   # Ingestion daemon
+│   │   │   ├── watcher.py           # Directory watcher with file lock checks
+│   │   │   └── daemon.py            # Background sweeper worker
+│   │   ├── db/                      # Relational persistence
+│   │   │   ├── base.py              # DeclarativeBase metadata
+│   │   │   ├── models.py            # Relational SQLAlchemy 2.0 models
+│   │   │   ├── session.py           # Async SQLite engine & sessionmaker
+│   │   │   ├── repository.py        # Read-through cached case repository
+│   │   │   ├── serializers.py       # Model <-> DTO translation
+│   │   │   └── seed.py              # Benchmark cases pre-seed with PQC tagging
+│   │   ├── siem/                    # Enterprise SIEM forwarders
+│   │   │   ├── cef_serializer.py    # ArcSight CEF format with CRLF sanitization
+│   │   │   ├── syslog_dispatcher.py # RFC 5424 UDP Syslog (:514 UDP)
+│   │   │   └── webhook_dispatcher.py# JSON Webhook dispatcher for SOAR
+│   │   ├── remediation/             # Automated countermeasure orchestration
+│   │   │   ├── orchestrator.py      # MITRE D3FEND mapping & action items
+│   │   │   ├── ansible_generator.py # Dynamic Postfix/Dovecot playbooks (.yml)
+│   │   │   └── ids_generator.py     # Suricata (.rules) & Snort 3 (.lua) rules
+│   │   ├── reports/                 # Formal reporting engines
+│   │   │   ├── pdf_exporter.py      # ReportLab multi-page audit PDF
+│   │   │   ├── json_exporter.py     # Structured JSON report exporter
+│   │   │   └── html_exporter.py     # Standalone HTML forensic dossier
+│   │   └── data/                    # Reference catalogs
+│   │       ├── cipher_db.json       # IANA cipher security registry
+│   │       ├── ja3_known.json       # Known client JA3 signatures
+│   │       └── demo_cases.json      # Built-in defense benchmark captures
+│   ├── tests/                       # Pytest test suite (45/45 tests passing)
+│   └── requirements.txt
+├── frontend/                        # Next.js 14 App Router
 │   ├── src/
-│   │   ├── app/
-│   │   │   ├── layout.tsx
-│   │   │   └── page.tsx        # Main dashboard page
+│   │   ├── app/                     # Page route and layout
 │   │   ├── components/
-│   │   │   ├── upload-zone.tsx         # PCAP drag-and-drop uploader
-│   │   │   ├── score-gauge.tsx         # Large circular posture score
-│   │   │   ├── grade-badge.tsx         # Letter grade badge (A+ to F)
-│   │   │   ├── session-table.tsx       # Analyzed sessions data table
-│   │   │   ├── session-detail.tsx      # Expandable session detail panel
-│   │   │   ├── protocol-chart.tsx      # TLS version distribution pie chart
-│   │   │   ├── cipher-chart.tsx        # Cipher suite bar chart
-│   │   │   ├── cert-panel.tsx          # Certificate details card
-│   │   │   ├── vulnerability-list.tsx  # Prioritized vulnerability findings
-│   │   │   ├── compliance-checklist.tsx # NIST compliance pass/fail grid
-│   │   │   ├── alert-banner.tsx        # Critical alert banner (STRIPTLS)
-│   │   │   └── export-button.tsx       # PDF/JSON export trigger
-│   │   ├── lib/
-│   │   │   ├── api.ts          # Fetch wrapper for backend calls
-│   │   │   └── types.ts        # TypeScript interfaces for API responses
-│   │   └── hooks/
-│   │       └── use-analysis.ts # React hook for upload + analysis state
-│   ├── package.json
-│   ├── tailwind.config.ts
-│   ├── next.config.mjs
-│   └── Dockerfile
-├── docker-compose.yml
-├── prd.md
-├── memory.md                  # THIS FILE
-├── agents.md
-├── design.md
-├── phases.md
+│   │   │   ├── shell/               # Header, NavStrip, CaseSelector, Modals
+│   │   │   ├── overview/            # PostureHero, WhatIfSimulator, PostureDiff
+│   │   │   ├── telemetry/           # TapStatusBar, SiemModal, ThreatFeedDrawer
+│   │   │   └── views/               # Flows, Findings, Certs, Dissector, Standards, Remediation, Report
+│   │   ├── hooks/                   # Custom React hooks (useLiveTap, etc.)
+│   │   └── lib/                     # Types, API client, mock data
+│   └── package.json
 └── README.md
 ```
 
 ---
 
-## 4. API Contract
+## 4. Cryptographic Scoring & Penalty Formula
 
-### POST `/api/upload`
-Upload a PCAP file for analysis.
-- **Request:** `multipart/form-data` with field `file` (`.pcap` or `.pcapng`)
-- **Response:** `{ "analysis_id": "uuid-string" }`
+$$\text{Score} = \max\left(0, \min\left(100, 100 - (V_{\text{proto}} + V_{\text{cipher}} + V_{\text{pfs}} + V_{\text{cert}} + V_{\text{anomaly}})\right)\right)$$
 
-### GET `/api/analysis/{analysis_id}`
-Get complete analysis results.
-- **Response:** See `types.ts` — `AnalysisResult` interface containing:
-  - `enterprise_score: number` (0–100)
-  - `enterprise_grade: string` (A+, A, B, C, D, F)
-  - `total_sessions: number`
-  - `protocols_detected: string[]`
-  - `sessions: Session[]` (array of per-session details)
-  - `vulnerabilities: Vulnerability[]` (prioritized findings)
-  - `compliance: ComplianceCheck[]` (NIST pass/fail items)
-  - `certificate_summary: CertSummary[]`
-  - `protocol_distribution: { version: string, count: number }[]`
-  - `cipher_distribution: { cipher: string, count: number, severity: string }[]`
+### Penalty Deductions:
+- **$V_{\text{proto}}$ (Protocol Version)**:
+  - Cleartext (None) / SSL 2.0 / SSL 3.0: 40 pts
+  - TLS 1.0 / TLS 1.1: 25 pts
+  - TLS 1.2 (non-AEAD): 5 pts
+  - TLS 1.2 (AEAD) / TLS 1.3: 0 pts
+- **$V_{\text{cipher}}$ (Cipher Suite)**:
+  - Cleartext (None) / RC4 / 3DES / NULL / EXPORT: 30 pts
+  - CBC mode: 15 pts
+  - AES-GCM / ChaCha20-Poly1305: 0 pts
+- **$V_{\text{pfs}}$ (Forward Secrecy)**:
+  - Static RSA / Cleartext: 20 pts
+  - ECDHE / DHE: 0 pts
+- **$V_{\text{cert}}$ (X.509 Certificate)**:
+  - Takes maximum penalty among certificate issues:
+    - Self-signed: 30 pts
+    - Expired / RSA key < 2048: 25 pts
+    - Weak signature (SHA-1 / MD5): 20 pts
+- **$V_{\text{anomaly}}$ (Client Fingerprint & Outliers)**:
+  - Unknown JA3 client fingerprint: 15 pts
+  - Isolation Forest anomaly flag: 15 pts
 
-### GET `/api/report/{analysis_id}/pdf`
-Download PDF forensic report.
-
-### GET `/api/report/{analysis_id}/json`
-Download machine-readable JSON report.
-
----
-
-## 5. Scoring Formula
-
-```
-Score = 100 - (V_proto + V_cipher + V_pfs + V_cert + V_anomaly)
-
-V_proto:
-  SSL 2.0 / SSL 3.0    → -40
-  TLS 1.0 / TLS 1.1    → -25
-  TLS 1.2 (non-AEAD)   → -5
-  TLS 1.2 (AEAD)       → 0
-  TLS 1.3              → 0
-
-V_cipher:
-  RC4, 3DES, NULL, EXP → -30
-  CBC mode             → -15
-  AES-GCM, ChaCha20    → 0
-
-V_pfs:
-  Static RSA           → -20
-  ECDHE / DHE          → 0
-
-V_cert:
-  Expired              → -25
-  Self-signed          → -30
-  SHA-1/MD5 signature  → -20
-  RSA key < 2048 bits  → -25
-
-V_anomaly:
-  Unknown JA3 hash     → -15
-  ML outlier detected  → -15
-
-Enterprise Score = average(all session scores), clamped to [0, 100]
-Grade mapping: 90–100 = A+, 80–89 = A, 70–79 = B, 60–69 = C, 50–59 = D, <50 = F
-```
+### Enterprise Grade Boundaries:
+- `90 – 100`: **A+** (Secure, NIST compliant)
+- `80 – 89`: **A** (Low risk)
+- `70 – 79`: **B** (Moderate risk)
+- `60 – 69`: **C** (Degraded)
+- `50 – 59`: **D** (High risk)
+- `< 50`: **F** (Critical vulnerability)
 
 ---
 
-## 6. Naming Conventions
-- **Python:** snake_case for files, functions, variables. PascalCase for classes.
-- **TypeScript/React:** PascalCase for components. camelCase for functions/variables. kebab-case for file names.
-- **API routes:** lowercase, hyphen-separated paths.
-- **CSS:** Tailwind utility classes only. No custom CSS files.
-
----
-
-## 7. Key Domain Terms
-- **PCAP:** Packet Capture file format (.pcap / .pcapng) — raw network traffic dump.
-- **STARTTLS:** In-band protocol command that upgrades a plaintext connection to TLS.
-- **Implicit TLS:** Connection starts encrypted from the first byte (dedicated ports: 465, 993, 995).
-- **JA3:** MD5 hash fingerprint of a TLS Client Hello's parameters. Identifies client software.
-- **Forward Secrecy (PFS):** Property ensuring session keys cannot be recovered even if long-term private key is compromised. Requires ephemeral key exchange (ECDHE/DHE).
-- **AEAD:** Authenticated Encryption with Associated Data — modern cipher mode (GCM, ChaCha20-Poly1305).
-- **CBC:** Cipher Block Chaining — legacy cipher mode vulnerable to padding oracle attacks.
-- **STRIPTLS Attack:** MitM strips the STARTTLS capability from server response, forcing cleartext.
-- **X.509:** Standard format for public key certificates used in TLS.
-
----
-
-## 8. Test PCAP Scenarios
-We need 4 synthetic PCAPs for the demo. Generate them using Python scripts that simulate mail handshakes:
-
-| ID | Name | TLS | Cipher | Cert | Expected Score |
-|---|---|---|---|---|---|
-| PCAP-01 | Hardened Modern | TLS 1.3 | AES-256-GCM | Valid Let's Encrypt, RSA-2048 | 98 (A+) |
-| PCAP-02 | Legacy Vulnerable | TLS 1.0 | 3DES-CBC | SHA-1 signed, RSA-1024 | 25 (F) |
-| PCAP-03 | STRIPTLS Attack | None (cleartext) | None | N/A | 0 (CRITICAL) |
-| PCAP-04 | Rogue Client | TLS 1.2 | AES-128-GCM | Valid, but unknown JA3 | 55 (D) |
-
----
-
-## 9. What NOT To Do
-- Do NOT build authentication or login.
-- Do NOT add dark mode toggle (waste of time; pick one theme and ship).
-- Do NOT over-engineer error handling. A toast notification for upload errors is sufficient.
-- Do NOT add loading skeletons or suspense boundaries. A simple spinner is fine.
-- Do NOT write unit tests (prototype sprint — we test manually with the 4 PCAPs).
-- Do NOT use a SQL/NoSQL database. Store analysis results in-memory (Python dict keyed by analysis_id).
-- Do NOT add WebSocket streaming. Simple request-response is fine for <50MB files.
+## 5. Defense Benchmark Profiles
+1. **`CASE-01: HARDENED_TLS13`**: Score 98 (A+). Enforced TLS 1.3, AES-256-GCM, ECDHE X25519, valid X.509 certs.
+2. **`CASE-02: STRIPTLS_MITM`**: Score 12 (F). Active AiTM downgrade on port 587, plaintext credentials exposed.
+3. **`CASE-03: LEGACY_3DES_RSA`**: Score 24 (F). Deprecated TLS 1.0 with 3DES-CBC (Sweet32), static RSA, expired SHA-1 cert.
+4. **`CASE-04: ENTERPRISE_MIXED`**: Score 42 (F). Multi-stream enterprise mailflow showing compliant SMTPS alongside unencrypted cleartext SMTP and legacy ciphers.

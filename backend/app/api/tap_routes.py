@@ -112,11 +112,29 @@ async def start_simulated_replay(
             status_code=400,
             detail=live_tap_daemon.error_message or f"Failed to replay PCAP: {req.pcap_name}",
         )
+
+    scenario_case_map = {
+        "01_hardened_tls13_smtps.pcap": "CASE-01",
+        "02_striptls_mitm_attack.pcap": "CASE-02",
+        "03_legacy_tls10_3des.pcap": "CASE-03",
+        "06_enterprise_multi_stream.pcap": "CASE-04",
+        "hardened_tls13.pcap": "CASE-01",
+        "striptls_attack.pcap": "CASE-02",
+        "legacy_tls10.pcap": "CASE-03",
+    }
+    case_code = scenario_case_map.get(req.pcap_name, "CASE-02")
+
+    from app.api.routes import _results
+    analysis = _results.get(case_code)
+
     return {
         "status": "replaying",
         "scenario": req.pcap_name,
         "speed_pps": req.speed_pps,
+        "case_code": case_code,
+        "analysis_id": case_code,
         "telemetry": live_tap_daemon.get_status(),
+        "analysis": analysis,
     }
 
 

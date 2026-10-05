@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { uploadPcap, getAnalysis } from "@/lib/api";
 import { AnalysisResult } from "@/lib/types";
+import { SpoolIngestionCard } from "./spool-ingestion-card";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -250,6 +251,10 @@ export function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalPro
                 <span>Run STRIPTLS Sample PCAP</span>
               </button>
             </div>
+          )}
+
+          {!isUploading && (
+            <SpoolIngestionCard onCaseLoaded={onUploadSuccess} />
           )}
 
           {error && (

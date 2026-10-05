@@ -202,3 +202,78 @@ export interface EvidenceCase {
   description: string;
   data: AnalysisResult;
 }
+
+export interface D3fendTechnique {
+  technique_id: string;
+  name: string;
+  status: "CRITICAL" | "HIGH" | "COMPLIANT";
+  rationale: string;
+  actions: string[];
+}
+
+export interface RemediationSummary {
+  case_code: string;
+  analysis_id: string;
+  target_host: string;
+  action_items_count: number;
+  d3fend_matrix: D3fendTechnique[];
+  playbook_available: boolean;
+  ids_rules_available: boolean;
+  download_endpoints: {
+    ansible: string;
+    suricata: string;
+    snort: string;
+  };
+}
+
+export interface SiemStats {
+  configured?: boolean;
+  enabled?: boolean;
+  host?: string;
+  port?: number;
+  protocol?: string;
+  facility?: number;
+  format?: string;
+  sent_count: number;
+  fail_count: number;
+  last_sent_at: string | null;
+}
+
+export interface SiemStatusResponse {
+  syslog: SiemStats;
+  webhook: SiemStats;
+  total_recorded_alerts: number;
+}
+
+export interface SiemAlertRecord {
+  timestamp: string;
+  source: string;
+  case_id?: string;
+  title: string;
+  severity: Severity;
+  mitre_attack_id?: string;
+  syslog_forwarded: boolean;
+  webhook_dispatched: boolean;
+  cef_payload: string;
+}
+
+export interface SpoolStatusResponse {
+  status: string;
+  incoming_count: number;
+  processed_count: number;
+  failed_count: number;
+  poll_interval: number;
+  incoming_dir: string;
+}
+
+export interface SpoolHistoryItem {
+  analysis_id: string;
+  case_code: string;
+  filename: string;
+  archived_path: string;
+  enterprise_score: number;
+  enterprise_grade: Grade;
+  total_sessions: number;
+  vulnerabilities_count: number;
+  processed_at?: string;
+}

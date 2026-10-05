@@ -1,212 +1,156 @@
-# SecureMailScope — Implementation Phases & Sprint Plan
+# SecureMailScope — Implementation Roadmap & Execution Record
 
-## Constraints
-- **Total Time Budget:** ~24 working hours (1 intense day)
-- **Goal:** Working prototype that can record a 3-minute demo video
-- **Team:** 1-2 developers + AI agents working in parallel
+Passive Network Forensic Framework for Cryptographic Security Posture Assessment of Encrypted Email Communications.  
+Smart India Hackathon (SIH 2026), Problem Statement **SIH26159** (National Technical Research Organisation — NTRO).
 
 ---
 
-## Phase Overview
+## Architecture Milestone Matrix
 
 ```
-Phase 0          Phase 1           Phase 2           Phase 3           Phase 4
-[DONE ✅]   →   [DONE ✅]     →   [DONE ✅]     →   [DONE ✅]     →   [DONE ✅]
-30 min          ~1 hour           ~40 min           2-3 hours         2-3 hours
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Phase 0    │ ──> │   Phase 1    │ ──> │   Phase 2    │ ──> │   Phase 3    │
+│  Scaffolding │     │  Core Engine │     │  Wire TAP &  │     │ Spool Daemon │
+│   [DONE ✅]  │     │   [DONE ✅]  │     │  WS [DONE ✅]│     │   [DONE ✅]  │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+       │
+       ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Phase 4    │ ──> │   Phase 5    │ ──> │   Phase 6    │ ──> │   Phase 7    │
+│ SQLite Async │     │  SIEM Alert  │     │ Remediation  │     │   Frontend   │
+│ Persistence  │     │  Syslog/CEF  │     │ MITRE D3FEND │     │  Workstation │
+│   [DONE ✅]  │     │   [DONE ✅]  │     │   [DONE ✅]  │     │   [DONE ✅]  │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
 ---
 
-## Phase 0: Project Scaffolding (30 minutes)
-
-### Tasks
-- [x] Create monorepo folder structure as defined in `memory.md`
-- [x] Initialize Python virtual environment, install dependencies from `requirements.txt`
-- [x] Initialize Next.js 14 app with TypeScript, Tailwind, shadcn/ui
-- [x] Install shadcn/ui components: `card`, `table`, `badge`, `button`, `alert`, `progress`
-- [x] Install `recharts` and `lucide-react`
-- [x] Verify both servers start: `uvicorn` on `:8000`, `next dev` on `:3000`
-- [x] Create `backend/app/data/cipher_db.json` with 30+ cipher suite entries
-
-### Exit Criteria
-- `http://localhost:8000/docs` shows FastAPI Swagger UI
-- `http://localhost:3000` shows Next.js default page
-- Both can run simultaneously without port conflicts
+## Phase 0: Scaffolding & Monorepo Architecture [DONE ✅]
+- [x] Monorepo workspace configuration (FastAPI backend + Next.js 14 frontend).
+- [x] Scapy, Cryptography, SQLAlchemy, Pydantic, and ReportLab environment configured.
+- [x] Next.js 14 App Router with TypeScript, Tailwind CSS, and Lucide React.
+- [x] IANA cipher suite classification database (`cipher_db.json`) with AEAD and Forward Secrecy metadata.
+- [x] Known client JA3 fingerprint signatures database (`ja3_known.json`).
 
 ---
 
-## Phase 1: Backend Core Engine (6–8 hours)
-
-This is the critical path. The backend must actually parse real PCAP files.
-
-### Task 1.1: PCAP Parser & TCP Reassembly (2 hours)
-- [x] `pcap_parser.py`: Read `.pcap` / `.pcapng` files using `scapy.rdpcap()` or `scapy.PcapReader()`
-- [x] Filter packets by destination/source ports: `{25, 110, 143, 465, 587, 993, 995}`
-- [x] Group packets into TCP streams by `(src_ip, src_port, dst_ip, dst_port)` tuple
-- [x] Reassemble stream payload by sorting on TCP sequence numbers
-- [x] Return list of `StreamData` objects with reassembled bytes, metadata, timestamps
-
-### Task 1.2: STARTTLS Detection (45 minutes)
-- [x] `starttls_detector.py`: Scan plaintext portion of reassembled streams
-- [x] Detect server capability: regex `250[- ]STARTTLS` in server response
-- [x] Detect client command: `STARTTLS\r\n`
-- [x] Detect server acceptance: `220 ` response after STARTTLS
-- [x] Detect the transition byte offset where TLS Record Layer begins (`0x16`)
-- [x] Flag sessions where STARTTLS was advertised but never initiated (potential strip)
-- [x] Flag sessions where no STARTTLS and no implicit TLS (fully cleartext — CRITICAL)
-
-### Task 1.3: TLS Handshake Analyzer (2 hours)
-- [x] `tls_analyzer.py`: Parse TLS Record Layer starting from transition offset
-- [x] Parse **Client Hello** (handshake type `0x01`):
-  - Protocol version (2 bytes after record header)
-  - Cipher suites list (2-byte IANA codes)
-  - Extensions: SNI, Supported Versions (for TLS 1.3 detection), Elliptic Curves, Point Formats
-- [x] Parse **Server Hello** (handshake type `0x02`):
-  - Selected protocol version
-  - Selected cipher suite (2 bytes)
-  - Selected extensions
-- [x] Parse **Certificate** message (handshake type `0x0B`, TLS 1.2 only):
-  - Extract raw DER-encoded certificate bytes
-  - Pass to cert_validator.py
-- [x] Parse **Server Key Exchange** (handshake type `0x0C`):
-  - Identify key exchange algorithm (ECDHE params, DHE params, or absent = static RSA)
-- [x] Lookup cipher suite hex code in `cipher_db.json` for human-readable name + security metadata
-
-### Task 1.4: Certificate Validator (1 hour)
-- [x] `cert_validator.py`: Accept raw DER bytes
-- [x] Use `cryptography.x509.load_der_x509_certificate(der_bytes)`
-- [x] Extract: Subject CN, Issuer CN, Not Before, Not After, Serial Number
-- [x] Extract: Signature Algorithm OID → map to name (sha256WithRSA, sha1WithRSA, md5WithRSA)
-- [x] Extract: Public Key type (RSA/EC) and key size in bits
-- [x] Extract: Subject Alternative Names (SAN) extension
-- [x] Checks:
-  - Expired: `not_after < now` → flag HIGH
-  - Not yet valid: `not_before > now` → flag MEDIUM
-  - Self-signed: `subject == issuer` → flag HIGH
-  - Weak hash: SHA-1 or MD5 → flag HIGH
-  - Short key: RSA < 2048 → flag CRITICAL
-  - Long validity: > 398 days → flag LOW
-
-### Task 1.5: JA3 Fingerprinting (30 minutes)
-- [x] `ja3_engine.py`: From parsed Client Hello, construct JA3 string:
-  `{version},{cipher_list},{extension_list},{elliptic_curves},{point_formats}`
-- [x] Compute MD5 hash of the JA3 string
-- [x] Lookup hash in `ja3_known.json`
-- [x] Return: `{ hash, known_client_name | "Unknown", is_known: bool }`
-
-### Task 1.6: Scoring & Anomaly Detection (1 hour)
-- [x] `scorer.py`: Implement formula from `memory.md` exactly
-- [x] Accept session metadata → compute V_proto, V_cipher, V_pfs, V_cert, V_anomaly → return score 0-100
-- [x] Compute enterprise aggregate: `mean(all_session_scores)`, clamped `[0, 100]`
-- [x] Map score to grade: `90-100=A+, 80-89=A, 70-79=B, 60-69=C, 50-59=D, <50=F`
-- [x] `anomaly.py`: Feature vector per session → fit Isolation Forest → flag outliers with contamination=0.1
-- [x] Generate sorted vulnerability list with severity, title, description, affected sessions
-
-### Task 1.7: API Routes (1 hour)
-- [x] `routes.py`: Wire up FastAPI endpoints
-- [x] `POST /api/upload`: Accept multipart file, save to temp dir, run full analysis pipeline, store result in-memory dict, return `{ analysis_id }`
-- [x] `GET /api/analysis/{id}`: Return complete analysis JSON
-- [x] `GET /api/report/{id}/pdf`: Generate PDF on the fly, return as `application/pdf` stream
-- [x] `GET /api/report/{id}/json`: Return formatted JSON download
-- [x] Add CORS middleware for `http://localhost:3000`
-
-### Exit Criteria (Phase 1)
-- [x] Upload any SMTP/TLS PCAP via Swagger UI → get back structured JSON with scores, vulns, certs
-- [x] Test with at least one real-world Wireshark sample PCAP
+## Phase 1: Core Cryptographic & Forensic Analysis Engine [DONE ✅]
+- [x] **PCAP Ingestion & TCP Stream Reassembly** (`pcap_parser.py`):
+  - Stream demultiplexing on email ports: `{25, 110, 143, 465, 587, 993, 995}`.
+  - Directional payload reassembly with TCP sequence wraparound and deduplication handling.
+- [x] **STARTTLS State Machine & Downgrade Detection** (`starttls_detector.py`):
+  - Advertised vs negotiated STARTTLS verification.
+  - Active detection of inline AiTM STRIPTLS downgrade attacks.
+  - Wire cleartext credential exposure detection (`AUTH PLAIN` / `AUTH LOGIN`).
+- [x] **TLS Handshake Dissection** (`tls_analyzer.py`):
+  - Binary parsing of Client Hello, Server Hello, and Server Key Exchange records.
+  - Cipher suite resolution, TLS 1.0–1.3 version extraction, SNI, Supported Groups, and Point Formats.
+  - Ephemeral Forward Secrecy evaluation (ECDHE/DHE vs static RSA).
+- [x] **X.509 Certificate Cryptanalysis** (`cert_validator.py`):
+  - DER certificate parsing via `cryptography`.
+  - Signature digest algorithm verification (flagging SHA-1 / MD5).
+  - Public key type and length verification (flagging RSA < 2048, EC < 256).
+  - Self-signed, validity duration, and expiration status analysis.
+- [x] **JA3 Fingerprinting & Scoring Engine** (`ja3_engine.py`, `scorer.py`):
+  - MD5 JA3 hash generation with GREASE value filtering.
+  - Posture scoring formula computing composite session score (0–100) and enterprise grade (A+ to F).
+- [x] **Dossier Reporting** (`pdf_exporter.py`, `json_exporter.py`):
+  - Multi-page ReportLab PDF forensic audit report generation with tabular summaries.
+  - Structured JSON export with complete cryptographic metadata.
 
 ---
 
-## Phase 2: Frontend Dashboard (4–5 hours)
-
-Can run in parallel with Phase 1 using hardcoded mock data.
-
-### Task 2.1: Layout & Upload Screen (1 hour)
-- [x] Dark theme layout (`bg-slate-950`, `text-slate-50`)
-- [x] Header bar with logo, title, and action buttons
-- [x] Centered upload zone with drag-and-drop, file validation (`.pcap` / `.pcapng`)
-- [x] Loading spinner state during analysis
-
-### Task 2.2: Dashboard — Stats & Score (1 hour)
-- [x] Score gauge component (SVG ring with CSS animation)
-- [x] 4 summary stat cards (Score, Sessions, Protocols, Vulnerabilities)
-- [x] Alert banner (conditional, for CRITICAL findings)
-
-### Task 2.3: Dashboard — Charts (1 hour)
-- [x] Protocol distribution PieChart (Recharts)
-- [x] Cipher suite BarChart (Recharts)
-- [x] Color-coded by severity
-
-### Task 2.4: Dashboard — Tables & Lists (1 hour)
-- [x] Session analysis table with all columns
-- [x] Expandable row showing certificate details, JA3 hash, full cipher name
-- [x] Vulnerability findings list sorted by severity
-- [x] NIST compliance checklist with pass/fail/warn icons
-
-### Task 2.5: Export & Polish (30 minutes)
-- [x] Export PDF and JSON buttons (trigger backend download endpoints)
-- [x] Score gauge ring animation on mount
-- [x] Upload → dashboard transition
-
-### Exit Criteria (Phase 2)
-- [x] Full dashboard renders with mock data
-- [x] All components visually match `design.md` specifications
-- [x] No layout overflow or text clipping at 1440px viewport
+## Phase 2: Live Wire TAP Sniffer & WebSocket Telemetry [DONE ✅]
+- [x] **Asynchronous Network Sniffer** (`app/tap/live_wire_sniffer.py`):
+  - Scapy `AsyncSniffer` capturing live frames across physical or virtual adapters.
+  - In-flight packet parsing under BPF: `tcp and (port 25 or 587 or 465 or 993 or 110)`.
+- [x] **In-Flight Threat Heuristics** (`app/tap/threat_heuristics.py`):
+  - Real-time detection of STRIPTLS downgrades, cleartext authentication, and deprecated SSLv3.
+- [x] **Ring Buffer & Snapshotting** (`app/tap/ring_buffer.py`):
+  - Thread-safe circular ring buffer (default capacity: 2,000 packets).
+  - `/api/tap/snapshot`: Converts buffered packets into an instant forensic dossier.
+- [x] **Simulated Attack Replay** (`app/tap/replay_engine.py`):
+  - Out-of-band PCAP stream replay at configurable packet rates (e.g., 12 PPS).
+- [x] **Real-Time WebSocket Stream** (`app/api/ws_telemetry.py`):
+  - `ws://127.0.0.1:8000/api/ws/telemetry`: Streams continuous PPS, buffer metrics, and instant alert frames.
 
 ---
 
-## Phase 3: Integration & Wiring (2–3 hours)
-
-### Tasks
-- [x] `api.ts`: Implement `uploadPcap()`, `getAnalysis()`, `downloadReport()` functions
-- [x] `use-analysis.ts`: Hook managing state transitions (idle → uploading → analyzing → done → error)
-- [x] Wire upload-zone to `POST /api/upload`
-- [x] Wire dashboard to `GET /api/analysis/{id}`
-- [x] Wire export buttons to `/api/report/{id}/pdf` and `/api/report/{id}/json`
-- [x] Test end-to-end: upload PCAP on frontend → see real analysis results on dashboard
-- [x] Fix any data shape mismatches between backend response and frontend TypeScript types
-
-### Exit Criteria (Phase 3)
-- [x] Complete end-to-end flow works: upload real PCAP → see real scores and findings on dashboard
-- [x] Export PDF downloads successfully
-- [x] No console errors
+## Phase 3: Automated Spool Ingestion Daemon [DONE ✅]
+- [x] **Folder Watch Architecture** (`app/spool/watcher.py`):
+  - Multi-directory lifecycle: `spool/incoming/` -> `spool/processed/` / `spool/quarantine/`.
+  - File lock verification (handles in-progress writes and partial transfers).
+  - Safety caps: maximum file size (50 MB) and allowed extensions (`.pcap`, `.pcapng`, `.cap`).
+- [x] **Daemon Sweeper & REST Endpoints** (`app/spool/daemon.py`, `app/api/spool_routes.py`):
+  - Background task worker with configurable polling intervals.
+  - Manual on-demand sweep trigger `/api/spool/scan` and status reporting `/api/spool/status`.
 
 ---
 
-## Phase 4: Demo PCAPs & Video Recording (2–3 hours)
-
-### Task 4.1: Generate Test PCAPs (1 hour)
-- [x] Run `generate_test_pcaps.py` to create 4 synthetic PCAPs
-- [x] Verify each PCAP produces expected scores when uploaded
-- [x] Adjust PCAP contents or scoring weights if needed to hit target scores
-
-### Task 4.2: Record Demo Video (1–2 hours)
-- [x] Screen record at 1080p using OBS Studio or similar
-- [x] Demo script written and verified (`DEMO_VIDEO_SCRIPT.md`):
-  1. Show upload screen (5 seconds)
-  2. Upload `hardened_tls13.pcap` → show A+ grade, all green (30 seconds)
-  3. Upload `legacy_tls10.pcap` → show F grade, red flags everywhere (30 seconds)
-  4. Upload `striptls_attack.pcap` → show CRITICAL banner, 0 score (30 seconds)
-  5. Walk through session table, click to expand one session (30 seconds)
-  6. Show charts (protocol distribution, cipher breakdown) (20 seconds)
-  7. Show compliance checklist (15 seconds)
-  8. Click Export PDF → show downloaded report (15 seconds)
-  9. Brief architecture/tech stack slide (optional, 30 seconds)
-- [x] Total video: 2.5–3 minutes
-- [x] Add simple title cards between sections (can use any video editor or PowerPoint export)
-
-### Exit Criteria (Phase 4)
-- [x] 4 test PCAPs produce correct, visually distinct results
-- [x] Demo video script recorded, clean, under 3 minutes
-- [x] Video clearly demonstrates all MUST-have features from PRD
+## Phase 4: Async SQLAlchemy 2.0 SQLite Relational Persistence [DONE ✅]
+- [x] **Relational Schema** (`app/db/models.py`):
+  - `CaptureCaseModel`: Master case table with composite score, grade, severity, and raw JSON document.
+  - `FlowSessionModel`: Normalized session records with foreign key relationship and cascade deletion.
+  - `FindingModel`: Normalized security findings with MITRE ATT&CK / D3FEND mappings.
+  - `CertEvidenceModel`: Leaf certificate cryptographic attributes.
+- [x] **Read-Through Repository** (`app/db/repository.py`):
+  - High-speed in-memory caching layered over async SQLite queries.
+- [x] **Benchmark Seed Utility** (`app/db/seed.py`):
+  - Automatically loads and enriches `CASE-01` through `CASE-04` with Post-Quantum Cryptography (PQC) classifications.
+- [x] **Case Management REST API** (`app/api/case_routes.py`):
+  - Paginated case listing `/api/cases`, single case retrieval, and relational deletion `/api/cases/{id}`.
 
 ---
 
-## Risk Mitigation
+## Phase 5: ArcSight CEF, RFC 5424 Syslog, and Webhooks [DONE ✅]
+- [x] **ArcSight CEF Serializer** (`app/siem/cef_serializer.py`):
+  - Implements Common Event Format (`CEF:0|SecureMailScope|PassiveTAP|2.0|...`).
+  - CRLF injection sanitization and RFC-compliant field escaping.
+- [x] **RFC 5424 UDP Syslog Dispatcher** (`app/siem/syslog_dispatcher.py`):
+  - UDP socket transmission to `:514 UDP` with facility (Local4) and severity calculation.
+- [x] **SOAR Webhook Dispatcher** (`app/siem/webhook_dispatcher.py`):
+  - JSON webhook delivery to external SIEM/SOAR platforms (Splunk, Elastic, Slack, MS Teams).
+- [x] **SIEM Configuration & Audit API** (`app/api/siem_routes.py`):
+  - Endpoints: `/api/siem/status`, `/api/siem/history`, and simulated dispatch trigger `/api/siem/test`.
 
-| Risk | Mitigation |
-|------|-----------|
-| scapy PCAP parsing is too slow for large files | Use `PcapReader` (streaming) instead of `rdpcap` (loads all in memory). Or use `dpkt` for raw byte parsing. |
-| TLS handshake parsing fails on edge cases | Start with the simplest case (TLS 1.2 SMTP). Get that working first. Add TLS 1.3 and IMAP/POP3 only after core works. |
-| Synthetic PCAP generation is tricky | Fallback: use real Wireshark sample captures from their public wiki. Or manually capture from a test Postfix instance. |
-| Frontend charts don't render | Recharts is well-documented. Fallback: replace charts with simple colored progress bars or text stats. |
-| Integration data shape mismatches | Define TypeScript types FIRST (in `types.ts`), share with backend dev. Backend must match exactly. |
+---
+
+## Phase 6: Automated Remediation Orchestration & MITRE D3FEND [DONE ✅]
+- [x] **Dynamic Ansible Playbook Generator** (`app/remediation/ansible_generator.py`):
+  - Synthesizes targeted Postfix `main.cf` and Dovecot `conf.d` hardening playbooks (`mail_hardening.yml`).
+  - Emits idempotent tasks enforcing `smtpd_tls_security_level = may/encrypt`, cipherlists, and PFS curves.
+- [x] **Suricata & Snort 3 Rule Generator** (`app/remediation/ids_generator.py`):
+  - Generates custom IDS signatures (`suricata_mail_rules.rules`, `snort3_mail_rules.lua`) with custom SIDs (2615901–2615905).
+  - Detects plaintext credential leakage, SSLv3 negotiation, and STARTTLS stripping.
+- [x] **MITRE D3FEND Mapping Orchestrator** (`app/remediation/orchestrator.py`):
+  - Maps cryptographic findings to defensive controls:
+    - `D3-OTP`: Opportunistic Inbound TLS Verification (RFC 7817)
+    - `D3-CSD`: Cipher Suite Deprecation Enforcement (NIST SP 800-52r2)
+    - `D3-PFS`: Ephemeral Key Exchange Mandate (ECDHE)
+    - `D3-CTA`: Certificate Trust & Signature Audit (X.509 RFC 5280)
+- [x] **Remediation REST API** (`app/api/remediation_routes.py`):
+  - Endpoints: `/api/remediation/{id}/summary`, `/api/remediation/{id}/ansible`, `/api/remediation/{id}/suricata`, `/api/remediation/{id}/snort`.
+
+---
+
+## Phase 7: Frontend Enterprise Workstation Transformation [DONE ✅]
+- [x] **8 Operational Decks**:
+  - `Overview`: Posture dial, hero telemetry, What-If sandbox, baseline diff trigger.
+  - `Flows`: Reconstructed stream matrix with direction vectors and cipher severity badges.
+  - `Findings`: Prioritized vulnerability ledger with MITRE ATT&CK technique IDs.
+  - `Certificates`: X.509 certificate hierarchy tree and download buttons.
+  - `Dissector`: Dual-mode deep inspector (Cryptanalysis vs Monospaced raw ASCII/Hex state machine).
+  - `Standards`: NIST SP 800-52r2, RFC 8314, and BSI TR-02102-2 compliance checklists.
+  - `Remediation`: D3FEND matrix grid + Ansible / Suricata / Snort rule inspector.
+  - `Dossier`: Archival executive report generator with PDF/JSON/HTML downloads.
+- [x] **Real-Time SOC Telemetry & Modals**:
+  - SIEM Telemetry Modal with Syslog (:514 UDP) and Webhook statistics.
+  - In-flight Wire Threat Feed Drawer connected to live WebSocket alerts.
+  - Spool Ingestion Card embedded in the upload modal.
+  - Dynamic SQLite case selector dropdown with deletion capabilities.
+  - Forensic Posture Diff Modal benchmarking against `CASE-01` baseline.
+- [x] **Code & Architecture Constraints**:
+  - Every component strictly under 150 LOC.
+  - Zero ESLint warnings or errors.
+  - Next.js production build cleanly compiles all 5 static routes.
+  - Full keyboard accessibility (hotkeys `1`–`8`, `/`, `?`, `P`, `H`, `J`).

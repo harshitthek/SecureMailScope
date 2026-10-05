@@ -83,7 +83,8 @@ export function ShortcutHudModal({
                 { key: "4", label: "X.509 Certificate Tree", tab: "CERTIFICATES" as ShellNavTab },
                 { key: "5", label: "Wire Protocol Dissector", tab: "DISSECTOR" as ShellNavTab },
                 { key: "6", label: "Defense Standards Matrix", tab: "STANDARDS" as ShellNavTab },
-                { key: "7", label: "Archival Report Dossier", tab: "REPORT" as ShellNavTab },
+                { key: "7", label: "Remediation & D3FEND", tab: "REMEDIATION" as ShellNavTab },
+                { key: "8", label: "Archival Report Dossier", tab: "REPORT" as ShellNavTab },
               ].map((item) => (
                 <button
                   key={item.key}
