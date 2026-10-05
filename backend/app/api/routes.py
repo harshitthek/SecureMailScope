@@ -355,51 +355,9 @@ def _build_forensic_inspection(stream, starttls, tls) -> dict:
         )
         step += 1
 
-    # Raw chunks
-    def make_chunks(data: bytes, direction: str, base_offset: int, phase_name: str):
-        chunks = []
-        for i in range(0, min(len(data), 160), 16):
-            slice_b = data[i : i + 16]
-            hex_str = " ".join(f"{b:02X}" for b in slice_b)
-            ascii_str = "".join(chr(b) if 32 <= b <= 126 else "." for b in slice_b)
-            is_trans = False
-            hl_label = None
-            hl_type = None
-
-            if b"AUTH" in slice_b:
-                hl_label = "CLEARTEXT CREDENTIALS"
-                hl_type = "danger"
-            elif b"\x16\x03" in slice_b:
-                is_trans = True
-                hl_label = "TLS RECORD HEADER (0x16 0x03)"
-                hl_type = "secure"
-            elif b"STARTTLS" in slice_b:
-                hl_label = "STARTTLS COMMAND"
-                hl_type = "info"
-
-            chunks.append(
-                {
-                    "offset": f"0x{(base_offset + i):04X}",
-                    "hex": hex_str,
-                    "ascii": ascii_str,
-                    "direction": direction,
-                    "protocol_phase": phase_name,
-                    "is_transition_point": is_trans,
-                    "highlight_label": hl_label,
-                    "highlight_type": hl_type,
-                }
-            )
-        return chunks
-
-    raw_chunks = []
-    if stream.client_payload:
-        raw_chunks.extend(make_chunks(stream.client_payload, "C->S", 0, "CLIENT_STREAM"))
-    if stream.server_payload:
-        raw_chunks.extend(make_chunks(stream.server_payload, "S->C", len(stream.client_payload), "SERVER_STREAM"))
-
     return {
         "state_timeline": state_timeline,
-        "raw_chunks": raw_chunks[:14],
+        "raw_chunks": [],
     }
 
 
