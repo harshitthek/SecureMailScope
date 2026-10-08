@@ -32,6 +32,17 @@ function ForensicWorkstationInner() {
   const tabParam = searchParams.get("tab")?.toUpperCase();
   const { showToast } = useToast();
 
+  // Enforce session containment: prevent back navigation from exiting workstation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   // Determine active case strictly based on URL query param or fallback to CASE-04
   const resolvedCase = useMemo(() => {
     if (caseParam) {
