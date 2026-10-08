@@ -43,7 +43,16 @@ export function useLiveTap() {
     function connectWs() {
       if (unmounted) return;
       try {
-        const wsUrl = API_BASE.replace(/^http/, "ws") + "/api/ws/telemetry";
+        let wsUrl: string;
+        if (API_BASE.startsWith("http://") || API_BASE.startsWith("https://")) {
+          wsUrl = API_BASE.replace(/^http/, "ws") + "/api/ws/telemetry";
+        } else if (typeof window !== "undefined") {
+          const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+          const cleanBase = API_BASE.startsWith("/") ? API_BASE : `/${API_BASE}`;
+          wsUrl = `${proto}//${window.location.host}${cleanBase}/api/ws/telemetry`;
+        } else {
+          wsUrl = "ws://localhost:8000/api/ws/telemetry";
+        }
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 

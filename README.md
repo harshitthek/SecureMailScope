@@ -3,6 +3,9 @@
 **Passive Network Forensic Framework for Cryptographic Security Posture Assessment of Encrypted Email Communications.**  
 Developed for **Smart India Hackathon (SIH 2026)** Problem Statement **SIH26159**, sponsored by the **National Technical Research Organisation (NTRO)**, Government of India.
 
+> **Live Deployment & Interactive Console**: [https://harshitthek.is-a.dev/mailscope](https://harshitthek.is-a.dev/mailscope)  
+> Interactive defense forensics workstation pre-loaded with reference cases (Hardened TLS 1.3, STRIPTLS downgrade attack, legacy 3DES/RSA), real-time WebSocket telemetry, and out-of-band PCAP ingestion.
+
 ---
 
 ## 1. Executive Summary
@@ -213,6 +216,13 @@ npm install
 npm run dev
 ```
 Workstation dashboard is accessible at `http://localhost:3000`.
+
+### 6.3 Live Production Deployment (Subpath Architecture)
+The application is deployed online via subpath routing with reverse proxy isolation:
+- **Public URL**: `https://harshitthek.is-a.dev/mailscope`
+- **Frontend**: Next.js 14 Standalone Engine (`basePath: /mailscope`) with strict route confinement.
+- **Backend API**: FastAPI out-of-band forensic engine on `127.0.0.1:8000` with streaming WebSocket feeds.
+- **Security & Proxy**: Cloudflare Edge SSL terminating into Caddy reverse proxy on Oracle Cloud Infrastructure (OCI).
 
 ---
 
